@@ -86,7 +86,7 @@ shot, animation-layer scale, model visibility, and model footprint.
 
 When a live staged shot exists, Dramatic Shapes already transforms the whole
 `BattleState.drawAnimLayer` from the classic Gen1 anchors to the current
-camera projection. Stadium Battle FX therefore keeps its internal anchors at
+camera projection. Stadium Attack Animations therefore keeps its internal anchors at
 player `(26, 96)` and enemy `(124, 56)` and lets that wrapper move and scale
 the completed effect exactly once. Applying the live shot coordinates inside
 the effect player would double-transform it and is specifically avoided.

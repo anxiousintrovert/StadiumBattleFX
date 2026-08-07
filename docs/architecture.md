@@ -49,5 +49,5 @@ used where traced; the remaining wind, speed, string, psychic, and screen
 shapes are procedural first-pass renderers. Growl and Splash claim the visual
 layer only while Dramatic Shapes reports that a Stadium model is showing.
 
-The companion relationship is read-only. Stadium Battle FX never writes the
+The companion relationship is read-only. Stadium Attack Animations never writes the
 Dramatic Shapes installation or its `dramatic_shape/stadium/` model cache.

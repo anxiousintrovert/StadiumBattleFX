@@ -1,15 +1,17 @@
 return {
   summary = "Recreates Stadium move effects in Gen1Recomp from your own Stadium cartridge.",
-  author = "StadiumBattleFX contributors",
+  author = "Stadium Attack Animations contributors",
   tags = { "graphics", "battle", "stadium", "experimental" },
   differences = {
     changed = {
       "All 14 moves on the supplied Yellow party use Stadium presentations",
+      "Five additional moves use the shared Stadium 0x2C impact family",
     },
     added = {
       "Runtime .z64/.n64/.v64 loading from the shared baseroms folder",
       "Versioned private effect cache in the Gen1Recomp save directory",
       "First-run attack-effect caching progress screen",
+      "Read-only Dramatic Shapes and Battle Cinematics camera compatibility",
     },
     known = {
       "Portable stage timing, scale, tint and particle motion remain provisional",

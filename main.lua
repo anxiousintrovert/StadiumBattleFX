@@ -1,4 +1,4 @@
--- StadiumBattleFX: portable Stadium move effects for Gen1Recomp.
+-- Stadium Attack Animations: portable Stadium move effects for Gen1Recomp.
 
 local mod = ...
 
@@ -46,7 +46,7 @@ mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
 })
 
-mod.exports.version = "0.2.0"
+mod.exports.version = "0.3.0"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs

@@ -17,7 +17,7 @@ Battle Cinematics:
 - exports only its version and an activity/reset function.
 
 It does not replace `BattleState.animPlayer`, `AnimPlayer:start`,
-`BattleState.drawAnimLayer`, or any effect-cache path. Stadium Battle FX owns
+`BattleState.drawAnimLayer`, or any effect-cache path. Stadium Attack Animations owns
 only the battle's `animPlayer` adapter, so there is no overlapping replacement.
 
 ## Moving-camera behavior
@@ -25,7 +25,7 @@ only the battle's `animPlayer` adapter, so there is no overlapping replacement.
 Dramatic Shapes calls the wrapped `BattleCam.rig`, renders the current camera,
 and produces a live shot containing the projected player/enemy marks. Its own
 `drawAnimLayer` wrapper then translates and scales the entire move animation
-layer to those marks every frame. Stadium Battle FX deliberately retains the
+layer to those marks every frame. Stadium Attack Animations deliberately retains the
 classic Gen1 anchors inside that layer, so its particles follow Battle
 Cinematics camera movement automatically and receive the transform once.
 
@@ -37,5 +37,5 @@ changes its settings, or reads/writes its files.
 
 The manifest declares `BATTLE_CINEMATICS@>=0.7.1 <1.0.0` as optional. Either
 mod can run without the other. When both are enabled, the relationship is
-visible to the loader and Stadium Battle FX resolves both companions lazily
+visible to the loader and Stadium Attack Animations resolves both companions lazily
 at battle start, after mod loading is complete.

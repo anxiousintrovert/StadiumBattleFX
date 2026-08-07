@@ -1,11 +1,11 @@
-# Stadium Battle FX
+# Stadium Attack Animations
 
-Stadium Battle FX is an experimental Gen1Recomp graphics mod that recreates
+Stadium Attack Animations is an experimental Gen1Recomp graphics mod that recreates
 Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.2.0 covers every move on the supplied Pokemon Yellow test party:
+Version 0.3.0 covers every move on the supplied Pokemon Yellow test party:
 
 - Pikachu: Thunder Shock, Growl, Quick Attack, Thunder Wave
 - Nidoran M: Leer, Tackle, Horn Attack, Double Kick
@@ -13,6 +13,9 @@ Version 0.2.0 covers every move on the supplied Pokemon Yellow test party:
 - Pidgey: Gust, Sand Attack, Quick Attack
 - Magikarp: Splash
 - Sandshrew: Scratch, Sand Attack
+
+It also begins the full-game roster with the shared Stadium `0x2C` impact
+family: Pound, Karate Chop, Jump Kick, Rolling Kick, and Counter.
 
 Thunder Shock retains the already tested Stadium texture and schedule. The
 other effects are a first portable pass based on Stadium's traced primary and
@@ -53,7 +56,7 @@ archive member, or a decompressed Stadium fragment.
 ## Dramatic Shapes compatibility
 
 Dramatic Shapes is optional for textured attack effects and is required only
-for body-only Stadium presentations such as Growl and Splash. Stadium Battle FX
+for body-only Stadium presentations such as Growl and Splash. Stadium Attack Animations
 uses its exported runtime state read-only to determine whether a Stadium model
 is showing and to let Dramatic Shapes finish its own first-run model extraction
 screen first. It also reads the live voxel level, staged-battle mode, projected
@@ -68,14 +71,14 @@ above.
 Dynamic Battle Cinematics v0.7.1 is supported as an optional read-only camera
 companion. It replaces Dramatic Shapes' camera rig but does not replace the
 animation player or animation layer. Dramatic Shapes projects that moving
-camera into its live shot and transforms Stadium Battle FX with the rest of
-the animation layer. Stadium Battle FX detects the companion version but does
+camera into its live shot and transforms Stadium Attack Animations with the rest of
+the animation layer. Stadium Attack Animations detects the companion version but does
 not call its controls or modify any of its files.
 
 ## Installation and updates
 
 Install the versioned `.modpkg` through Gen1Recomp's mod manager and enable
-**Stadium Battle FX**. The mod declares `engine_internals` for its narrow
+**Stadium Attack Animations**. The mod declares `engine_internals` for its narrow
 AnimPlayer adapter and `filesystem` for ROM reads and its private cache.
 
 The manifest points to `anxiousintrovert/StadiumBattleFX`. Tagged GitHub
@@ -96,7 +99,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.2.0.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.3.0.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and

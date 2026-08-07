@@ -1,7 +1,7 @@
 -- Read-only view of Dramatic Shapes presentation state.
 --
 -- Dramatic Shapes transforms BattleState.drawAnimLayer from the fixed Gen1
--- anchors into its live staged-battle shot. Stadium Battle FX must detect
+-- anchors into its live staged-battle shot. Stadium Attack Animations must detect
 -- that ownership and avoid applying the same camera transform twice.
 
 local State = {}

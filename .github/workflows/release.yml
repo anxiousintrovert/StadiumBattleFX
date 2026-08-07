@@ -105,7 +105,7 @@ jobs:
           fi
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "$VERSION" \
+            --title "Stadium Attack Animations $VERSION" \
             --generate-notes \
             "dist/STADIUM_BATTLE_FX-${VERSION}.zip" \
             "dist/sha256sums.txt"
