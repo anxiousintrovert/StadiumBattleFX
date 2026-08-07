@@ -5,6 +5,7 @@ local Registry = V.require("effects/MoveSpecs")
 local Assets = V.require("StadiumAssets")
 local ThunderShock = V.require("effects/ThunderShockSpec")
 local DramaticShapeState = V.require("DramaticShapeState")
+local DramaticShapeHit = V.require("DramaticShapeHit")
 local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
 local AttackCinematics = V.require("AttackCinematics")
 
@@ -41,16 +42,40 @@ local function stadiumParticleScale(callback, age, seed)
   return math.min(target, profile.initial + profile.step * age)
 end
 
-function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions)
+function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions,
+                    hitOptions)
   return setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, cameraCompanion = cameraCompanion,
     cameraOptions = cameraOptions or function() return true end,
+    hitOptions = hitOptions or function() return true end,
     custom = false, tick = 0, warned = {},
-    drawWarned = false, context = nil }, Player)
+    drawWarned = false, context = nil, damageByMove = {},
+    activeHit = nil, hitTriggered = false }, Player)
 end
 
 function Player:setMoveContext(payload)
   self.context = payload
+  -- A called move (Metronome/Mirror Move) is queued alongside its caller.
+  -- Keep the outer buckets in that case; a new ordinary move starts a fresh
+  -- action and retires anything stale from the previous one.
+  if not (payload and payload.isCalled) then self.damageByMove = {} end
+end
+
+function Player:recordDamage(payload)
+  local damage = payload and tonumber(payload.damage)
+  if not damage or damage <= 0 then return end
+  local move = payload.move or (self.context and self.context.move)
+  local spec = move and Registry.get(move.index or move.id)
+  if not spec then return end
+  local queue = self.damageByMove[spec.id]
+  if not queue then
+    queue = {}
+    self.damageByMove[spec.id] = queue
+  end
+  queue[#queue + 1] = {
+    targetSide = payload.target and payload.target.isPlayer and "player" or "enemy",
+    effectiveness = DramaticShapeHit.effectiveness(payload.typeMult),
+  }
 end
 
 function Player:warn(key, reason)
@@ -70,6 +95,7 @@ end
 function Player:start(moveId, attackerIsPlayer, opts)
   AttackCinematics.stop()
   self.custom, self.spec = false, nil
+  self.activeHit, self.hitTriggered = nil, false
   local spec = Registry.get(moveId)
   if not spec or not self.options() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
@@ -91,9 +117,19 @@ function Player:start(moveId, attackerIsPlayer, opts)
   -- and screen effects while a Stadium presentation is active.
   call(self.inner, "start", moveId, attackerIsPlayer, opts)
   self.custom, self.spec, self.tick = true, spec, 0
+  local damage = self.damageByMove[spec.id]
+  self.activeHit = damage and table.remove(damage, 1) or nil
   if self.cameraOptions() ~= false then
     AttackCinematics.start(spec, self.attackerIsPlayer, self.companion)
   end
+end
+
+function Player:triggerHitReaction()
+  if self.hitTriggered or not self.activeHit then return false end
+  self.hitTriggered = true
+  if self.hitOptions() == false then return false end
+  return DramaticShapeHit.request(
+    self.companion, self.activeHit.targetSide, self.activeHit.effectiveness)
 end
 
 function Player:anchor(which)
@@ -124,6 +160,9 @@ function Player:update()
   if not self.custom then return call(self.inner, "update") end
   self.tick = self.tick + 1
   AttackCinematics.setTick(self.tick)
+  if self.spec and self.tick >= (self.spec.impactAt or math.huge) then
+    self:triggerHitReaction()
+  end
   if self.inner and not call(self.inner, "isDone") then call(self.inner, "update") end
 end
 
@@ -474,6 +513,8 @@ end
 function Player:release()
   AttackCinematics.stop()
   self.custom, self.spec, self.context = false, nil, nil
+  self.activeHit, self.hitTriggered = nil, false
+  self.damageByMove = {}
   return call(self.inner, "release")
 end
 

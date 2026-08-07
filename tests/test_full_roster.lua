@@ -61,6 +61,14 @@ local Player = playerChunk({ require = function(name)
       return { attackerShowing = true, targetShowing = true }
     end }
   end
+  if name == "DramaticShapeHit" then
+    return {
+      effectiveness = function(n)
+        return n < 10 and "resisted" or n > 10 and "super" or "neutral"
+      end,
+      request = function() return true end,
+    }
+  end
   if name == "effects/GenericMoveRenderer" then return generic end
   if name == "AttackCinematics" then
     return { start = function() return false end, setTick = function() end,

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Added optional, impact-synchronized defender reactions through the proposed
+  public Dramatic Shapes `Stadium.hit(side, effectiveness)` API. The bridge is
+  capability-checked and safely does nothing on forks without that API.
+- Added a HIT REACTIONS option and retained Gen1Recomp damage outcomes so
+  misses, immunities, and status-only moves cannot trigger skeletal reactions.
+- Added optional faint disposition requests: unowned wild opponents collapse,
+  while trainer-owned Pokemon return to their Poke Ball. Dramatic Shapes owns
+  the delayed model transition through the proposed `Stadium.faint` API.
+
 ## 0.5.1 - 2026-08-07
 
 - Added an opt-in Dynamic Battle Cinematics compatibility zoom with 10%, 25%,

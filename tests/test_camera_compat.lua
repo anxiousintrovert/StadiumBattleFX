@@ -13,6 +13,10 @@ local modules = {
                battleCinematicsVersion = "0.7.1" }
     end,
   },
+  DramaticShapeHit = {
+    effectiveness = function() return "neutral" end,
+    request = function() return false end,
+  },
   ["effects/GenericMoveRenderer"] = { draw = function() end },
   AttackCinematics = { start = function() return false end,
     setTick = function() end, stop = function() end },

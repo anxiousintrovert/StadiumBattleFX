@@ -102,8 +102,20 @@ layer, this mod retains classic Gen1 effect anchors and lets Dramatic Shapes
 apply the resulting camera transform exactly once.
 
 This mod never writes to the Dramatic Shapes mod directory or its
-`dramatic_shape/stadium/` cache. Its only writes are to the private cache path
-above.
+cache. When a compatible successor fork exports
+`Stadium.hit(side, effectiveness)`, landed damaging moves also request the
+target model's Stadium skeletal reaction at the effect's `impactAt` frame.
+Misses, immunities, and status-only moves do not request a reaction. The
+integration is capability-checked and remains a safe no-op on older forks.
+
+If the fork also exports `Stadium.faint(side, disposition)`, this mod requests
+`collapse` for an unowned enemy in a wild encounter and `recall` for every
+trainer-owned Pokemon, including the player's Pokemon. Dramatic Shapes still
+owns HP-drain synchronization, model animation, and the return-to-ball visual.
+Older forks keep their existing faint behavior.
+
+This mod's only writes are to its private cache path above; it never writes to
+the Dramatic Shapes mod directory or its `dramatic_shape/stadium/` cache.
 
 Dynamic Battle Cinematics v0.7.1 is supported as an optional camera companion.
 It replaces Dramatic Shapes' idle camera rig but does not replace the animation
