@@ -27,6 +27,7 @@ function love.load()
     assert(love.filesystem.load(path), "runtime module did not compile: " .. path)
   end
   assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
+  assert(love.filesystem.load("tests/test_camera_compat.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
     love.event.quit(0)

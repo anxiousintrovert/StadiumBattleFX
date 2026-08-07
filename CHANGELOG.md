@@ -13,6 +13,9 @@
 - Added a read-only Dramatic Shapes presentation adapter for the current voxel
   level, staged-camera animation scale, Stadium mode, and model footprints;
   live DS animation-layer projection is detected and never applied twice.
+- Declared and regression-tested Dynamic Battle Cinematics v0.7.1 as an
+  optional camera companion. Its camera remains owned by Dramatic Shapes and
+  no Battle Cinematics files or settings are touched.
 
 ### Changed
 

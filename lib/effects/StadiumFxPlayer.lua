@@ -39,9 +39,10 @@ local function stadiumParticleScale(callback, age, seed)
   return math.min(target, profile.initial + profile.step * age)
 end
 
-function Player.new(inner, options, logger, companion)
+function Player.new(inner, options, logger, companion, cameraCompanion)
   return setmetatable({ inner = inner, options = options, logger = logger,
-    companion = companion, custom = false, tick = 0, warned = {},
+    companion = companion, cameraCompanion = cameraCompanion,
+    custom = false, tick = 0, warned = {},
     drawWarned = false, context = nil }, Player)
 end
 
@@ -58,7 +59,8 @@ function Player:warn(key, reason)
 end
 
 function Player:stadiumModelShowing()
-  self.dsState = DramaticShapeState.read(self.companion, self.attackerIsPlayer)
+  self.dsState = DramaticShapeState.read(
+    self.companion, self.attackerIsPlayer, self.cameraCompanion)
   return self.dsState and self.dsState.attackerShowing or false
 end
 
@@ -70,7 +72,8 @@ function Player:start(moveId, attackerIsPlayer, opts)
   end
 
   self.attackerIsPlayer = attackerIsPlayer and true or false
-  self.dsState = DramaticShapeState.read(self.companion, self.attackerIsPlayer)
+  self.dsState = DramaticShapeState.read(
+    self.companion, self.attackerIsPlayer, self.cameraCompanion)
   if spec.bodyOnly and not self:stadiumModelShowing() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end

@@ -10,7 +10,8 @@
   "priority": 110,
   "dependencies": [],
   "optional_dependencies": [
-    "DRAMATIC_SHAPE@>=1.7.0 <2.0.0"
+    "DRAMATIC_SHAPE@>=1.7.0 <2.0.0",
+    "BATTLE_CINEMATICS@>=0.7.1 <1.0.0"
   ],
   "conflicts": [],
   "incompatible": [],

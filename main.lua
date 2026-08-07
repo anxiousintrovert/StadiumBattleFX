@@ -54,6 +54,9 @@ mod.exports.textureStatus = StadiumAssets.status
 mod.exports.dramaticShape = function()
   return mod.find("DRAMATIC_SHAPE")
 end
+mod.exports.battleCinematics = function()
+  return mod.find("BATTLE_CINEMATICS")
+end
 
 -- Offer the one-time cache build only after the real overworld owns the
 -- stack. The fixed-step seam supplies the live Game object on desktop and
@@ -91,7 +94,8 @@ mod.events:on("battle.started", function(payload)
     battle.animPlayer,
     function() return mod.options:get("enabled") ~= false end,
     mod.log,
-    function() return mod.find("DRAMATIC_SHAPE") end)
+    function() return mod.find("DRAMATIC_SHAPE") end,
+    function() return mod.find("BATTLE_CINEMATICS") end)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter

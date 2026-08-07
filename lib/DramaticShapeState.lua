@@ -14,7 +14,7 @@ local function safeCall(object, name, ...)
   return nil
 end
 
-function State.read(companion, attackerIsPlayer)
+function State.read(companion, attackerIsPlayer, cameraCompanion)
   local ok, result = pcall(function()
     local found = companion and companion()
     local exports = found and found.exports
@@ -33,6 +33,8 @@ function State.read(companion, attackerIsPlayer)
 
     local attackerSide = attackerIsPlayer and "player" or "enemy"
     local targetSide = attackerIsPlayer and "enemy" or "player"
+    local cameraMod = cameraCompanion and cameraCompanion()
+    local cameraExports = cameraMod and cameraMod.exports
     return {
       voxelLevel = Voxel and Voxel.level or nil,
       voxelAngle = Voxel and Voxel.angle or nil,
@@ -46,6 +48,8 @@ function State.read(companion, attackerIsPlayer)
       targetShowing = safeCall(Stadium, "showing", targetSide) and true or false,
       attackerFootprint = safeCall(Stadium, "footprint", attackerSide),
       targetFootprint = safeCall(Stadium, "footprint", targetSide),
+      battleCinematicsVersion = cameraExports and cameraExports.version or nil,
+      externalCamera = cameraExports and cameraExports.version ~= nil or false,
     }
   end)
   if ok then return result end

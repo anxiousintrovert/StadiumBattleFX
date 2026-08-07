@@ -65,6 +65,13 @@ This mod never writes to the Dramatic Shapes mod directory or its
 `dramatic_shape/stadium/` cache. Its only writes are to the private cache path
 above.
 
+Dynamic Battle Cinematics v0.7.1 is supported as an optional read-only camera
+companion. It replaces Dramatic Shapes' camera rig but does not replace the
+animation player or animation layer. Dramatic Shapes projects that moving
+camera into its live shot and transforms Stadium Battle FX with the rest of
+the animation layer. Stadium Battle FX detects the companion version but does
+not call its controls or modify any of its files.
+
 ## Installation and updates
 
 Install the versioned `.modpkg` through Gen1Recomp's mod manager and enable
