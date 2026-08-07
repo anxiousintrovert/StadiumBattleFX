@@ -41,15 +41,18 @@ local StadiumAssets = namespace.require("StadiumAssets")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
+local AttackCinematics = namespace.require("AttackCinematics")
 
 mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
+  { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
 })
 
-mod.exports.version = "0.4.0"
+mod.exports.version = "0.5.0"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
+mod.exports.attackCinematics = AttackCinematics.status
 mod.exports.textureStatus = StadiumAssets.status
 mod.exports.dramaticShape = function()
   return mod.find("DRAMATIC_SHAPE")
@@ -95,7 +98,8 @@ mod.events:on("battle.started", function(payload)
     function() return mod.options:get("enabled") ~= false end,
     mod.log,
     function() return mod.find("DRAMATIC_SHAPE") end,
-    function() return mod.find("BATTLE_CINEMATICS") end)
+    function() return mod.find("BATTLE_CINEMATICS") end,
+    function() return mod.options:get("attack_camera") ~= false end)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter
@@ -105,4 +109,8 @@ mod.events:on("battle.move_used", function(payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.setMoveContext then player:setMoveContext(payload) end
+end)
+
+mod.events:on("battle.ended", function()
+  AttackCinematics.stop()
 end)

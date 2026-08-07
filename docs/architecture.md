@@ -49,5 +49,14 @@ used where traced; the remaining wind, speed, string, psychic, and screen
 shapes are procedural first-pass renderers. Growl and Splash claim the visual
 layer only while Dramatic Shapes reports that a Stadium model is showing.
 
-The companion relationship is read-only. Stadium Attack Animations never writes the
-Dramatic Shapes installation or its `dramatic_shape/stadium/` model cache.
+`lib/AttackCinematics.lua` is the independent move-time camera layer. It
+lazily composes with Dramatic Shapes' `BattleCam.rig`, leaves canonical camera
+queries unchanged, and selects a reusable windup/travel/impact/recovery
+timeline from each move spec. Map stages use optical focus/FOV changes with a
+fixed eye; the empty-disc stage also allows a small orbit. The player updates
+the director from the same authoritative move tick used by the VFX renderer.
+
+Companion data and caches are read-only. The optional attack director composes
+with Dramatic Shapes' in-memory camera function, but Stadium Attack Animations
+never writes the Dramatic Shapes installation, settings, or its
+`dramatic_shape/stadium/` model cache.

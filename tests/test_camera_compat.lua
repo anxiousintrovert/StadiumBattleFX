@@ -14,6 +14,8 @@ local modules = {
     end,
   },
   ["effects/GenericMoveRenderer"] = { draw = function() end },
+  AttackCinematics = { start = function() return false end,
+    setTick = function() end, stop = function() end },
 }
 local V = { require = function(name) return assert(modules[name], name) end }
 local Player = chunk(V)

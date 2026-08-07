@@ -27,6 +27,17 @@ class CompleteMoveSpecTests(unittest.TestCase):
             spec = module.presentation(row)
             self.assertIn(spec["delivery"], {"contact", "projectile", "beam", "status", "screen"})
             self.assertIn(spec["anchor"], {"attacker", "target"})
+            self.assertIn(spec["visual"], {
+                "impact", "rush", "slash", "punch", "kick", "bite",
+                "grapple", "needle", "leaf", "orb", "wind", "sound",
+                "stream", "wave", "beam", "storm", "electric", "psychic",
+                "drain", "ground", "status", "barrier", "heal", "transform",
+                "explosion",
+            })
+            self.assertIn(spec["cinematic"], {
+                "melee", "combo", "sustained", "aerial", "field", "status",
+                "self", "explosion", "ranged",
+            })
             self.assertGreaterEqual(spec["hits"], 1)
             self.assertGreater(spec["duration"], spec["impactAt"])
 
@@ -36,6 +47,13 @@ class CompleteMoveSpecTests(unittest.TestCase):
         self.assertEqual("screen", by_key["EXPLOSION"]["delivery"])
         self.assertEqual("attacker", by_key["RECOVER"]["anchor"])
         self.assertEqual(4, by_key["FURY_ATTACK"]["hits"])
+        self.assertEqual("slash", by_key["SLASH"]["visual"])
+        self.assertEqual("ground", by_key["EARTHQUAKE"]["visual"])
+        self.assertEqual("explosion", by_key["EXPLOSION"]["cinematic"])
+        self.assertEqual(
+            by_key["DOUBLESLAP"]["cinematic"],
+            by_key["FURY_ATTACK"]["cinematic"],
+        )
 
     def test_generator_is_deterministic(self):
         with tempfile.TemporaryDirectory() as temp:

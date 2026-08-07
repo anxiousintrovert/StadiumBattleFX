@@ -1,5 +1,14 @@
 local Texture = require("lib.StadiumTexture")
 
+-- CI/compile-only launches must fail in the console instead of waiting on
+-- LÖVE's interactive error screen.
+if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
+  love.errorhandler = function(message)
+    io.stderr:write(debug.traceback(tostring(message), 2), "\n")
+    return function() return 1 end
+  end
+end
+
 local function loadPlayer()
   local modules = { StadiumTexture = Texture }
   local namespace = {}
@@ -19,6 +28,7 @@ function love.load()
   for _, path in ipairs({
     "lib/StadiumAssets.lua",
     "lib/DramaticShapeState.lua",
+    "lib/AttackCinematics.lua",
     "lib/effects/MoveSpecs.lua",
     "lib/effects/AllMoveSpecs.lua",
     "lib/effects/StadiumMoveRoster.lua",
@@ -30,6 +40,7 @@ function love.load()
   end
   assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
   assert(love.filesystem.load("tests/test_camera_compat.lua"))()
+  assert(love.filesystem.load("tests/test_attack_cinematics.lua"))()
   assert(love.filesystem.load("tests/test_full_roster.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
@@ -96,7 +107,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "0.4.0", "wrong mod export version")
+  assert(mod.exports.version == "0.5.0", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   local liveInner = {}

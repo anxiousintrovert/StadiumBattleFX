@@ -59,9 +59,153 @@ PROJECTILES = {
     "SONICBOOM", "SPIKE_CANNON", "SWIFT", "WATER_GUN",
 }
 
+# Portable visual programs.  These are deliberately move-shaped instead of
+# type-shaped: Stadium composes a move from a body animation, a primary
+# program, and one or more defender/impact programs.  Several moves therefore
+# reuse the same program while attacks of the same elemental type need not
+# look alike.
+PUNCHES = {
+    "COMET_PUNCH", "MEGA_PUNCH", "FIRE_PUNCH", "ICE_PUNCH",
+    "THUNDERPUNCH", "DIZZY_PUNCH",
+}
+KICKS = {
+    "STOMP", "DOUBLE_KICK", "MEGA_KICK", "JUMP_KICK", "ROLLING_KICK",
+    "LOW_KICK", "HI_JUMP_KICK",
+}
+SLASHES = {
+    "KARATE_CHOP", "SCRATCH", "GUILLOTINE", "CUT", "CRABHAMMER",
+    "FURY_SWIPES", "SLASH",
+}
+BITES = {"BITE", "HYPER_FANG", "SUPER_FANG"}
+GRAPPLES = {
+    "VICEGRIP", "BIND", "WRAP", "SUBMISSION", "SEISMIC_TOSS", "CLAMP",
+    "CONSTRICT",
+}
+RUSHES = {
+    "POUND", "SLAM", "HEADBUTT", "TACKLE", "BODY_SLAM", "TAKE_DOWN",
+    "THRASH", "DOUBLE_EDGE", "COUNTER", "STRENGTH", "QUICK_ATTACK",
+    "RAGE", "SKULL_BASH", "STRUGGLE",
+}
+NEEDLES = {
+    "PECK", "DRILL_PECK", "HORN_ATTACK", "FURY_ATTACK", "HORN_DRILL",
+    "POISON_STING", "TWINEEDLE", "PIN_MISSILE", "SPIKE_CANNON",
+}
+WINDS = {
+    "RAZOR_WIND", "GUST", "WING_ATTACK", "WHIRLWIND", "FLY",
+    "SKY_ATTACK",
+}
+SOUNDS = {"GROWL", "ROAR", "SING", "SUPERSONIC", "SONICBOOM", "SCREECH"}
+STREAMS = {
+    "ACID", "EMBER", "FLAMETHROWER", "WATER_GUN", "HYDRO_PUMP",
+    "BUBBLE", "FIRE_SPIN", "SMOG", "SLUDGE",
+}
+WAVES = {"SURF", "WATERFALL"}
+STORMS = {"BLIZZARD", "THUNDER", "ROCK_SLIDE", "BARRAGE"}
+ORBS = {
+    "PAY_DAY", "FIRE_BLAST", "ROCK_THROW", "EGG_BOMB", "BONE_CLUB",
+    "BONEMERANG", "SWIFT", "TRI_ATTACK", "DRAGON_RAGE",
+}
+LEAVES = {
+    "VINE_WHIP", "LEECH_SEED", "RAZOR_LEAF", "PETAL_DANCE",
+    "POISONPOWDER", "STUN_SPORE", "SLEEP_POWDER", "SPORE",
+}
+ELECTRIC = {"THUNDERSHOCK", "THUNDERBOLT", "THUNDER_WAVE", "THUNDERPUNCH", "THUNDER"}
+PSYCHIC = {
+    "PSYBEAM", "CONFUSION", "PSYCHIC_M", "HYPNOSIS", "TELEPORT",
+    "NIGHT_SHADE", "CONFUSE_RAY", "KINESIS", "DREAM_EATER", "PSYWAVE",
+}
+DRAINS = {"ABSORB", "MEGA_DRAIN", "DREAM_EATER", "LEECH_LIFE"}
+GROUND = {"SAND_ATTACK", "EARTHQUAKE", "FISSURE", "DIG", "BONE_CLUB", "BONEMERANG"}
+BARRIERS = {"MIST", "BARRIER", "LIGHT_SCREEN", "HAZE", "REFLECT"}
+HEALS = {"RECOVER", "SOFTBOILED", "REST"}
+TRANSFORMS = {
+    "DOUBLE_TEAM", "MINIMIZE", "TRANSFORM", "ACID_ARMOR", "SHARPEN",
+    "CONVERSION", "SUBSTITUTE",
+}
+EXPLOSIONS = {"SELFDESTRUCT", "EXPLOSION"}
+
+
+def visual_program(row: dict[str, object]) -> str:
+    """Choose a shared portable program for the move's complete staging."""
+    key = row["key"]
+    if key in EXPLOSIONS:
+        return "explosion"
+    if key in GROUND:
+        return "ground"
+    if key in DRAINS:
+        return "drain"
+    if key in ELECTRIC:
+        return "electric"
+    if key in PSYCHIC:
+        return "psychic"
+    if key in BARRIERS:
+        return "barrier"
+    if key in HEALS:
+        return "heal"
+    if key in TRANSFORMS:
+        return "transform"
+    if key in SOUNDS:
+        return "sound"
+    if key in WINDS:
+        return "wind"
+    if key in SLASHES:
+        return "slash"
+    if key in PUNCHES:
+        return "punch"
+    if key in KICKS:
+        return "kick"
+    if key in BITES:
+        return "bite"
+    if key in GRAPPLES:
+        return "grapple"
+    if key in NEEDLES:
+        return "needle"
+    if key in RUSHES:
+        return "rush"
+    if key in STREAMS:
+        return "stream"
+    if key in WAVES:
+        return "wave"
+    if key in STORMS:
+        return "storm"
+    if key in ORBS:
+        return "orb"
+    if key in LEAVES:
+        return "leaf"
+    if key in BEAMS:
+        return "beam"
+    if row["power"] == 0:
+        return "status"
+    if key in PROJECTILES or row["type"] not in {"NORMAL", "FIGHTING", "FLYING"}:
+        return "orb"
+    return "impact"
+
+
+def cinematic_program(row: dict[str, object], visual: str, hits: int) -> str:
+    """Choose a reusable attack-camera timeline, independent of VFX color."""
+    effect = row["effect"]
+    if visual == "explosion":
+        return "explosion"
+    if visual in {"ground", "wave", "storm", "barrier"}:
+        return "field"
+    if visual in {"transform", "heal"}:
+        return "self"
+    if row["power"] == 0 or visual in {"status", "sound"}:
+        return "status"
+    if row["key"] in {"FLY", "DIG", "SKY_ATTACK"} or "CHARGE" in effect:
+        return "aerial"
+    if hits > 1:
+        return "combo"
+    if visual in {"slash", "punch", "kick", "bite", "grapple", "rush", "impact"}:
+        return "melee"
+    if visual in {"beam", "stream", "electric", "drain"}:
+        return "sustained"
+    return "ranged"
+
 
 def presentation(row: dict[str, object]) -> dict[str, object]:
     key, effect, power = row["key"], row["effect"], row["power"]
+    visual = visual_program(row)
     status = power == 0
     if "EXPLODE" in effect:
         delivery, anchor = "screen", "attacker"
@@ -82,6 +226,7 @@ def presentation(row: dict[str, object]) -> dict[str, object]:
         hits = 4
     elif "TRAPPING" in effect:
         hits = 3
+    cinematic = cinematic_program(row, visual, hits)
     impact_at = 38 if delivery == "contact" else 46
     if delivery in {"status", "screen"}:
         impact_at = 28
@@ -96,6 +241,8 @@ def presentation(row: dict[str, object]) -> dict[str, object]:
         "delivery": delivery,
         "anchor": anchor,
         "hits": hits,
+        "visual": visual,
+        "cinematic": cinematic,
         "impactAt": impact_at,
         "duration": duration,
     }
@@ -124,6 +271,8 @@ def write_lua(path: Path, rows: list[dict[str, object]]) -> None:
                 "    "
                 f"delivery = {lua_string(row['delivery'])}, anchor = {lua_string(row['anchor'])}, "
                 f"hits = {row['hits']},",
+                "    "
+                f"visual = {lua_string(row['visual'])}, cinematic = {lua_string(row['cinematic'])},",
                 "    "
                 f"impactAt = {row['impactAt']}, duration = {row['duration']}, "
                 "resources = {}, assets = {} },",

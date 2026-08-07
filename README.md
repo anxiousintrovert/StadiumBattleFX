@@ -18,10 +18,18 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.4.0 implements a presentation for all 165 Gen 1 moves. The complete
+Version 0.5.0 implements a presentation for all 165 Gen 1 moves. The complete
 registry is generated from Gen1Recomp's canonical move data and augmented with
 each move's decoded Pokemon Stadium primary, alternate, impact, and resource
 dispatch metadata.
+
+Current development builds also separate that roster into move-shaped visual
+programs and attack-camera timelines. Slash, punch, kick, grapple, rush,
+needle, wind, sound, stream, wave, beam, storm, orb, leaf, electric, psychic,
+drain, ground, barrier, heal, transform, and explosion programs replace the
+old type-only fallback. Reusable melee, combo, ranged, sustained, aerial,
+field, status, self, and explosion shots focus the body windup, travel, and
+defender impact as distinct stages during Dramatic Shapes Stadium battles.
 
 Thunder Shock retains its tested Stadium texture and schedule. Scratch, Sand
 Attack, Thunder Wave, and the shared hit family also use exact cached Stadium
@@ -36,7 +44,7 @@ Stadium model is showing.
 
 ## Animation showcase
 
-These GIFs are clean captures from the version 0.4.0 renderer. They show one
+These GIFs are clean captures from the version 0.5.0 renderer. They show one
 representative move for each of the 15 Gen 1 attack types; they are not native
 Pokemon Stadium footage.
 
@@ -82,25 +90,28 @@ archive member, or a decompressed Stadium fragment.
 
 ## Dramatic Shapes compatibility
 
-Dramatic Shapes is optional for textured attack effects and is required only
-for body-only Stadium presentations such as Growl and Splash. Stadium Attack Animations
-uses its exported runtime state read-only to determine whether a Stadium model
-is showing and to let Dramatic Shapes finish its own first-run model extraction
-screen first. It also reads the live voxel level, staged-battle mode, projected
-shot scale, and model footprints. When Dramatic Shapes owns the transformed
-animation layer, this mod retains classic Gen1 effect anchors and lets Dramatic
-Shapes apply the configured camera transform exactly once.
+Dramatic Shapes is optional for textured attack effects and is required for
+body-only Stadium presentations and the move-time attack camera. Stadium
+Attack Animations reads its exported runtime state to determine whether a
+Stadium model is showing and to let Dramatic Shapes finish its own first-run
+model extraction screen first. It also reads the live voxel level,
+staged-battle mode, projected shot scale, and model footprints. When the attack
+camera is enabled, it composes a temporary move shot through Dramatic Shapes'
+runtime camera function. When Dramatic Shapes owns the transformed animation
+layer, this mod retains classic Gen1 effect anchors and lets Dramatic Shapes
+apply the resulting camera transform exactly once.
 
 This mod never writes to the Dramatic Shapes mod directory or its
 `dramatic_shape/stadium/` cache. Its only writes are to the private cache path
 above.
 
-Dynamic Battle Cinematics v0.7.1 is supported as an optional read-only camera
-companion. It replaces Dramatic Shapes' camera rig but does not replace the
-animation player or animation layer. Dramatic Shapes projects that moving
-camera into its live shot and transforms Stadium Attack Animations with the rest of
-the animation layer. Stadium Attack Animations detects the companion version but does
-not call its controls or modify any of its files.
+Dynamic Battle Cinematics v0.7.1 is supported as an optional camera companion.
+It replaces Dramatic Shapes' idle camera rig but does not replace the animation
+player or animation layer. The move-time attack director composes after that
+rig, while Dynamic Battle Cinematics returns to idle during committed actions.
+Dramatic Shapes projects the resulting live shot and transforms Stadium Attack
+Animations with the rest of the animation layer. Neither mod's files or saved
+settings are modified.
 
 ## Installation and updates
 
@@ -126,7 +137,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.4.0.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.5.0.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and
@@ -143,6 +154,8 @@ captures. See `docs/research.md` and
 `docs/thunder-shock-trace.md` for the source trail. The generated
 `docs/move-roster.md` covers all 165 Gen 1 moves, and `docs/effect-scale.md`
 records the native scale and projection model used for roster expansion.
+`docs/attack-cinematics.md` records the newly traced presentation layers,
+camera source trail, shared-program model, and remaining calibration work.
 
 Research references:
 

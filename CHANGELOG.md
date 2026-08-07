@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 - 2026-08-07
+
+- Split the complete roster into reusable move-shaped visual programs instead
+  of presenting most attacks through the same type-colored beam/projectile
+  fallback.
+- Added staged melee, combo, ranged, sustained, aerial, field, status, self,
+  and explosion attack-camera timelines for Dramatic Shapes Stadium battles.
+- Preserved Stadium's overlap model: visual, primary/impact dispatch, species
+  body animation, and camera selection remain independent layers.
+- Added source research and tests for safe disc orbits, fixed-eye map shots,
+  mirrored attackers, canonical-camera passthrough, and director shutdown.
+
 ## 0.4.0 - 2026-08-07
 
 ### Added
