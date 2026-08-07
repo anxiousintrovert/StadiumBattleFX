@@ -1,10 +1,11 @@
--- Delegating AnimPlayer adapter for the first complete test party.
+-- Delegating AnimPlayer adapter for the complete Gen 1 move roster.
 
 local V = ...
 local Registry = V.require("effects/MoveSpecs")
 local Assets = V.require("StadiumAssets")
 local ThunderShock = V.require("effects/ThunderShockSpec")
 local DramaticShapeState = V.require("DramaticShapeState")
+local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
 
 local Player = {}
 Player.__index = Player
@@ -419,6 +420,7 @@ local DRAW = {
   double_kick = drawDoubleKick,
   single_kick = function(self) drawHit(self, self.tick - self.spec.impactAt, "kick") end,
   tackle = function(self) drawHit(self, self.tick - self.spec.impactAt) end,
+  generic = function(self) GenericMoveRenderer.draw(self, Assets) end,
   body_only = function() end,
 }
 

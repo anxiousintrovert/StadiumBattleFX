@@ -46,7 +46,7 @@ mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
 })
 
-mod.exports.version = "0.3.1"
+mod.exports.version = "0.4.0"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
@@ -73,7 +73,7 @@ end)
 -- BattleState creates one AnimPlayer per battle. Replacing that instance with
 -- a narrow adapter preserves the engine's queue/draw contract and also lets
 -- Dramatic Shapes keep transforming the ordinary animation layer. The
--- adapter delegates moves outside the supported party set unchanged.
+-- adapter now owns a presentation for the complete 165-move Gen 1 roster.
 mod.events:on("battle.started", function(payload)
   local battle = payload and payload.battle
   if not (battle and battle.animPlayer) then return end

@@ -2,6 +2,10 @@
 -- fragment 62. Portable stage offsets remain first-pass synchronization
 -- values until native Stadium captures can resolve the battle controller.
 
+local V = ...
+local allMoves = V.require("effects/AllMoveSpecs")
+local stadiumMoves = V.require("effects/StadiumMoveRoster")
+
 local specs = {
   -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
   -- independent primary VFX. Dramatic Shapes supplies the body motion.
@@ -70,6 +74,42 @@ for _, spec in ipairs(specs) do
   byId[spec.id], byId[tostring(spec.id)] = spec, spec
   byKey[spec.key] = spec
 end
+
+-- Exact traced implementations above win. Generated entries fill their
+-- metadata and provide a Stadium-style renderer for every remaining move.
+for _, generated in ipairs(allMoves) do
+  local trace = stadiumMoves[generated.id]
+  if trace then
+    generated.primaryOpcodes = trace.primary
+    generated.alternateOpcodes = trace.alternate
+    generated.impactOpcodes = trace.impact
+    generated.primaryOpcode = trace.primary[1]
+    generated.impactOpcode = trace.impact[1]
+    local resources, used = {}, {}
+    for _, list in ipairs({ trace.primaryResources, trace.impactResources }) do
+      for _, resource in ipairs(list) do
+        if not used[resource] then
+          used[resource] = true
+          resources[#resources + 1] = resource
+        end
+      end
+    end
+    generated.resources = resources
+  end
+  local spec = byId[generated.id]
+  if spec then
+    for key, value in pairs(generated) do
+      if spec[key] == nil then spec[key] = value end
+    end
+  else
+    spec = generated
+    specs[#specs + 1] = spec
+    byId[spec.id], byId[tostring(spec.id)] = spec, spec
+    byKey[spec.key] = spec
+  end
+end
+
+table.sort(specs, function(a, b) return a.id < b.id end)
 
 return {
   list = specs,

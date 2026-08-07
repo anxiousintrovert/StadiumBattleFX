@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0 - 2026-08-07
+
+### Added
+
+- Implemented presentations for all 165 Gen 1 moves through a deterministic
+  type- and behavior-aware renderer covering contact, projectile, beam,
+  multi-hit, trapping, status, stat, recovery, screen, charge, and explosion
+  families.
+- Added a generated complete-roster specification sourced from Gen1Recomp's
+  canonical move table and merged with every decoded Stadium primary,
+  alternate, impact, and resource dispatch entry.
+- Added exhaustive lifecycle rendering tests for every move at start, impact,
+  and completion while retaining the Dramatic Shapes and Dynamic Battle
+  Cinematics projection tests.
+
+### Changed
+
+- The battle adapter now replaces every registered Gen 1 attack instead of
+  limiting custom presentations to the supplied Yellow party and first shared
+  impact family.
+- Exact ROM-textured renderers remain authoritative where available; the rest
+  use portable procedural presentations pending native Stadium calibration.
+
 ## 0.3.1 - 2026-08-07
 
 ### Fixed

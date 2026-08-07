@@ -20,14 +20,17 @@ function love.load()
     "lib/StadiumAssets.lua",
     "lib/DramaticShapeState.lua",
     "lib/effects/MoveSpecs.lua",
+    "lib/effects/AllMoveSpecs.lua",
     "lib/effects/StadiumMoveRoster.lua",
     "lib/effects/StadiumFxPlayer.lua",
+    "lib/effects/GenericMoveRenderer.lua",
     "lib/effects/ThunderShockSpec.lua",
   }) do
     assert(love.filesystem.load(path), "runtime module did not compile: " .. path)
   end
   assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
   assert(love.filesystem.load("tests/test_camera_compat.lua"))()
+  assert(love.filesystem.load("tests/test_full_roster.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
     love.event.quit(0)
@@ -93,7 +96,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "0.3.1", "wrong mod export version")
+  assert(mod.exports.version == "0.4.0", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   local liveInner = {}

@@ -5,25 +5,21 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.3.1 covers every move on the supplied Pokemon Yellow test party:
+Version 0.4.0 implements a presentation for all 165 Gen 1 moves. The complete
+registry is generated from Gen1Recomp's canonical move data and augmented with
+each move's decoded Pokemon Stadium primary, alternate, impact, and resource
+dispatch metadata.
 
-- Pikachu: Thunder Shock, Growl, Quick Attack, Thunder Wave
-- Nidoran M: Leer, Tackle, Horn Attack, Double Kick
-- Butterfree: Tackle, String Shot, Confusion
-- Pidgey: Gust, Sand Attack, Quick Attack
-- Magikarp: Splash
-- Sandshrew: Scratch, Sand Attack
-
-It also begins the full-game roster with the shared Stadium `0x2C` impact
-family: Pound, Karate Chop, Jump Kick, Rolling Kick, and Counter.
-
-Thunder Shock retains the already tested Stadium texture and schedule. The
-other effects are a first portable pass based on Stadium's traced primary and
-impact dispatch. Scratch, Sand Attack, Thunder Wave, and the shared hit effects
-use exact cached Stadium texture primitives. Wind, speed, string, psychic, and
-screen effects are procedural interpretations and still need hardware visual
-tuning. Growl and Splash have no standalone Stadium VFX stage; with Dramatic
-Shapes showing a Stadium model, the mod leaves those as body animations.
+Thunder Shock retains its tested Stadium texture and schedule. Scratch, Sand
+Attack, Thunder Wave, and the shared hit family also use exact cached Stadium
+texture primitives. The remaining roster uses deterministic Stadium-style
+rendering selected by type and behavior: contact, projectile, beam, multi-hit,
+trapping, status, stat change, recovery, screen, charge, recoil, and explosion
+presentations are all covered. These portable renderers are source-driven
+interpretations and still need native Stadium capture calibration for exact
+timing, scale, tint, and motion. Moves with no standalone Stadium VFX stage,
+including Growl and Splash, retain their Dramatic Shapes body animation when a
+Stadium model is showing.
 
 ## ROM and cache
 
@@ -99,7 +95,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.3.1.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.4.0.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and
@@ -107,10 +103,12 @@ research-only tooling from entering a release.
 
 ## Research status
 
-The move dispatch opcodes and resource bundles are traced from
-pret/pokestadium. The current portable stage offsets, target anchors, scale,
-tint, and particle motion remain provisional until they are compared against
-native Stadium captures. See `docs/research.md` and
+The move dispatch opcodes and resource bundles for all 165 moves are traced
+from pret/pokestadium. Exact cached textures currently cover the established
+traced subset; the rest use type/behavior-aware procedural presentations. The
+current portable stage offsets, target anchors, scale, tint, and particle
+motion remain provisional until they are compared against native Stadium
+captures. See `docs/research.md` and
 `docs/thunder-shock-trace.md` for the source trail. The generated
 `docs/move-roster.md` covers all 165 Gen 1 moves, and `docs/effect-scale.md`
 records the native scale and projection model used for roster expansion.

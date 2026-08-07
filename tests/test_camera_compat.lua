@@ -13,6 +13,7 @@ local modules = {
                battleCinematicsVersion = "0.7.1" }
     end,
   },
+  ["effects/GenericMoveRenderer"] = { draw = function() end },
 }
 local V = { require = function(name) return assert(modules[name], name) end }
 local Player = chunk(V)

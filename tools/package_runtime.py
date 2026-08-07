@@ -27,8 +27,10 @@ FILES = (
     "lib/DramaticShapeState.lua",
     "lib/EffectCacheScreen.lua",
     "lib/effects/MoveSpecs.lua",
+    "lib/effects/AllMoveSpecs.lua",
     "lib/effects/StadiumMoveRoster.lua",
     "lib/effects/StadiumFxPlayer.lua",
+    "lib/effects/GenericMoveRenderer.lua",
     "lib/effects/ThunderShockSpec.lua",
     "lib/effects/ThunderShockPlayer.lua",
 )
