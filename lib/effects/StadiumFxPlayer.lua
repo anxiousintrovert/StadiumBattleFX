@@ -4,6 +4,7 @@ local V = ...
 local Registry = V.require("effects/MoveSpecs")
 local Assets = V.require("StadiumAssets")
 local ThunderShock = V.require("effects/ThunderShockSpec")
+local DramaticShapeState = V.require("DramaticShapeState")
 
 local Player = {}
 Player.__index = Player
@@ -27,6 +28,17 @@ local function clamp(v, lo, hi)
   return v
 end
 
+local function stadiumParticleScale(callback, age, seed)
+  local profile = ThunderShock.scaleProfiles[callback]
+  if not profile then return 1 end
+  local target = profile.target
+  if not target then
+    target = profile.targetMin
+      + hash01(seed, 41, 73) * (profile.targetMax - profile.targetMin)
+  end
+  return math.min(target, profile.initial + profile.step * age)
+end
+
 function Player.new(inner, options, logger, companion)
   return setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, custom = false, tick = 0, warned = {},
@@ -46,15 +58,8 @@ function Player:warn(key, reason)
 end
 
 function Player:stadiumModelShowing()
-  local ok, showing = pcall(function()
-    local found = self.companion and self.companion()
-    local exports = found and found.exports
-    local lib = exports and exports.lib
-    local Stadium = lib and lib.require and lib.require("Stadium")
-    local side = self.attackerIsPlayer and "player" or "enemy"
-    return Stadium and Stadium.showing and Stadium.showing(side)
-  end)
-  return ok and showing and true or false
+  self.dsState = DramaticShapeState.read(self.companion, self.attackerIsPlayer)
+  return self.dsState and self.dsState.attackerShowing or false
 end
 
 function Player:start(moveId, attackerIsPlayer, opts)
@@ -65,6 +70,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   end
 
   self.attackerIsPlayer = attackerIsPlayer and true or false
+  self.dsState = DramaticShapeState.read(self.companion, self.attackerIsPlayer)
   if spec.bodyOnly and not self:stadiumModelShowing() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
@@ -81,6 +87,10 @@ function Player:start(moveId, attackerIsPlayer, opts)
 end
 
 function Player:anchor(which)
+  -- These are intentionally the classic authored positions even when DS is
+  -- active. Its live drawAnimLayer wrapper reads voxel/camera configuration
+  -- and projects the complete layer; using shot.player/enemy here too would
+  -- apply the same translation and scale twice.
   local attacker = self.attackerIsPlayer and ANCHOR.player or ANCHOR.enemy
   local target = self.attackerIsPlayer and ANCHOR.enemy or ANCHOR.player
   local p = which == "attacker" and attacker or target
@@ -168,10 +178,15 @@ local function drawThunderShock(self)
           if schedule.callback == "func_8433D560" then py = py - 12 - age * 0.25 end
           local width = ({ [0x14] = 32, [0x13] = 16,
                            [0x12] = 32, [0x0F] = 8 })[schedule.preset] or 16
+          local nativeScale = stadiumParticleScale(schedule.callback, age, seed)
+          -- Portable projection anchor. The changing component is Stadium's
+          -- source world scale; the fixed component comes from its base
+          -- battle-camera distance/FOV table and remains capture-tunable.
+          local projectedScale = nativeScale * ThunderShock.portableWorldToPixel
           local x, y = self:anchor(name == "primary" and "attacker" or "target")
           g.setColor(1, 0.92, 0.22, 1 - age / 20)
           drawAsset(g, asset, age + 1, x + px, y - 22 + py,
-            angle, (width / asset.frameWidth) * 0.45, 0.45)
+            angle, (width / asset.frameWidth) * projectedScale, projectedScale)
         end
       end
     end
@@ -386,6 +401,7 @@ local DRAW = {
   string = drawString,
   confusion = drawConfusion,
   double_kick = drawDoubleKick,
+  single_kick = function(self) drawHit(self, self.tick - self.spec.impactAt, "kick") end,
   tackle = function(self) drawHit(self, self.tick - self.spec.impactAt) end,
   body_only = function() end,
 }

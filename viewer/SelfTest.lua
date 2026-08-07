@@ -16,6 +16,23 @@ local function loadPlayer()
 end
 
 function love.load()
+  for _, path in ipairs({
+    "lib/StadiumAssets.lua",
+    "lib/DramaticShapeState.lua",
+    "lib/effects/MoveSpecs.lua",
+    "lib/effects/StadiumMoveRoster.lua",
+    "lib/effects/StadiumFxPlayer.lua",
+    "lib/effects/ThunderShockSpec.lua",
+  }) do
+    assert(love.filesystem.load(path), "runtime module did not compile: " .. path)
+  end
+  assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
+  if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
+    print("ok runtime modules compile")
+    love.event.quit(0)
+    return
+  end
+
   local asset, err = Texture.get()
   assert(asset, tostring(err))
   assert(asset.frames == 8, "wrong Thunder Shock frame count")

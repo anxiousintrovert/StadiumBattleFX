@@ -3,6 +3,14 @@
 -- values until native Stadium captures can resolve the battle controller.
 
 local specs = {
+  -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
+  -- independent primary VFX. Dramatic Shapes supplies the body motion.
+  { id = 1, key = "POUND", name = "Pound", kind = "tackle",
+    primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
+    assets = { "impact_ia", "impact_i" }, impactAt = 30, duration = 62 },
+  { id = 2, key = "KARATE_CHOP", name = "Karate Chop", kind = "tackle",
+    primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
+    assets = { "impact_ia", "impact_i" }, impactAt = 30, duration = 62 },
   { id = 10, key = "SCRATCH", name = "Scratch", kind = "scratch",
     primaryOpcode = 0x0D, impactOpcode = 0x05, resources = { 0x0B },
     assets = { "scratch_claw", "scratch_spark", "scratch_swipe", "impact_i" },
@@ -13,6 +21,12 @@ local specs = {
   { id = 24, key = "DOUBLE_KICK", name = "Double Kick", kind = "double_kick",
     primaryOpcode = nil, impactOpcode = 0x23, resources = { 0x18 },
     assets = { "impact_ia", "impact_i" }, impactAt = 24, duration = 66 },
+  { id = 26, key = "JUMP_KICK", name = "Jump Kick", kind = "single_kick",
+    primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
+    assets = { "impact_ia", "impact_i" }, impactAt = 31, duration = 64 },
+  { id = 27, key = "ROLLING_KICK", name = "Rolling Kick", kind = "single_kick",
+    primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
+    assets = { "impact_ia", "impact_i" }, impactAt = 31, duration = 64 },
   { id = 28, key = "SAND_ATTACK", name = "Sand Attack", kind = "sand",
     primaryOpcode = 0x1F, impactOpcode = 0x37, resources = { 0x16, 0x18 },
     assets = { "sand", "impact_i" }, impactAt = 46, duration = 90 },
@@ -28,6 +42,9 @@ local specs = {
   { id = 45, key = "GROWL", name = "Growl", kind = "body_only",
     primaryOpcode = nil, impactOpcode = nil, resources = {}, assets = {},
     bodyOnly = true },
+  { id = 68, key = "COUNTER", name = "Counter", kind = "tackle",
+    primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
+    assets = { "impact_ia", "impact_i" }, impactAt = 30, duration = 62 },
   { id = 81, key = "STRING_SHOT", name = "String Shot", kind = "string",
     primaryOpcode = 0x21, impactOpcode = 0x20, resources = {}, assets = {},
     duration = 181 },

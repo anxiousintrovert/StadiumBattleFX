@@ -56,7 +56,10 @@ Dramatic Shapes is optional for textured attack effects and is required only
 for body-only Stadium presentations such as Growl and Splash. Stadium Battle FX
 uses its exported runtime state read-only to determine whether a Stadium model
 is showing and to let Dramatic Shapes finish its own first-run model extraction
-screen first.
+screen first. It also reads the live voxel level, staged-battle mode, projected
+shot scale, and model footprints. When Dramatic Shapes owns the transformed
+animation layer, this mod retains classic Gen1 effect anchors and lets Dramatic
+Shapes apply the configured camera transform exactly once.
 
 This mod never writes to the Dramatic Shapes mod directory or its
 `dramatic_shape/stadium/` cache. Its only writes are to the private cache path
@@ -98,7 +101,9 @@ The move dispatch opcodes and resource bundles are traced from
 pret/pokestadium. The current portable stage offsets, target anchors, scale,
 tint, and particle motion remain provisional until they are compared against
 native Stadium captures. See `docs/research.md` and
-`docs/thunder-shock-trace.md` for the source trail.
+`docs/thunder-shock-trace.md` for the source trail. The generated
+`docs/move-roster.md` covers all 165 Gen 1 moves, and `docs/effect-scale.md`
+records the native scale and projection model used for roster expansion.
 
 Research references:
 

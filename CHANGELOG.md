@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Decoded all 165 Gen 1 entries in Stadium's move dispatch/resource table and
+  generated a runtime roster plus a human-readable coverage report.
+- Added the first post-0.2 shared family: Pound, Karate Chop, Jump Kick,
+  Rolling Kick, and Counter now reuse Stadium impact opcode `0x2C` assets.
+- Recorded canonical Stadium particle quad sizes, scale APIs, optional species
+  normalization, and Thunder Shock's five exact scale envelopes.
+- Added a read-only Dramatic Shapes presentation adapter for the current voxel
+  level, staged-camera animation scale, Stadium mode, and model footprints;
+  live DS animation-layer projection is detected and never applied twice.
+
+### Changed
+
+- Thunder Shock development source now animates Stadium's per-callback world
+  scale instead of applying one constant sprite size. The absolute portable
+  projection anchor remains pending native capture calibration.
+
 ## 0.2.0 - 2026-08-07
 
 ### Added

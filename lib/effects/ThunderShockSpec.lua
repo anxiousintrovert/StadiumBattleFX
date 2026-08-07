@@ -9,6 +9,9 @@ return {
   moveId = 84,
   name = "Thunder Shock",
   stadiumTickRate = 60,
+  -- Median of Stadium's 50-degree base battle camera distances after
+  -- converting the 240-line N64 viewport to Gen1Recomp's 144-line canvas.
+  portableWorldToPixel = 0.10,
 
   dispatch = {
     moveTableIndex = 84,
@@ -33,6 +36,16 @@ return {
     medium = { width = 16, height = 96, sourcePreset = 0x13 },
     narrow = { width = 8, height = 96, sourcePreset = 0x0F },
     impact = { width = 32, height = 96, sourcePreset = 0x12 },
+  },
+
+  -- Exact world-scale envelopes from the five particle callbacks used by
+  -- this move. Random targets are deterministic in the portable renderer.
+  scaleProfiles = {
+    func_8433D6EC = { initial = 0.1, target = 1.4, step = 0.1 },
+    func_8433D560 = { initial = 0.5, targetMin = 1.0, targetMax = 6.0, step = 0.2 },
+    func_8433D3B0 = { initial = 0.5, target = 2.0, step = 0.2 },
+    func_8433D070 = { initial = 0.1, target = 3.0, step = 0.1 },
+    func_8433D224 = { initial = 0.1, target = 3.5, step = 0.1 },
   },
 
   primary = {
