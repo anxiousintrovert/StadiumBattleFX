@@ -28,5 +28,19 @@ assert(state.animationScale == 0.91)
 assert(state.attackerShowing and not state.targetShowing)
 assert(state.attackerFootprint == 23 and state.targetFootprint == 17)
 assert(state.externalCamera and state.battleCinematicsVersion == "0.7.1")
+
+modules.OverworldBattle.backPinned = function() return true end
+local scalePlayer
+modules.OverworldBattle.animScale = function(_, px, py)
+  scalePlayer = { px, py }
+  return 1.1
+end
+local pinned = State.read(function()
+  return { exports = { lib = { require = function(name) return modules[name] end } } }
+end, true)
+assert(pinned.backPinned and pinned.projectedAnchors.player[1] == 26
+       and pinned.projectedAnchors.player[2] == 96)
+assert(scalePlayer[1] == 26 and scalePlayer[2] == 96,
+       "BACK SPRITES must use DS's classic player mark for layer scaling")
 assert(State.read(function() return nil end, true) == nil)
 print("ok dramatic shape read-only state")

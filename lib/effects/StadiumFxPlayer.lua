@@ -90,13 +90,26 @@ function Player:start(moveId, attackerIsPlayer, opts)
 end
 
 function Player:anchor(which)
-  -- These are intentionally the classic authored positions even when DS is
-  -- active. Its live drawAnimLayer wrapper reads voxel/camera configuration
-  -- and projects the complete layer; using shot.player/enemy here too would
-  -- apply the same translation and scale twice.
-  local attacker = self.attackerIsPlayer and ANCHOR.player or ANCHOR.enemy
-  local target = self.attackerIsPlayer and ANCHOR.enemy or ANCHOR.player
-  local p = which == "attacker" and attacker or target
+  local attackerSide = self.attackerIsPlayer and "player" or "enemy"
+  local targetSide = self.attackerIsPlayer and "enemy" or "player"
+  local side = which == "attacker" and attackerSide or targetSide
+  local p = ANCHOR[side]
+
+  -- DS transforms the complete animation layer after this draw. Its camera
+  -- wrapper supplies translation and uniform scale but no rotation, so a
+  -- cinematic orbit can otherwise leave an authored target anchor beside
+  -- the newly projected Pokemon. Draw at the inverse-transformed point;
+  -- DS's outer transform then lands the particle on the exact live mark.
+  local state = self.dsState
+  local transform = state and state.layerTransform
+  local projected = state and state.projectedAnchors
+  local desired = projected and projected[side]
+  if transform and desired and transform.scale > 0 then
+    local authoredCenter = transform.authoredCenter
+    local projectedCenter = transform.projectedCenter
+    return authoredCenter[1] + (desired[1] - projectedCenter[1]) / transform.scale,
+           authoredCenter[2] + (desired[2] - projectedCenter[2]) / transform.scale
+  end
   return p[1], p[2]
 end
 
@@ -412,6 +425,11 @@ local DRAW = {
 local function drawCustom(self)
   local g = love and love.graphics
   if not (g and self.spec) then return end
+  -- Cinematic cameras can move between every frame. Refresh their read-only
+  -- projected anchors immediately before drawing rather than using the shot
+  -- captured when the move started.
+  self.dsState = DramaticShapeState.read(
+    self.companion, self.attackerIsPlayer, self.cameraCompanion)
   local oldMode, oldAlpha = g.getBlendMode()
   local oldWidth = g.getLineWidth and g.getLineWidth() or 1
   local r, gg, b, a = g.getColor()

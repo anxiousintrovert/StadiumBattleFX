@@ -24,10 +24,13 @@ only the battle's `animPlayer` adapter, so there is no overlapping replacement.
 
 Dramatic Shapes calls the wrapped `BattleCam.rig`, renders the current camera,
 and produces a live shot containing the projected player/enemy marks. Its own
-`drawAnimLayer` wrapper then translates and scales the entire move animation
-layer to those marks every frame. Stadium Attack Animations deliberately retains the
-classic Gen1 anchors inside that layer, so its particles follow Battle
-Cinematics camera movement automatically and receive the transform once.
+`drawAnimLayer` wrapper then translates and uniformly scales the entire move
+animation layer. A cinematic orbit also changes the projected angle between
+the battlers, which that uniform transform cannot reproduce by itself.
+Stadium Attack Animations therefore reads the live marks every frame and
+inverse-maps each effect anchor through DS's outer transform. When DS applies
+that transform, the particle lands exactly on the current projected Pokémon
+without receiving translation or scale twice.
 
 `DramaticShapeState` also records the installed `BATTLE_CINEMATICS` export
 version for diagnostics. It never calls the camera's activity/reset export,

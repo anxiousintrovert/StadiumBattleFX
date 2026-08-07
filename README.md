@@ -5,7 +5,7 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.3.0 covers every move on the supplied Pokemon Yellow test party:
+Version 0.3.1 covers every move on the supplied Pokemon Yellow test party:
 
 - Pikachu: Thunder Shock, Growl, Quick Attack, Thunder Wave
 - Nidoran M: Leer, Tackle, Horn Attack, Double Kick
@@ -99,7 +99,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.3.0.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.3.1.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and

@@ -46,7 +46,7 @@ mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
 })
 
-mod.exports.version = "0.3.0"
+mod.exports.version = "0.3.1"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs

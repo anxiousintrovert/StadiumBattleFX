@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-08-07
+
+### Fixed
+
+- Inverse-map attacker and target anchors through Dramatic Shapes' live
+  animation-layer transform so Dynamic Battle Cinematics camera orbits no
+  longer leave attack particles beside the target.
+
 ## 0.3.0 - 2026-08-07
 
 ### Added
