@@ -6,12 +6,14 @@ return {
     changed = {
       "All 165 Gen 1 moves use Stadium-style presentations",
       "Move behavior selects contact, projectile, beam, status, screen, and multi-hit families",
+      "Move-shaped visual programs and staged attack-camera timelines replace the type-only fallback",
     },
     added = {
       "Runtime .z64/.n64/.v64 loading from the shared baseroms folder",
       "Versioned private effect cache in the Gen1Recomp save directory",
       "First-run attack-effect caching progress screen",
-      "Read-only Dramatic Shapes and Battle Cinematics camera compatibility",
+      "Composed Dramatic Shapes and Battle Cinematics camera compatibility",
+      "Windup, travel, impact, and recovery camera staging for Stadium battles",
     },
     known = {
       "Portable stage timing, scale, tint and particle motion remain provisional",

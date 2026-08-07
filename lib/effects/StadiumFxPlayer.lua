@@ -6,6 +6,7 @@ local Assets = V.require("StadiumAssets")
 local ThunderShock = V.require("effects/ThunderShockSpec")
 local DramaticShapeState = V.require("DramaticShapeState")
 local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
+local AttackCinematics = V.require("AttackCinematics")
 
 local Player = {}
 Player.__index = Player
@@ -40,9 +41,10 @@ local function stadiumParticleScale(callback, age, seed)
   return math.min(target, profile.initial + profile.step * age)
 end
 
-function Player.new(inner, options, logger, companion, cameraCompanion)
+function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions)
   return setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, cameraCompanion = cameraCompanion,
+    cameraOptions = cameraOptions or function() return true end,
     custom = false, tick = 0, warned = {},
     drawWarned = false, context = nil }, Player)
 end
@@ -66,6 +68,7 @@ function Player:stadiumModelShowing()
 end
 
 function Player:start(moveId, attackerIsPlayer, opts)
+  AttackCinematics.stop()
   self.custom, self.spec = false, nil
   local spec = Registry.get(moveId)
   if not spec or not self.options() then
@@ -88,6 +91,9 @@ function Player:start(moveId, attackerIsPlayer, opts)
   -- and screen effects while a Stadium presentation is active.
   call(self.inner, "start", moveId, attackerIsPlayer, opts)
   self.custom, self.spec, self.tick = true, spec, 0
+  if self.cameraOptions() ~= false then
+    AttackCinematics.start(spec, self.attackerIsPlayer, self.companion)
+  end
 end
 
 function Player:anchor(which)
@@ -117,6 +123,7 @@ end
 function Player:update()
   if not self.custom then return call(self.inner, "update") end
   self.tick = self.tick + 1
+  AttackCinematics.setTick(self.tick)
   if self.inner and not call(self.inner, "isDone") then call(self.inner, "update") end
 end
 
@@ -465,6 +472,7 @@ function Player:finalSprites()
 end
 
 function Player:release()
+  AttackCinematics.stop()
   self.custom, self.spec, self.context = false, nil, nil
   return call(self.inner, "release")
 end

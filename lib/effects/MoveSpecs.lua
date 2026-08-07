@@ -95,6 +95,13 @@ for _, generated in ipairs(allMoves) do
       end
     end
     generated.resources = resources
+    -- Stadium has no standalone primary, alternate, or defender VFX program
+    -- for these entries. Their presentation is the species-specific body
+    -- animation (and its camera), not a fabricated portable particle layer.
+    if #trace.primary == 0 and #trace.alternate == 0 and #trace.impact == 0 then
+      generated.bodyOnly = true
+      generated.kind = "body_only"
+    end
   end
   local spec = byId[generated.id]
   if spec then

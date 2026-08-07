@@ -13,6 +13,7 @@ end })
 assert(#registry.list == 165, "merged move registry must contain 165 moves")
 
 local seen = {}
+local bodyOnly = {}
 for id = 1, 165 do
   local spec = assert(registry.get(id), "missing move " .. id)
   assert(not seen[spec.id], "duplicate move " .. spec.id)
@@ -21,7 +22,10 @@ for id = 1, 165 do
   assert(spec.kind, "move has no renderer kind " .. id)
   assert(spec.primaryOpcodes and spec.impactOpcodes,
          "move has no Stadium dispatch metadata " .. id)
+  if spec.bodyOnly then bodyOnly[#bodyOnly + 1] = id end
 end
+assert(table.concat(bodyOnly, ",") == "39,45,46,107,150,156",
+       "body-only roster did not match Stadium's empty VFX entries")
 
 local generic = assert(loader("lib/effects/GenericMoveRenderer.lua"))()
 local assets = { get = function() return nil end }
@@ -58,6 +62,10 @@ local Player = playerChunk({ require = function(name)
     end }
   end
   if name == "effects/GenericMoveRenderer" then return generic end
+  if name == "AttackCinematics" then
+    return { start = function() return false end, setTick = function() end,
+      stop = function() end }
+  end
   error(name)
 end })
 

@@ -25,6 +25,7 @@ FILES = (
     "lib/StadiumTexture.lua",
     "lib/StadiumAssets.lua",
     "lib/DramaticShapeState.lua",
+    "lib/AttackCinematics.lua",
     "lib/EffectCacheScreen.lua",
     "lib/effects/MoveSpecs.lua",
     "lib/effects/AllMoveSpecs.lua",

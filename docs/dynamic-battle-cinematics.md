@@ -17,8 +17,11 @@ Battle Cinematics:
 - exports only its version and an activity/reset function.
 
 It does not replace `BattleState.animPlayer`, `AnimPlayer:start`,
-`BattleState.drawAnimLayer`, or any effect-cache path. Stadium Attack Animations owns
-only the battle's `animPlayer` adapter, so there is no overlapping replacement.
+`BattleState.drawAnimLayer`, or any effect-cache path. Stadium Attack
+Animations owns the battle's `animPlayer` adapter and lazily composes its
+move-time director around the final `BattleCam.rig` only after all mods have
+loaded. Battle Cinematics resets its idle shot on a committed action; the
+attack director then stages that action and returns to the wrapped base rig.
 
 ## Moving-camera behavior
 
@@ -42,3 +45,5 @@ The manifest declares `BATTLE_CINEMATICS@>=0.7.1 <1.0.0` as optional. Either
 mod can run without the other. When both are enabled, the relationship is
 visible to the loader and Stadium Attack Animations resolves both companions lazily
 at battle start, after mod loading is complete.
+The camera wrapper itself is installed on the first eligible Stadium move, so
+it composes with the final runtime rig regardless of manifest load order.
