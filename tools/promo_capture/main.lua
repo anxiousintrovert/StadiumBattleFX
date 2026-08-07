@@ -28,7 +28,6 @@ for _, spec in ipairs(all) do byKey[spec.key] = spec end
 for _, pick in ipairs(PICKS) do
   pick.spec = assert(byKey[pick[2]], "missing move " .. pick[2])
 end
-
 local SCALE, FRAME_COUNT = 3, 36
 local moveIndex, frameIndex, pending = 1, 1, false
 local font, tiny
@@ -130,4 +129,3 @@ function love.draw()
     pending = false
   end)
 end
-
