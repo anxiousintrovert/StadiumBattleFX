@@ -1,0 +1,26 @@
+return {
+  summary = "Recreates Stadium move effects in Gen1Recomp from your own Stadium cartridge.",
+  author = "StadiumBattleFX contributors",
+  tags = { "graphics", "battle", "stadium", "experimental" },
+  differences = {
+    changed = {
+      "All 14 moves on the supplied Yellow party use Stadium presentations",
+    },
+    added = {
+      "Runtime .z64/.n64/.v64 loading from the shared baseroms folder",
+      "Versioned private effect cache in the Gen1Recomp save directory",
+      "First-run attack-effect caching progress screen",
+    },
+    known = {
+      "Portable stage timing, scale, tint and particle motion remain provisional",
+      "Growl and Splash are body-only and require Dramatic Shapes models",
+    },
+  },
+  credits = {
+    { who = "Gen1Recomp", for_ = "the host engine and mod API" },
+    { who = "DramaticShapeVoxelMod", for_ = "Stadium model-extraction research and architectural precedent" },
+    { who = "pret/pokestadium", for_ = "the Pokemon Stadium decompilation used for structural research" },
+    { who = "PokemonStadiumRecomp", for_ = "the executable recompilation used as a behavioral oracle" },
+  },
+  compat = { engine = ">=0.1.37 <2.0.0", modApi = 2 },
+}

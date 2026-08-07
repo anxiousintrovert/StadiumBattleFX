@@ -1,0 +1,24 @@
+# User-supplied ROMs and saves
+*.z64
+*.v64
+*.n64
+*.gb
+*.gbc
+*.sav
+baseroms/
+
+# ROM-derived output must remain local
+cache/
+generated/
+reports/private/
+
+# Tooling noise
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+
+# Packaged artifacts
+dist/
+*.love
+*.zip
