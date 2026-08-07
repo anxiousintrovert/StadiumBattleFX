@@ -1,5 +1,18 @@
 # Stadium Attack Animations
 
+> [!WARNING]
+> ## THIS PROJECT IS ENTIRELY AI VIBE-CODED
+>
+> This mod and its supporting research code were created through AI-assisted
+> vibe coding. It is an experimental prototype, not a professionally engineered
+> or authoritative Pokemon Stadium implementation. Expect inaccuracies, rough
+> approximations, bugs, and code that may need substantial replacement.
+>
+> **This project is temporary and will be deleted once these effects are
+> properly implemented by a skilled developer.** Until then, please treat every
+> release as public test software and report problems rather than relying on it
+> as a finished or faithful recreation.
+
 Stadium Attack Animations is an experimental Gen1Recomp graphics mod that recreates
 Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
@@ -20,6 +33,24 @@ interpretations and still need native Stadium capture calibration for exact
 timing, scale, tint, and motion. Moves with no standalone Stadium VFX stage,
 including Growl and Splash, retain their Dramatic Shapes body animation when a
 Stadium model is showing.
+
+## Animation showcase
+
+These GIFs are clean captures from the version 0.4.0 renderer. They show one
+representative move for each of the 15 Gen 1 attack types; they are not native
+Pokemon Stadium footage.
+
+| Normal | Fighting | Flying |
+|:---:|:---:|:---:|
+| **Hyper Beam**<br>![Hyper Beam](promo/gifs/01_normal_hyper_beam.gif) | **Submission**<br>![Submission](promo/gifs/02_fighting_submission.gif) | **Wing Attack**<br>![Wing Attack](promo/gifs/03_flying_wing_attack.gif) |
+| Poison | Ground | Rock |
+| **Acid**<br>![Acid](promo/gifs/04_poison_acid.gif) | **Bone Club**<br>![Bone Club](promo/gifs/05_ground_bone_club.gif) | **Rock Slide**<br>![Rock Slide](promo/gifs/06_rock_rock_slide.gif) |
+| Bug | Ghost | Fire |
+| **Pin Missile**<br>![Pin Missile](promo/gifs/07_bug_pin_missile.gif) | **Night Shade**<br>![Night Shade](promo/gifs/08_ghost_night_shade.gif) | **Fire Blast**<br>![Fire Blast](promo/gifs/09_fire_fire_blast.gif) |
+| Water | Grass | Electric |
+| **Hydro Pump**<br>![Hydro Pump](promo/gifs/10_water_hydro_pump.gif) | **Razor Leaf**<br>![Razor Leaf](promo/gifs/11_grass_razor_leaf.gif) | **Thunderbolt**<br>![Thunderbolt](promo/gifs/12_electric_thunderbolt.gif) |
+| Psychic | Ice | Dragon |
+| **Psybeam**<br>![Psybeam](promo/gifs/13_psychic_psybeam.gif) | **Ice Beam**<br>![Ice Beam](promo/gifs/14_ice_ice_beam.gif) | **Dragon Rage**<br>![Dragon Rage](promo/gifs/15_dragon_dragon_rage.gif) |
 
 ## ROM and cache
 

@@ -11,6 +11,7 @@ baseroms/
 cache/
 generated/
 reports/private/
+promo/frames/
 
 # Tooling noise
 __pycache__/
