@@ -60,7 +60,10 @@ class CompleteMoveSpecTests(unittest.TestCase):
             output = Path(temp) / "AllMoveSpecs.lua"
             module.write_lua(output, self.rows)
             checked_in = ROOT / "lib" / "effects" / "AllMoveSpecs.lua"
-            self.assertEqual(checked_in.read_bytes(), output.read_bytes())
+            self.assertEqual(
+                checked_in.read_text(encoding="utf-8"),
+                output.read_text(encoding="utf-8"),
+            )
 
 
 if __name__ == "__main__":

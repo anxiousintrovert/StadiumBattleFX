@@ -46,9 +46,15 @@ local AttackCinematics = namespace.require("AttackCinematics")
 mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
+  { key = "battle_cinematics_zoom", label = "BC ZOOM OUT", type = "choice",
+    default = "off",
+    choices = {
+      { "OFF", "off" }, { "10%", "10" }, { "25%", "25" },
+      { "35%", "35" }, { "50%", "50" },
+    } },
 })
 
-mod.exports.version = "0.5.0"
+mod.exports.version = "0.5.1"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
@@ -92,6 +98,14 @@ mod.events:on("battle.started", function(payload)
       mod.log:warn("Stadium effect cache unavailable: %s", tostring(err))
     end
   end
+
+  AttackCinematics.configure(
+    function() return mod.find("DRAMATIC_SHAPE") end,
+    function() return mod.find("BATTLE_CINEMATICS") end,
+    function()
+      if mod.options:get("enabled") == false then return "off" end
+      return mod.options:get("battle_cinematics_zoom") or "off"
+    end)
 
   battle.animPlayer = StadiumFxPlayer.new(
     battle.animPlayer,

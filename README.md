@@ -18,7 +18,7 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.5.0 implements a presentation for all 165 Gen 1 moves. The complete
+Version 0.5.1 implements a presentation for all 165 Gen 1 moves. The complete
 registry is generated from Gen1Recomp's canonical move data and augmented with
 each move's decoded Pokemon Stadium primary, alternate, impact, and resource
 dispatch metadata.
@@ -111,7 +111,10 @@ player or animation layer. The move-time attack director composes after that
 rig, while Dynamic Battle Cinematics returns to idle during committed actions.
 Dramatic Shapes projects the resulting live shot and transforms Stadium Attack
 Animations with the rest of the animation layer. Neither mod's files or saved
-settings are modified.
+settings are modified. The optional **BC ZOOM OUT** setting widens Battle
+Cinematics' complete battle framing by 10%, 25%, 35%, or 50%. It changes only
+the optical field of view, so the companion's collision-safe camera path and
+focus remain intact; **OFF** preserves its original framing.
 
 ## Installation and updates
 
@@ -137,7 +140,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.5.0.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.5.1.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and

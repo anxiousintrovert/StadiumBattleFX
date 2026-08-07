@@ -39,6 +39,17 @@ without receiving translation or scale twice.
 version for diagnostics. It never calls the camera's activity/reset export,
 changes its settings, or reads/writes its files.
 
+## Compatibility zoom
+
+`BC ZOOM OUT` is an opt-in optical framing adjustment with OFF, 10%, 25%, 35%,
+and 50% choices. It scales the visible frame height with
+`2 * atan(tan(fov / 2) * (1 + amount))`; it does not multiply the FOV angle or
+move the camera eye backward. This preserves Battle Cinematics' established
+collision-safe trajectory and focus while keeping more of the arena visible
+during its shot changes. Canonical Dramatic Shapes camera queries are passed
+through unchanged, and the adjustment is ignored when Battle Cinematics is not
+installed.
+
 ## Load relationship
 
 The manifest declares `BATTLE_CINEMATICS@>=0.7.1 <1.0.0` as optional. Either
