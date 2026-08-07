@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 - 2026-08-07
+
+- Added an opt-in Dynamic Battle Cinematics compatibility zoom with 10%, 25%,
+  35%, and 50% optical zoom-out levels. It widens the lens without changing
+  the companion camera's eye path, focus, canonical queries, files, or saved
+  settings.
+
 ## 0.5.0 - 2026-08-07
 
 - Split the complete roster into reusable move-shaped visual programs instead

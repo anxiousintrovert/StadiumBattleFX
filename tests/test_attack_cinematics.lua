@@ -26,6 +26,11 @@ local companion = function()
     },
   }
 end
+local zoomOption = "25"
+local cameraAvailable = true
+local cameraCompanion = function()
+  return cameraAvailable and { exports = { version = "0.7.1" } } or nil
+end
 
 local arena = { player = { -24, 0 }, enemy = { 24, 0 } }
 local spec = {
@@ -34,6 +39,21 @@ local spec = {
 }
 
 assert(Director.profileFor(spec) == "melee")
+assert(Director.configure(companion, cameraCompanion, function() return zoomOption end),
+  "Battle Cinematics compatibility did not install")
+for _, percent in ipairs({ 10, 25, 35, 50 }) do
+  zoomOption = tostring(percent)
+  local widened = BattleCam.rig(arena, 0, false)
+  local expectedFov = 2 * math.atan(
+    math.tan(math.rad(42) / 2) * (1 + percent / 100))
+  assert(math.abs(widened.fov - expectedFov) < 1e-9,
+    tostring(percent) .. "% compatibility zoom did not widen the optical frame")
+end
+zoomOption = "25"
+local widenedStatus = Director.status()
+assert(widenedStatus.compatibilityZoom == 0.25,
+  "compatibility zoom was not exposed for diagnostics")
+
 assert(Director.start(spec, true, companion), "disc cinematic did not start")
 Director.setTick(20)
 local directed = BattleCam.rig(arena, 0, false)
@@ -56,7 +76,14 @@ assert(mapShot.eye[1] == 0 and mapShot.eye[3] == 95,
 assert(mapShot.focus[1] > 0, "enemy windup did not mirror toward its attacker")
 
 Director.stop()
+zoomOption = "off"
 local stopped = BattleCam.rig(arena, 0, false)
 assert(stopped.fov == math.rad(42), "stopped director still changed the rig")
+
+zoomOption = "50"
+cameraAvailable = false
+local withoutCompanion = BattleCam.rig(arena, 0, false)
+assert(withoutCompanion.fov == math.rad(42),
+  "compatibility zoom applied without Battle Cinematics")
 
 print("ok attack cinematic profiles")

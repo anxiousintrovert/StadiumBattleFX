@@ -10,6 +10,8 @@ local Director = {}
 
 local active
 local installed = false
+local cameraCompanion
+local compatibilityZoomOption = function() return "off" end
 
 local function clamp(value, low, high)
   if value < low then return low end
@@ -28,6 +30,35 @@ end
 
 local function copy3(value)
   return { value[1], value[2], value[3] }
+end
+
+local function compatibilityZoom()
+  if type(cameraCompanion) ~= "function" then return 0 end
+  local foundOk, found = pcall(cameraCompanion)
+  if not foundOk then return 0 end
+  local exports = found and found.exports
+  if not (exports and exports.version) then return 0 end
+  local ok, value = pcall(compatibilityZoomOption)
+  if not ok then return 0 end
+  return clamp((tonumber(value) or 0) / 100, 0, 0.50)
+end
+
+local function widenBattleCinematics(base, pitch, canonical)
+  local amount = compatibilityZoom()
+  if canonical or amount <= 0 or type(base) ~= "table"
+     or type(base.fov) ~= "number" then
+    return base, pitch
+  end
+
+  -- Scale the visible frame rather than the angle itself. This is a true
+  -- optical zoom-out and keeps Battle Cinematics' collision-safe eye path and
+  -- focus point intact. A new table also avoids mutating its cached rig.
+  local widened = {}
+  for key, value in pairs(base) do widened[key] = value end
+  widened.fov = clamp(
+    2 * math.atan(math.tan(base.fov / 2) * (1 + amount)),
+    math.rad(15), math.rad(90))
+  return widened, pitch
 end
 
 local function cameraProfile(spec)
@@ -227,12 +258,20 @@ local function install(companion)
     local originalRig = BattleCam.rig
     BattleCam.rig = function(arena, groundY, canonical)
       local base, pitch = originalRig(arena, groundY, canonical)
+      base, pitch = widenBattleCinematics(base, pitch, canonical)
       return apply(base, pitch, arena, groundY, canonical)
     end
     BattleCam.__stadiumAttackCinematicsWrapped = true
   end
   installed = true
   return true
+end
+
+function Director.configure(companion, externalCamera, zoomOption)
+  cameraCompanion = externalCamera
+  compatibilityZoomOption = type(zoomOption) == "function"
+    and zoomOption or function() return "off" end
+  return install(companion)
 end
 
 function Director.start(spec, attackerIsPlayer, companion)
@@ -273,13 +312,20 @@ function Director.profileFor(spec)
 end
 
 function Director.status()
-  if not active then return { active = false, installed = installed } end
+  if not active then
+    return {
+      active = false,
+      installed = installed,
+      compatibilityZoom = compatibilityZoom(),
+    }
+  end
   return {
     active = true,
     installed = installed,
     move = active.spec.id,
     profile = cameraProfile(active.spec),
     tick = active.tick,
+    compatibilityZoom = compatibilityZoom(),
   }
 end
 
