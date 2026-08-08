@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0 - local test build
+## 0.7.0 - 2026-08-07
 
 - Expanded the private Pokemon Stadium 1 cache from 8 to 36 exact texture
   ranges across 14 effect archive members, with native I4, IA8, and RGBA16
