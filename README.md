@@ -18,7 +18,7 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.6.0 implements a presentation for all 165 Gen 1 moves. The complete
+Version 0.7.0 implements a presentation for all 165 Gen 1 moves. The complete
 registry is generated from Gen1Recomp's canonical move data and augmented with
 each move's decoded Pokemon Stadium primary, alternate, impact, and resource
 dispatch metadata.
@@ -31,9 +31,14 @@ old type-only fallback. Reusable melee, combo, ranged, sustained, aerial,
 field, status, self, and explosion shots focus the body windup, travel, and
 defender impact as distinct stages during Dramaless Shape Stadium battles.
 
-Thunder Shock retains its tested Stadium texture and schedule. Scratch, Sand
-Attack, Thunder Wave, and the shared hit family also use exact cached Stadium
-texture primitives. The remaining roster uses deterministic Stadium-style
+The exact private cache now contains 36 Stadium 1 texture ranges decoded in
+their native I4, IA8, or RGBA16 formats. Twenty-four prominent moves have a
+source-calibrated presentation built from those cartridge textures: Ember,
+Flamethrower, Water Gun, Hydro Pump, Surf, Ice Beam, Blizzard, Psybeam, Hyper
+Beam, Absorb, Mega Drain, Razor Leaf, Solar Beam, Thunderbolt, Thunder,
+Earthquake, Toxic, Psychic, Recover, Confuse Ray, Light Screen, Reflect, Fire
+Blast, and Explosion. Thunder Shock and the earlier traced physical/status
+families retain their dedicated implementations. The remaining roster uses deterministic Stadium-style
 rendering selected by type and behavior: contact, projectile, beam, multi-hit,
 trapping, status, stat change, recovery, screen, charge, recoil, and explosion
 presentations are all covered. These portable renderers are source-driven
@@ -80,13 +85,14 @@ without showing the screen or rereading the ROM.
 The private cache is stored under:
 
 ```text
-stadium_battle_fx/effects/v2/
+stadium_battle_fx/effects/v3/
 ```
 
 Its versioned marker is written last and records the size and checksum of each
 primitive. Interrupted, incomplete, or stale caches are rejected and rebuilt.
-The cache contains only eight small texture ranges, never the ROM, a complete
-archive member, or a decompressed Stadium fragment.
+The cache contains only 36 bounded texture ranges (about 157 KiB total), never
+the ROM, a complete archive member, or a decompressed Stadium fragment. Cache
+revision 3 deliberately invalidates the earlier eight-asset cache.
 
 ## Dramaless Shape compatibility
 
@@ -104,7 +110,7 @@ apply the resulting camera transform exactly once.
 Install the `DRAMALESS_SHAPE` mod from
 [artyrambles/DRAMALESS_SHAPE](https://github.com/artyrambles/DRAMALESS_SHAPE).
 The fork currently uses the non-SemVer version `1.6.2.ST`, so the manifest
-cannot safely express a numeric version range; 0.6.0 therefore declares only
+cannot safely express a numeric version range; 0.7.0 therefore declares only
 the mod ID as an optional dependency. Without Dramaless Shape, portable attack
 effects still run, but Stadium Pokemon body animations, model-aware scaling,
 and the staged attack camera are unavailable. Body-only moves fall back to the
@@ -112,7 +118,7 @@ ordinary Gen 1 presentation.
 
 The source tree contains capability-checked adapters for proposed
 `Stadium.hit(side, effectiveness)` and `Stadium.faint(side, disposition)` APIs.
-Version 0.6.0 deliberately does not register damage or faint event listeners
+Version 0.7.0 deliberately does not register damage or faint event listeners
 and never calls those adapters. Hit and faint reactions will remain disabled
 until Dramaless Shape publishes the required public API.
 
@@ -151,7 +157,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.6.0.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.7.0.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and
@@ -160,11 +166,11 @@ research-only tooling from entering a release.
 ## Research status
 
 The move dispatch opcodes and resource bundles for all 165 moves are traced
-from pret/pokestadium. Exact cached textures currently cover the established
-traced subset; the rest use type/behavior-aware procedural presentations. The
-current portable stage offsets, target anchors, scale, tint, and particle
-motion remain provisional until they are compared against native Stadium
-captures. See `docs/research.md` and
+from pret/pokestadium. The exact cache and 24-move fidelity roster are audited
+against Pokemon Stadium (USA) v1.0; the rest use type/behavior-aware procedural
+presentations. Portable projection, tint, and motion still require comparison
+against native Stadium captures. See `docs/research.md`,
+`docs/stadium1-fidelity.md`, and
 `docs/thunder-shock-trace.md` for the source trail. The generated
 `docs/move-roster.md` covers all 165 Gen 1 moves, and `docs/effect-scale.md`
 records the native scale and projection model used for roster expansion.

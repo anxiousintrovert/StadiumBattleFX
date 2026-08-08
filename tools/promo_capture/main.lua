@@ -84,7 +84,7 @@ local function drawHeader(pick)
   g.print(pick.spec.name:upper(), 7, 5)
   g.setFont(tiny)
   g.setColor(0.58, 0.76, 0.96, 1)
-  g.print(pick.spec.type .. "  /  STADIUM ATTACK ANIMATIONS 0.6.0", 7, 21)
+  g.print(pick.spec.type .. "  /  STADIUM ATTACK ANIMATIONS 0.7.0", 7, 21)
 end
 
 function love.load()

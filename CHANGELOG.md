@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0 - local test build
+
+- Expanded the private Pokemon Stadium 1 cache from 8 to 36 exact texture
+  ranges across 14 effect archive members, with native I4, IA8, and RGBA16
+  decoding and a format-v3 integrity marker.
+- Added source-calibrated Stadium 1 profiles for 24 prominent elemental,
+  beam, drain, status, screen, recovery, ground, and explosion moves.
+- Added cartridge-textured full-screen and status programs for Surf, Blizzard,
+  Toxic, Psychic, Confuse Ray, Light Screen, Reflect, Earthquake, and
+  Explosion.
+- Added ROM-backed auditing of every declared asset pointer, byte count, and
+  fragment bound, plus lifecycle smoke tests for every fidelity profile.
+
 ## 0.6.0 - 2026-08-07
 
 - Migrated model, cache-screen, and camera discovery from the defunct

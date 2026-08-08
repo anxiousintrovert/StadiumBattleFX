@@ -1,0 +1,50 @@
+local loader = love and love.filesystem and love.filesystem.load or loadfile
+local profiles = assert(loader("lib/effects/StadiumFidelityProfiles.lua"))()
+local renderer = assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))()
+
+local expected = {
+  52, 53, 55, 56, 57, 58, 59, 60, 63, 71, 72, 75, 76, 85, 87, 89,
+  92, 94, 105, 109, 113, 115, 126, 153,
+}
+
+local count = 0
+for id, profile in pairs(profiles) do
+  count = count + 1
+  assert(type(id) == "number", "profile move ID must be numeric")
+  assert(type(profile.stadiumProgram) == "string", "missing Stadium program")
+  assert(profile.impactAt > 0 and profile.duration > profile.impactAt,
+    "invalid calibrated lifecycle for move " .. id)
+  assert(#profile.assets > 0, "profile has no exact Stadium assets")
+end
+assert(count == #expected, "unexpected Stadium fidelity profile count")
+for _, id in ipairs(expected) do assert(profiles[id], "missing profile " .. id) end
+
+local hostLove = love
+love = { graphics = {} }
+for _, name in ipairs({ "setColor", "draw", "rectangle", "setLineWidth", "line" }) do
+  love.graphics[name] = function() end
+end
+
+local fake = {
+  image = {}, quads = { {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} },
+  frameWidth = 32, frameHeight = 32, frames = 16,
+}
+local Assets = { get = function() return fake end }
+local player = {}
+function player:anchor(which)
+  if which == "attacker" then return 26, 96 end
+  return 124, 56
+end
+
+for _, id in ipairs(expected) do
+  player.spec = profiles[id]
+  for _, tick in ipairs({ 0, player.spec.impactAt, player.spec.duration - 1 }) do
+    player.tick = tick
+    local ok, err = pcall(renderer.draw, player, Assets)
+    assert(ok, ("profile %d failed at tick %d: %s"):format(id, tick, tostring(err)))
+  end
+end
+
+love = hostLove
+
+print("ok 24 Stadium 1 fidelity profiles")

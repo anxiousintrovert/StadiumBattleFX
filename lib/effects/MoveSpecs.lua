@@ -5,6 +5,7 @@
 local V = ...
 local allMoves = V.require("effects/AllMoveSpecs")
 local stadiumMoves = V.require("effects/StadiumMoveRoster")
+local fidelityProfiles = V.require("effects/StadiumFidelityProfiles")
 
 local specs = {
   -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
@@ -113,6 +114,17 @@ for _, generated in ipairs(allMoves) do
     specs[#specs + 1] = spec
     byId[spec.id], byId[tostring(spec.id)] = spec, spec
     byKey[spec.key] = spec
+  end
+end
+
+-- Curated Stadium 1 fidelity profiles override the portable generated timing
+-- and renderer selection after the complete registry has been assembled.
+for id, profile in pairs(fidelityProfiles) do
+  local spec = byId[id]
+  if spec then
+    for key, value in pairs(profile) do spec[key] = value end
+    spec.kind = "generic"
+    spec.fidelity = "stadium1-source-calibrated"
   end
 end
 

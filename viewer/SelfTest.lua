@@ -30,9 +30,11 @@ function love.load()
     "lib/DramaticShapeState.lua",
     "lib/AttackCinematics.lua",
     "lib/effects/MoveSpecs.lua",
+    "lib/effects/StadiumFidelityProfiles.lua",
     "lib/effects/AllMoveSpecs.lua",
     "lib/effects/StadiumMoveRoster.lua",
     "lib/effects/StadiumFxPlayer.lua",
+    "lib/effects/StadiumAuthenticRenderer.lua",
     "lib/effects/GenericMoveRenderer.lua",
     "lib/effects/ThunderShockSpec.lua",
   }) do
@@ -42,6 +44,7 @@ function love.load()
   assert(love.filesystem.load("tests/test_camera_compat.lua"))()
   assert(love.filesystem.load("tests/test_attack_cinematics.lua"))()
   assert(love.filesystem.load("tests/test_full_roster.lua"))()
+  assert(love.filesystem.load("tests/test_stadium_fidelity.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
     love.event.quit(0)
@@ -107,7 +110,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "0.6.0", "wrong mod export version")
+  assert(mod.exports.version == "0.7.0", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   assert(handlers["battle.damage_dealt"] == nil,
@@ -119,7 +122,11 @@ function love.load()
   function liveInner:isDone() return true end
   function liveInner:pollEffects() return {} end
   handlers["battle.started"]({ battle = { animPlayer = liveInner } })
+  local cacheStatus = mod.exports.textureStatus()
+  assert(cacheStatus.ready and cacheStatus.assets == 36,
+         "full Stadium 1 texture cache did not load")
   print("ok runtime Thunder Shock texture: " .. tostring(asset.path))
+  print("ok runtime Stadium 1 cache: " .. tostring(cacheStatus.assets) .. " assets")
   love.event.quit(0)
 end
 

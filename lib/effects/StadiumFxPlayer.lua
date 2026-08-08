@@ -7,6 +7,7 @@ local ThunderShock = V.require("effects/ThunderShockSpec")
 local DramaticShapeState = V.require("DramaticShapeState")
 local DramaticShapeHit = V.require("DramaticShapeHit")
 local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
+local StadiumAuthenticRenderer = V.require("effects/StadiumAuthenticRenderer")
 local AttackCinematics = V.require("AttackCinematics")
 
 local Player = {}
@@ -466,7 +467,11 @@ local DRAW = {
   double_kick = drawDoubleKick,
   single_kick = function(self) drawHit(self, self.tick - self.spec.impactAt, "kick") end,
   tackle = function(self) drawHit(self, self.tick - self.spec.impactAt) end,
-  generic = function(self) GenericMoveRenderer.draw(self, Assets) end,
+  generic = function(self)
+    if not StadiumAuthenticRenderer.draw(self, Assets) then
+      GenericMoveRenderer.draw(self, Assets)
+    end
+  end,
   body_only = function() end,
 }
 

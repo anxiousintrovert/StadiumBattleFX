@@ -18,6 +18,7 @@ local modules = {
     request = function() return false end,
   },
   ["effects/GenericMoveRenderer"] = { draw = function() end },
+  ["effects/StadiumAuthenticRenderer"] = { draw = function() return false end },
   AttackCinematics = { start = function() return false end,
     setTick = function() end, stop = function() end },
 }

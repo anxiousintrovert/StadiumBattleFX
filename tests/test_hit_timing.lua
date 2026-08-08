@@ -29,6 +29,9 @@ local Player = chunk({ require = function(name)
     }
   end
   if name == "effects/GenericMoveRenderer" then return { draw = function() end } end
+  if name == "effects/StadiumAuthenticRenderer" then
+    return { draw = function() return false end }
+  end
   if name == "AttackCinematics" then
     return { start = function() end, setTick = function() end, stop = function() end }
   end

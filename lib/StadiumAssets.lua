@@ -7,9 +7,9 @@ local ROM_SIZE = 32 * 1024 * 1024
 local ARCHIVE = 0x8CC000
 local VRAM_BASE = 0x8FF00000
 local CRC1, CRC2 = 0x90F5D9B3, 0x9D0EDCF0
-local CACHE_DIR = "stadium_battle_fx/effects/v2"
+local CACHE_DIR = "stadium_battle_fx/effects/v3"
 local CACHE_MARKER = CACHE_DIR .. "/cache.info"
-local CACHE_FORMAT, CACHE_REV = "SFXC2", 2
+local CACHE_FORMAT, CACHE_REV = "SFXC3", 3
 
 -- Each range is tied to a fragment asset-table entry and a renderer format
 -- in pret/pokestadium. Only these texture bytes are retained.
@@ -30,6 +30,78 @@ local SPECS = {
     format = "i4", width = 32, height = 32, frames = 8, bytes = 0x1000 },
   { name = "thunder_wave", member = 0x1C, slot = 0x0B, offset = 0x0030,
     format = "i4", width = 64, height = 64, frames = 1, bytes = 0x0800 },
+
+  -- Shared beam/projectile bundle. The formats, dimensions, and frame
+  -- strides come directly from fragment 34's loader functions selected by
+  -- fragment 62's D_84385E40 descriptor table.
+  { name = "beam_spark", member = 0x03, slot = 0x08, offset = 0x0060,
+    format = "i4", width = 24, height = 24, frames = 8, bytes = 0x0900 },
+  { name = "beam_core", member = 0x03, slot = 0x11, offset = 0x0960,
+    format = "ia8", width = 32, height = 32, frames = 8, bytes = 0x2000 },
+  { name = "beam_ring", member = 0x03, slot = 0x17, offset = 0x2960,
+    format = "i4", width = 32, height = 32, frames = 4, bytes = 0x0800 },
+  { name = "beam_orb", member = 0x03, slot = 0x05, offset = 0x3160,
+    format = "i4", width = 32, height = 32, frames = 8, bytes = 0x1000 },
+  { name = "beam_flare", member = 0x03, slot = 0x0E, offset = 0x4160,
+    format = "i4", width = 32, height = 32, frames = 4, bytes = 0x0800 },
+  { name = "beam_impact", member = 0x03, slot = 0x02, offset = 0x4960,
+    format = "ia8", width = 32, height = 32, frames = 4, bytes = 0x1000 },
+  { name = "beam_star", member = 0x03, slot = 0x03, offset = 0x5960,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
+
+  -- Razor Leaf's resource member mixes colored RGBA16 leaves with animated
+  -- I4 masks. Keeping those formats distinct preserves the cartridge color
+  -- rather than tinting every primitive white.
+  { name = "leaf_green", member = 0x0A, slot = 0x1C, offset = 0x0050,
+    format = "rgba16", width = 32, height = 32, frames = 1, bytes = 0x0800 },
+  { name = "leaf_glint", member = 0x0A, slot = 0x1D, offset = 0x0850,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
+  { name = "leaf_spin", member = 0x0A, slot = 0x1A, offset = 0x0A50,
+    format = "i4", width = 32, height = 32, frames = 8, bytes = 0x1000 },
+  { name = "leaf_red", member = 0x0A, slot = 0xC3, offset = 0x1A50,
+    format = "rgba16", width = 32, height = 32, frames = 1, bytes = 0x0800 },
+  { name = "leaf_gold", member = 0x0A, slot = 0x1E, offset = 0x2250,
+    format = "rgba16", width = 32, height = 32, frames = 1, bytes = 0x0800 },
+
+  { name = "poison_field", member = 0x0E, slot = 0x70, offset = 0x0050,
+    format = "ia8", width = 64, height = 64, frames = 1, bytes = 0x1000 },
+  { name = "thunder_orb", member = 0x0F, slot = 0x12, offset = 0x0860,
+    format = "i4", width = 64, height = 64, frames = 8, bytes = 0x4000 },
+
+  -- Member 0x11 is reused by fire, drain, psychic, and explosion programs;
+  -- Stadium supplies neutral masks and selects their colors in code.
+  { name = "energy_orb", member = 0x11, slot = 0x05, offset = 0x0050,
+    format = "i4", width = 32, height = 32, frames = 8, bytes = 0x1000 },
+  { name = "energy_core", member = 0x11, slot = 0x64, offset = 0x1050,
+    format = "ia8", width = 32, height = 32, frames = 8, bytes = 0x2000 },
+  { name = "energy_column", member = 0x11, slot = 0x76, offset = 0x3050,
+    format = "ia8", width = 32, height = 64, frames = 8, bytes = 0x4000 },
+
+  { name = "heal_star_a", member = 0x15, slot = 0xA6, offset = 0x1810,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
+  { name = "heal_star_b", member = 0x15, slot = 0xA7, offset = 0x1A10,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
+  { name = "heal_ring", member = 0x15, slot = 0x18, offset = 0x1C10,
+    format = "i4", width = 32, height = 32, frames = 16, bytes = 0x2000 },
+
+  { name = "screen_grain", member = 0x18, slot = 0x3F, offset = 0x0060,
+    format = "i4", width = 64, height = 64, frames = 1, bytes = 0x0800 },
+  { name = "large_burst", member = 0x18, slot = 0x59, offset = 0x0860,
+    format = "i4", width = 64, height = 64, frames = 6, bytes = 0x3000 },
+  { name = "screen_pulse", member = 0x18, slot = 0x7A, offset = 0x3860,
+    format = "ia8", width = 32, height = 32, frames = 9, bytes = 0x2400 },
+
+  -- These are consecutive per-frame slots in their resource fragments.
+  { name = "screen_dual", member = 0x02, slot = 0x43, offset = 0x0040,
+    format = "i4", width = 32, height = 32, frames = 2, bytes = 0x0400 },
+  { name = "water_cycle", member = 0x1A, slot = 0xB8, offset = 0x0050,
+    format = "i4", width = 32, height = 32, frames = 5, bytes = 0x0A00 },
+  { name = "spectrum_cycle", member = 0x29, slot = 0x8F, offset = 0x0090,
+    format = "i4", width = 32, height = 32, frames = 10, bytes = 0x1400 },
+  { name = "spectrum_glint", member = 0x29, slot = 0xAC, offset = 0x4490,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
+  { name = "spectrum_star", member = 0x29, slot = 0x99, offset = 0x4690,
+    format = "i4", width = 32, height = 32, frames = 1, bytes = 0x0200 },
 }
 
 local byName = {}
@@ -41,7 +113,13 @@ end
 local loaded, attempted = {}, false
 local lastError, lastSource, cacheError
 local cacheReady, cachedRaw, job
-local MEMBERS = { 0x00, 0x0B, 0x0F, 0x16, 0x1C }
+local MEMBERS, memberSeen = {}, {}
+for _, spec in ipairs(SPECS) do
+  if not memberSeen[spec.member] then
+    memberSeen[spec.member] = true
+    MEMBERS[#MEMBERS + 1] = spec.member
+  end
+end
 local progress = {
   state = "idle", done = 0, total = #MEMBERS + #SPECS + #SPECS + 1,
   current = nil, error = nil,
@@ -336,15 +414,36 @@ local function rgbaAtlas(spec, bytes)
           local packed = bytes:byte(math.floor(pixel / 2) + 1)
           local value = (pixel % 2 == 0) and math.floor(packed / 16) or packed % 16
           rows[#rows + 1] = string.char(255, 255, 255, value * 17)
-        else
+        elseif spec.format == "ia8" then
           local packed = bytes:byte(pixel + 1)
           local intensity, alpha = math.floor(packed / 16) * 17, (packed % 16) * 17
           rows[#rows + 1] = string.char(intensity, intensity, intensity, alpha)
+        elseif spec.format == "rgba16" then
+          local hi, lo = bytes:byte(pixel * 2 + 1, pixel * 2 + 2)
+          local packed = hi * 256 + lo
+          local red = math.floor(packed / 0x800) % 0x20
+          local green = math.floor(packed / 0x40) % 0x20
+          local blue = math.floor(packed / 0x2) % 0x20
+          rows[#rows + 1] = string.char(
+            math.floor(red * 255 / 31), math.floor(green * 255 / 31),
+            math.floor(blue * 255 / 31), packed % 2 == 1 and 255 or 0)
+        else
+          error("unsupported cached Stadium texture format " .. tostring(spec.format))
         end
       end
     end
   end
   return table.concat(rows)
+end
+
+function Assets.specs()
+  local out = {}
+  for i, spec in ipairs(SPECS) do
+    out[i] = { name = spec.name, member = spec.member, slot = spec.slot,
+      offset = spec.offset, format = spec.format, width = spec.width,
+      height = spec.height, frames = spec.frames, bytes = spec.bytes }
+  end
+  return out
 end
 
 local function makeAsset(spec, bytes, source)

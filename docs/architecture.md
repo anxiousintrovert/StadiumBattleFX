@@ -10,10 +10,10 @@ flat baseroms/*.z64|*.n64|*.v64
   byte-order-aware validated Stadium reader
                  |
                  v
- five bounded battle-effect archive members
+ fourteen bounded battle-effect archive members
                  |
                  v
- eight exact texture ranges + v2 checksums
+ 36 exact texture ranges + v3 checksums
                  |
                  v
  first-run stepped cache screen / later cache preload
@@ -24,9 +24,9 @@ flat baseroms/*.z64|*.n64|*.v64
 
 `lib/StadiumAssets.lua` recognizes the three N64 byte orders, validates the
 32 MiB USA v1.0 cartridge by its N64 header CRCs, decompresses only members
-`00`, `0B`, `0F`, `16`, and `1C`, and retains only the eight declared texture
-ranges. The first-run API (`pending`, `begin`, `step`) performs one member,
-file write, texture upload, or marker write per update. `preload` handles the
+needed by the declared asset table and retains only its 36 bounded texture
+ranges (about 157 KiB). The first-run API (`pending`, `begin`, `step`) performs
+one member, file write, texture upload, or marker write per update. `preload` handles the
 small validated-cache path and remains a synchronous fallback if a battle is
 created before the overworld can offer the screen.
 
@@ -37,16 +37,18 @@ progress, and retires automatically. It checks Dramaless Shape through
 that mod's own model extraction is complete. It does not access either mod's
 files.
 
-`lib/effects/MoveSpecs.lua` maps the fourteen saved-party moves to their
-traced Stadium primary/impact opcodes and resource members. It also records
-the provisional portable duration and primary-to-impact offset.
+`lib/effects/MoveSpecs.lua` merges all 165 moves with their traced Stadium
+primary/alternate/impact opcodes and resource members. Twenty-four prominent
+moves then receive Stadium 1 source-calibrated timing and renderer profiles.
 
 `lib/effects/StadiumFxPlayer.lua` wraps Gen1Recomp's battle `AnimPlayer`.
 Unsupported moves and any move with a missing asset delegate unchanged. A
 custom move keeps the original player running as the sound-event clock while
-suppressing its Game Boy sprites and screen effects. Exact cached textures are
-used where traced; the remaining wind, speed, string, psychic, and screen
-shapes are procedural first-pass renderers. Growl and Splash claim the visual
+suppressing its Game Boy sprites and screen effects.
+`lib/effects/StadiumAuthenticRenderer.lua` composes exact cached textures into
+beam, elemental, full-screen, status, recovery, barrier, quake, and explosion
+programs for the curated fidelity roster. Other shapes use the procedural
+first-pass renderer. Growl and Splash claim the visual
 layer only while Dramaless Shape reports that a Stadium model is showing.
 
 `lib/AttackCinematics.lua` is the independent move-time camera layer. It

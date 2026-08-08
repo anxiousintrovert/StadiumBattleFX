@@ -1,4 +1,11 @@
 local loader = love and love.filesystem and love.filesystem.load or loadfile
+love = love or { graphics = {} }
+for _, name in ipairs({
+  "arc", "circle", "draw", "ellipse", "line", "polygon", "rectangle",
+  "setColor", "setLineWidth",
+}) do
+  love.graphics[name] = love.graphics[name] or function() end
+end
 local all = assert(loader("lib/effects/AllMoveSpecs.lua"))()
 assert(#all == 165, "complete move spec must contain all 165 Gen 1 moves")
 
@@ -7,6 +14,9 @@ local registry = moveChunk({ require = function(name)
   if name == "effects/AllMoveSpecs" then return all end
   if name == "effects/StadiumMoveRoster" then
     return assert(loader("lib/effects/StadiumMoveRoster.lua"))()
+  end
+  if name == "effects/StadiumFidelityProfiles" then
+    return assert(loader("lib/effects/StadiumFidelityProfiles.lua"))()
   end
   error(name)
 end })
@@ -70,6 +80,9 @@ local Player = playerChunk({ require = function(name)
     }
   end
   if name == "effects/GenericMoveRenderer" then return generic end
+  if name == "effects/StadiumAuthenticRenderer" then
+    return assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))()
+  end
   if name == "AttackCinematics" then
     return { start = function() return false end, setTick = function() end,
       stop = function() end }
