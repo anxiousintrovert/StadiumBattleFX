@@ -77,6 +77,38 @@ baseroms/my-stadium-cartridge.n64
 baseroms/anything.v64
 ```
 
+Create the `baseroms` folder if it does not already exist. For an official
+packaged Gen1Recomp build, the full folder location is:
+
+| Platform | Stadium ROM folder |
+| --- | --- |
+| Windows | `%APPDATA%\pokemon-love2d\baseroms\` |
+| macOS | `~/Library/Application Support/pokemon-love2d/baseroms/` |
+| Linux / Steam Deck | `${XDG_DATA_HOME:-$HOME/.local/share}/pokemon-love2d/baseroms/` |
+| Android | `/storage/emulated/0/Android/data/com.theboisclub.pokemonred/files/save/pokemon-love2d/baseroms/` |
+| iOS | `<Gen1Recomp app container>/Library/Application Support/pokemon-love2d/baseroms/` |
+| Nintendo Switch | `sdmc:/switch/gen1recomp/pokemon-love2d/baseroms/` |
+| Xbox UWP | `Gen1Recomp/LocalState/pokemon-love2d/baseroms/` in Xbox Device Portal |
+| Anbernic RG34XXSP | `/mnt/mmc/Roms/PORTS/gen1recomp/lovegame/baseroms/` |
+
+Android may use a different external-storage root on adopted storage. The iOS
+folder is inside the app sandbox and is not directly exposed in the Files app.
+On either platform, use the exact save-directory path reported by Gen1Recomp
+if it differs from the example above.
+
+A source checkout or other unfused folder install may instead put `baseroms/`
+beside `main.lua`. An unfused `love .` run can also use the usual LÖVE identity
+folder:
+
+```text
+Windows: %APPDATA%\LOVE\pokemon-love2d\baseroms\
+macOS:   ~/Library/Application Support/LOVE/pokemon-love2d/baseroms/
+Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
+```
+
+Put the ROM directly inside that folder, not in a `us/` subfolder, then restart
+Gen1Recomp with the mod enabled.
+
 On the first overworld load, a dedicated **STADIUM ATTACK FX** screen extracts
 and caches the small shared effect set. It advances one archive, cache, or GPU
 upload operation per tick and closes automatically. Later boots load the cache
