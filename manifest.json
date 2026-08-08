@@ -10,8 +10,7 @@
   "priority": 110,
   "dependencies": [],
   "optional_dependencies": [
-    "DRAMALESS_SHAPE",
-    "BATTLE_CINEMATICS@>=0.7.1 <1.0.0"
+    "DRAMALESS_SHAPE"
   ],
   "conflicts": [],
   "incompatible": [],
@@ -21,5 +20,5 @@
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,
-  "description": "Recreates Stadium battle effects, with optional locally generated Gym and Elite Four announcer audio."
+  "description": "Recreates Stadium battle effects with optional locally generated Gym and Elite Four announcer audio."
 }
