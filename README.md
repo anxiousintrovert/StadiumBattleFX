@@ -59,10 +59,10 @@ Pokemon Stadium footage.
   models, skeletal animations, attachment points, hit reactions, and attack
   cameras
 
-Dynamic Battle Cinematics is also an optional integration. Its current v0.7.1
-release still depends on the retired `DRAMATIC_SHAPE` mod ID and cannot load in
-a `DRAMALESS_SHAPE` installation. StadiumBattleFX keeps its compatibility
-adapter for a future release that supports the new companion ID.
+Battle Cinematics / Stadium Camera is also an optional integration. Version
+0.7.6 and newer support the current Dramaless Shape backend plus newer camera
+backends and fallbacks. StadiumBattleFX detects it lazily and remains fully
+usable without the companion.
 
 ## Installation
 
@@ -113,7 +113,7 @@ Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
 
 ## Stadium animations
 
-Version 1.0.0 covers the complete 165-move Gen 1 roster. Each move is generated
+Version 1.0.1 covers the complete 165-move Gen 1 roster. Each move is generated
 from Gen1Recomp's canonical move data and matched with decoded Pokemon Stadium
 primary, alternate, impact, and resource dispatch metadata.
 
@@ -248,7 +248,7 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | **STADIUM FX** | On | Enables Stadium move presentations and effect-cache loading. |
 | **ATTACK CAMERA** | On | Enables staged move cameras when the required Stadium model integration is available. |
 | **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
-| **BC ZOOM OUT** | Off | Optionally widens Dynamic Battle Cinematics' optical field of view by 10%, 25%, 35%, or 50%. |
+| **BC ZOOM OUT** | Off | Optionally widens Battle Cinematics / Stadium Camera's optical field of view by 10%, 25%, 35%, or 50%. |
 
 ## ROM data and private cache
 
@@ -292,7 +292,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.0.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.1.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

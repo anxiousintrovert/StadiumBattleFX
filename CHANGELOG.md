@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-08-08
+
+- Screen-overlay cache misses no longer cancel custom move animations.
+- Blizzard retains its snow field with procedural fallback geometry when
+  optional overlay or snow textures are unavailable.
+- Rebuilt the runtime release as `STADIUM_BATTLE_FX-1.0.1.zip`.
+
 ## 1.0.0 - 2026-08-08
 
 - Added optional, failure-isolated Stadium announcer playback for the eight Gym

@@ -1,22 +1,15 @@
-# Dynamic Battle Cinematics compatibility
+# Battle Cinematics / Stadium Camera compatibility
 
-> **Current DRAMALESS_SHAPE limitation:** Dynamic Battle Cinematics v0.7.1
-> declares `DRAMATIC_SHAPE` as a hard dependency and queries that old mod ID at
-> startup. It cannot load beside the strongly recommended `DRAMALESS_SHAPE`
-> fork until its
-> own manifest and companion lookup are updated. Stadium Attack Animations
-> does not modify that mod's files; the composition below remains ready for a
-> compatible future release.
+Battle Cinematics / Stadium Camera v0.7.6 is an optional camera companion. It
+supports the current Dramaless Shape backend as well as newer camera backends
+and fallbacks. StadiumBattleFX remains fully usable without the companion.
 
-Compatibility was checked against the official `Battle_Cinematics-v0.7.1.zip`
-release asset (SHA-256
-`4164f10d6948068ba7a4bfef78219427a90237944be19dbde34aa488e3227f32`).
-The upstream release was inspected read-only and no files in its repository
-or package were modified.
+The manifest advertises `BATTLE_CINEMATICS@>=0.7.6` as an optional integration.
+The companion is resolved lazily, so either mod can run without the other.
 
 ## Hook boundary
 
-Battle Cinematics:
+Battle Cinematics / Stadium Camera:
 
 - replaces Dramatic Shapes' `BattleCam.rig` function;
 - wraps the `input.step` hook;
@@ -33,7 +26,7 @@ attack director then stages that action and returns to the wrapped base rig.
 
 ## Moving-camera behavior
 
-Dramatic Shapes calls the wrapped `BattleCam.rig`, renders the current camera,
+The active Stadium camera backend calls the wrapped `BattleCam.rig`, renders the current camera,
 and produces a live shot containing the projected player/enemy marks. Its own
 `drawAnimLayer` wrapper then translates and uniformly scales the entire move
 animation layer. A cinematic orbit also changes the projected angle between
@@ -60,9 +53,9 @@ installed.
 
 ## Load relationship
 
-The manifest declares `BATTLE_CINEMATICS@>=0.7.1 <1.0.0` as optional. Either
-mod can run without the other. When both are enabled, the relationship is
-visible to the loader and Stadium Attack Animations resolves both companions lazily
-at battle start, after mod loading is complete.
+The manifest declares `BATTLE_CINEMATICS@>=0.7.6` as optional. When both are
+enabled, the relationship is visible to the loader and Stadium Attack
+Animations resolves both companions lazily at battle start, after mod loading
+is complete.
 The camera wrapper itself is installed on the first eligible Stadium move, so
 it composes with the final runtime rig regardless of manifest load order.

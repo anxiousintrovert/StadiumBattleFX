@@ -28,7 +28,10 @@ return {
     assets = { "spectrum_cycle", "spectrum_glint", "beam_impact" } },
   [59] = { stadiumProgram = "ice", variant = "storm",
     impactAt = 58, duration = 120,
-    assets = { "spectrum_cycle", "beam_star", "screen_grain", "large_burst" } },
+    assets = { "spectrum_cycle", "beam_star", "screen_grain", "large_burst" },
+    -- The snow field is the move's core animation. These are presentation
+    -- polish only; a stale/missing overlay cache must not disable Blizzard.
+    optionalAssets = { "screen_grain", "large_burst" } },
   [60] = { stadiumProgram = "beam", variant = "psybeam",
     impactAt = 54, duration = 108,
     assets = { "spectrum_cycle", "spectrum_glint", "screen_pulse" } },

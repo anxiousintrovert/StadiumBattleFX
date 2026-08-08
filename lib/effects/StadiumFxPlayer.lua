@@ -56,6 +56,21 @@ function Player.new(inner, options, logger, companion, cameraCompanion, cameraOp
     activeHit = nil, hitTriggered = false }, Player)
 end
 
+local function requiredAssets(spec)
+  local optional = {}
+  for _, name in ipairs(spec.optionalAssets or {}) do optional[name] = true end
+  local required = {}
+  for _, name in ipairs(spec.assets or {}) do
+    -- Screen overlays are presentation polish. If one cache entry is stale,
+    -- the move's anchored animation must still be allowed to run.
+    local isScreenOverlay = name:match("^screen_") ~= nil
+    if not optional[name] and not isScreenOverlay then
+      required[#required + 1] = name
+    end
+  end
+  return required
+end
+
 function Player:setMoveContext(payload)
   self.context = payload
   -- A called move (Metronome/Mirror Move) is queued alongside its caller.
@@ -111,7 +126,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   if spec.bodyOnly and not self:stadiumModelShowing() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
-  local ok, err = Assets.has(spec.assets)
+  local ok, err = Assets.has(requiredAssets(spec))
   if not ok and #spec.assets > 0 then
     self:warn(spec.key, err)
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)

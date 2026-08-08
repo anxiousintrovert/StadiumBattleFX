@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -11,7 +11,7 @@
   "dependencies": [],
   "optional_dependencies": [
     "DRAMALESS_SHAPE",
-    "BATTLE_CINEMATICS@>=0.7.1 <1.0.0"
+    "BATTLE_CINEMATICS@>=0.7.6"
   ],
   "conflicts": [],
   "incompatible": [],
@@ -21,5 +21,5 @@
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,
-  "description": "Recreates Stadium battle effects, with optional locally generated Gym and Elite Four announcer audio."
+  "description": "Recreates Stadium battle effects with optional Battle Cinematics / Stadium Camera integration and locally generated announcer audio."
 }
