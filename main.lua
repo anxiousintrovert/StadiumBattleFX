@@ -40,8 +40,6 @@ local ThunderShockSpec = namespace.require("effects/ThunderShockSpec")
 local StadiumAssets = namespace.require("StadiumAssets")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
-local DramaticShapeHit = namespace.require("DramaticShapeHit")
-local DramaticShapeFaint = namespace.require("DramaticShapeFaint")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
 local AttackCinematics = namespace.require("AttackCinematics")
 
@@ -52,8 +50,6 @@ end
 mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
-  { key = "hit_reactions", label = "HIT REACTIONS", type = "toggle", default = true },
-  { key = "faint_reactions", label = "STADIUM FAINTS", type = "toggle", default = true },
   { key = "battle_cinematics_zoom", label = "BC ZOOM OUT", type = "choice",
     default = "off",
     choices = {
@@ -62,13 +58,11 @@ mod.options:define({
     } },
 })
 
-mod.exports.version = "0.5.1"
+mod.exports.version = "0.6.0"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
 mod.exports.attackCinematics = AttackCinematics.status
-mod.exports.hitReactions = DramaticShapeHit.status
-mod.exports.faintReactions = DramaticShapeFaint.status
 mod.exports.textureStatus = StadiumAssets.status
 mod.exports.dramaticShape = function()
   return dramalessCompanion()
@@ -125,7 +119,9 @@ mod.events:on("battle.started", function(payload)
     dramalessCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
     function() return mod.options:get("attack_camera") ~= false end,
-    function() return mod.options:get("hit_reactions") ~= false end)
+    -- The reaction bridge remains staged, but must stay disabled until the
+    -- companion publishes its hit API.
+    function() return false end)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter
@@ -135,30 +131,6 @@ mod.events:on("battle.move_used", function(payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.setMoveContext then player:setMoveContext(payload) end
-end)
-
--- Damage is resolved while Gen1Recomp constructs the queue, before the move
--- animation starts. Retain only landed damage here; the adapter consumes it
--- at the matching Stadium presentation's impactAt frame.
-mod.events:on("battle.damage_dealt", function(payload)
-  local battle = payload and payload.battle
-  local player = battle and battle.animPlayer
-  if player and player.recordDamage then player:recordDamage(payload) end
-end)
-
--- Tell the model owner which exit Stadium should perform. This event occurs
--- before the queued HP drain completes; the companion owns that delay and
--- the actual collapse or return-to-ball presentation.
-mod.events:on("battle.fainted", function(payload)
-  if mod.options:get("enabled") == false
-      or mod.options:get("faint_reactions") == false then return end
-  local battle = payload and payload.battle
-  local battler = payload and payload.battler
-  if not (battle and battler) then return end
-  local side = battler.isPlayer and "player" or "enemy"
-  DramaticShapeFaint.request(
-    dramalessCompanion,
-    side, DramaticShapeFaint.disposition(battle, battler))
 end)
 
 mod.events:on("battle.ended", function()

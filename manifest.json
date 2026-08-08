@@ -1,17 +1,16 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "Stadium Attack Animations",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
   "category": "GRAPHICS",
   "game_version": "0.0.0-dev || >=0.1.37 <2.0.0",
   "priority": 110,
-  "dependencies": [
-    "DRAMALESS_SHAPE"
-  ],
+  "dependencies": [],
   "optional_dependencies": [
+    "DRAMALESS_SHAPE",
     "BATTLE_CINEMATICS@>=0.7.1 <1.0.0"
   ],
   "conflicts": [],

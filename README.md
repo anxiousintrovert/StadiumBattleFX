@@ -18,7 +18,7 @@ Pokemon Stadium move effects from a Pokemon Stadium ROM supplied by the
 player. No ROM or extracted Nintendo asset is included in the mod or this
 repository.
 
-Version 0.5.1 implements a presentation for all 165 Gen 1 moves. The complete
+Version 0.6.0 implements a presentation for all 165 Gen 1 moves. The complete
 registry is generated from Gen1Recomp's canonical move data and augmented with
 each move's decoded Pokemon Stadium primary, alternate, impact, and resource
 dispatch metadata.
@@ -88,10 +88,10 @@ primitive. Interrupted, incomplete, or stale caches are rejected and rebuilt.
 The cache contains only eight small texture ranges, never the ROM, a complete
 archive member, or a decompressed Stadium fragment.
 
-## Dramaless Shape requirement
+## Dramaless Shape compatibility
 
-Dramaless Shape is a required companion and supplies the live Stadium Pokemon
-models, their skeletal animations, and staged battle projection. Stadium
+**Dramaless Shape is optional but strongly recommended.** It supplies the live
+Stadium Pokemon models, their skeletal animations, and staged battle projection. Stadium
 Attack Animations reads its exported runtime state to determine whether a
 Stadium model is showing and to let Dramaless Shape finish its own first-run
 model extraction screen first. It also reads the live voxel level,
@@ -101,27 +101,26 @@ runtime camera function. When Dramaless Shape owns the transformed animation
 layer, this mod retains classic Gen1 effect anchors and lets Dramaless Shape
 apply the resulting camera transform exactly once.
 
-This mod requires the `DRAMALESS_SHAPE` mod ID from
+Install the `DRAMALESS_SHAPE` mod from
 [artyrambles/DRAMALESS_SHAPE](https://github.com/artyrambles/DRAMALESS_SHAPE).
 The fork currently uses the non-SemVer version `1.6.2.ST`, so the manifest
-cannot safely express a numeric version range and instead requires that exact
-mod ID. When it exports `Stadium.hit(side, effectiveness)`, landed damaging
-moves request the target model's Stadium skeletal reaction at the effect's
-`impactAt` frame.
-Misses, immunities, and status-only moves do not request a reaction. The
-integration is capability-checked and remains a safe no-op until that API is
-available.
+cannot safely express a numeric version range; 0.6.0 therefore declares only
+the mod ID as an optional dependency. Without Dramaless Shape, portable attack
+effects still run, but Stadium Pokemon body animations, model-aware scaling,
+and the staged attack camera are unavailable. Body-only moves fall back to the
+ordinary Gen 1 presentation.
 
-If the fork also exports `Stadium.faint(side, disposition)`, this mod requests
-`collapse` for an unowned enemy in a wild encounter and `recall` for every
-trainer-owned Pokemon, including the player's Pokemon. Dramaless Shape still
-owns HP-drain synchronization, model animation, and the return-to-ball visual.
-Older forks keep their existing faint behavior.
+The source tree contains capability-checked adapters for proposed
+`Stadium.hit(side, effectiveness)` and `Stadium.faint(side, disposition)` APIs.
+Version 0.6.0 deliberately does not register damage or faint event listeners
+and never calls those adapters. Hit and faint reactions will remain disabled
+until Dramaless Shape publishes the required public API.
 
 This mod's only writes are to its private cache path above; it never writes to
 the Dramaless Shape mod directory or its `dramatic_shape/stadium/` cache.
 
-Dynamic Battle Cinematics v0.7.1 still hard-depends on the defunct
+Dynamic Battle Cinematics is an optional companion. Its current v0.7.1 release
+still hard-depends on the defunct
 `DRAMATIC_SHAPE` mod ID and therefore cannot currently load in a
 DRAMALESS_SHAPE installation. Stadium Attack Animations retains its composed
 camera adapter for a future compatible release, but does not patch or modify
@@ -152,7 +151,7 @@ Build a runtime-only package with Gen1Recomp's ModKit:
 ```powershell
 python tools/package_runtime.py `
   --modkit ..\Gen1Recomp\tools\modkit.py `
-  --output dist\STADIUM_BATTLE_FX-0.5.1.modpkg
+  --output dist\STADIUM_BATTLE_FX-0.6.0.modpkg
 ```
 
 The allowlisted packer prevents ignored ROMs, saves, caches, captures, and
@@ -175,7 +174,7 @@ camera source trail, shared-program model, and remaining calibration work.
 Research references:
 
 - Gen1Recomp — host engine and mod API
-- Dramaless Shape — required live Stadium model and camera companion
+- Dramaless Shape — optional, strongly recommended live Stadium model and camera companion
 - DramaticShapeVoxelMod — original model-extraction research and architectural precedent
 - pret/pokestadium — structural source for Stadium's battle effects
 - PokemonStadiumRecomp — executable behavioral oracle

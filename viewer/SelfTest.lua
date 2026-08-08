@@ -107,9 +107,13 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "0.5.1", "wrong mod export version")
+  assert(mod.exports.version == "0.6.0", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
+  assert(handlers["battle.damage_dealt"] == nil,
+         "unreleased hit-reaction event must remain disabled")
+  assert(handlers["battle.fainted"] == nil,
+         "unreleased faint-reaction event must remain disabled")
   local liveInner = {}
   function liveInner:start() end
   function liveInner:isDone() return true end
