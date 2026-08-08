@@ -70,7 +70,7 @@ end
 
 -- The marker is written last, so an interrupted first build never makes a
 -- partial texture count as usable. love.filesystem writes only to the game's
--- save directory; this cannot touch Dramatic Shapes or either mod folder.
+-- save directory; this cannot touch Dramaless Shape or either mod folder.
 local function writeCache(bytes)
   local f = love and love.filesystem
   if not (f and f.write) then return false, "filesystem cache is unavailable" end

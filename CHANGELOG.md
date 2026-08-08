@@ -2,13 +2,16 @@
 
 ## Unreleased
 
+- Replaced the defunct `DRAMATIC_SHAPE` companion with a required
+  `DRAMALESS_SHAPE` dependency and routed model, cache-screen, hit-reaction,
+  and camera integration through the new fork's exported library.
 - Added optional, impact-synchronized defender reactions through the proposed
-  public Dramatic Shapes `Stadium.hit(side, effectiveness)` API. The bridge is
+  public Dramaless Shape `Stadium.hit(side, effectiveness)` API. The bridge is
   capability-checked and safely does nothing on forks without that API.
 - Added a HIT REACTIONS option and retained Gen1Recomp damage outcomes so
   misses, immunities, and status-only moves cannot trigger skeletal reactions.
 - Added optional faint disposition requests: unowned wild opponents collapse,
-  while trainer-owned Pokemon return to their Poke Ball. Dramatic Shapes owns
+  while trainer-owned Pokemon return to their Poke Ball. Dramaless Shape owns
   the delayed model transition through the proposed `Stadium.faint` API.
 
 ## 0.5.1 - 2026-08-07

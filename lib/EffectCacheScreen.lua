@@ -138,7 +138,7 @@ end
 local asked = false
 
 local function dramaticShapesBusy()
-  local ds = V.mod.find("DRAMATIC_SHAPE")
+  local ds = V.mod.find("DRAMALESS_SHAPE")
   local lib = ds and ds.exports and ds.exports.lib
   if not (lib and type(lib.require) == "function") then return false end
   local ok, install = pcall(lib.require, "StadiumInstall")

@@ -1,9 +1,9 @@
--- Move-time camera director for staged Dramatic Shapes battles.
+-- Move-time camera director for staged Dramaless Shape battles.
 --
 -- Stadium's move presentation is not a single animation blob.  Species body
 -- motion, primary VFX, defender/impact VFX, and camera state run alongside
 -- one another.  This module owns only the last layer.  It wraps the public
--- Dramatic Shapes BattleCam rig lazily and leaves its canonical/clearance
+-- Dramaless Shape BattleCam rig lazily and leaves its canonical/clearance
 -- queries untouched.
 
 local Director = {}

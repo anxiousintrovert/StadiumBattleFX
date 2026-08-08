@@ -131,7 +131,7 @@ local function drawCustom(self)
   local g = love and love.graphics
   if not (g and self.asset) then return end
   local oldMode, oldAlpha = g.getBlendMode()
-  -- Dramatic Shapes renders the battle UI over a transparent canvas. An
+  -- Dramaless Shape renders the battle UI over a transparent canvas. An
   -- additive-only draw colors the RGB channels there without establishing
   -- usable coverage for the later canvas composite, so it disappears even
   -- though the particles were drawn. Ordinary alpha preserves that coverage

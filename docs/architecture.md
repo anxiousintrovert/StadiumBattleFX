@@ -32,7 +32,7 @@ created before the overworld can offer the screen.
 
 `lib/EffectCacheScreen.lua` is an opaque 160x144 Gen1Recomp state. It pauses
 the overworld while the stepped job is active, displays measured work-unit
-progress, and retires automatically. It checks Dramatic Shapes through
+progress, and retires automatically. It checks Dramaless Shape through
 `mod.find` and the companion's exported `StadiumInstall` state, deferring until
 that mod's own model extraction is complete. It does not access either mod's
 files.
@@ -47,16 +47,16 @@ custom move keeps the original player running as the sound-event clock while
 suppressing its Game Boy sprites and screen effects. Exact cached textures are
 used where traced; the remaining wind, speed, string, psychic, and screen
 shapes are procedural first-pass renderers. Growl and Splash claim the visual
-layer only while Dramatic Shapes reports that a Stadium model is showing.
+layer only while Dramaless Shape reports that a Stadium model is showing.
 
 `lib/AttackCinematics.lua` is the independent move-time camera layer. It
-lazily composes with Dramatic Shapes' `BattleCam.rig`, leaves canonical camera
+lazily composes with Dramaless Shape's `BattleCam.rig`, leaves canonical camera
 queries unchanged, and selects a reusable windup/travel/impact/recovery
 timeline from each move spec. Map stages use optical focus/FOV changes with a
 fixed eye; the empty-disc stage also allows a small orbit. The player updates
 the director from the same authoritative move tick used by the VFX renderer.
 
 Companion data and caches are read-only. The optional attack director composes
-with Dramatic Shapes' in-memory camera function, but Stadium Attack Animations
-never writes the Dramatic Shapes installation, settings, or its
+with Dramaless Shape's in-memory camera function, but Stadium Attack Animations
+never writes the Dramaless Shape installation, settings, or its
 `dramatic_shape/stadium/` model cache.

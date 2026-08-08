@@ -32,7 +32,7 @@ camera staging is also shared.
   bounds and facing, and use several lenses (commonly 30, 40, 50, and 60
   degrees). Camera logic is therefore a live battle layer, not texture data
   that can be extracted beside a particle atlas.
-- Dramatic Shapes' per-species Stadium tables map move rows 0-164 to the body
+- Dramaless Shape's per-species Stadium tables map move rows 0-164 to the body
   animation used by that particular Pokemon. The same move can consequently
   have different body timing for two species while retaining the same shared
   VFX program.
@@ -53,10 +53,10 @@ those details.
   sustained, aerial, field, status, self, or explosion.
 
 `lib/AttackCinematics.lua` applies the camera timeline only while a Stadium
-move player is active and Dramatic Shapes owns a staged Stadium battle. A
+move player is active and Dramaless Shape owns a staged Stadium battle. A
 timeline focuses the attacker during windup, follows the primary stage, cuts
 to the defender near `impactAt`, and returns to the base shot before the move
-finishes. Map stages keep Dramatic Shapes' proven camera eye fixed and create
+finishes. Map stages keep Dramaless Shape's proven camera eye fixed and create
 close-ups through focus/FOV; empty-disc stages also permit a small safe orbit.
 Canonical camera queries are never modified.
 

@@ -29,7 +29,7 @@ needle, wind, sound, stream, wave, beam, storm, orb, leaf, electric, psychic,
 drain, ground, barrier, heal, transform, and explosion programs replace the
 old type-only fallback. Reusable melee, combo, ranged, sustained, aerial,
 field, status, self, and explosion shots focus the body windup, travel, and
-defender impact as distinct stages during Dramatic Shapes Stadium battles.
+defender impact as distinct stages during Dramaless Shape Stadium battles.
 
 Thunder Shock retains its tested Stadium texture and schedule. Scratch, Sand
 Attack, Thunder Wave, and the shared hit family also use exact cached Stadium
@@ -39,7 +39,7 @@ trapping, status, stat change, recovery, screen, charge, recoil, and explosion
 presentations are all covered. These portable renderers are source-driven
 interpretations and still need native Stadium capture calibration for exact
 timing, scale, tint, and motion. Moves with no standalone Stadium VFX stage,
-including Growl and Splash, retain their Dramatic Shapes body animation when a
+including Growl and Splash, retain their Dramaless Shape body animation when a
 Stadium model is showing.
 
 ## Animation showcase
@@ -64,7 +64,7 @@ Pokemon Stadium footage.
 
 The supported cartridge is Pokemon Stadium (USA) v1.0, exactly 32 MiB. Put any
 `.z64`, `.n64`, or `.v64` dump directly in the same flat `baseroms/` folder
-Dramatic Shapes uses. The filename is not important:
+Dramaless Shape uses. The filename is not important:
 
 ```text
 baseroms/baserom.z64
@@ -88,45 +88,45 @@ primitive. Interrupted, incomplete, or stale caches are rejected and rebuilt.
 The cache contains only eight small texture ranges, never the ROM, a complete
 archive member, or a decompressed Stadium fragment.
 
-## Dramatic Shapes compatibility
+## Dramaless Shape requirement
 
-Dramatic Shapes is optional for textured attack effects and is required for
-body-only Stadium presentations and the move-time attack camera. Stadium
+Dramaless Shape is a required companion and supplies the live Stadium Pokemon
+models, their skeletal animations, and staged battle projection. Stadium
 Attack Animations reads its exported runtime state to determine whether a
-Stadium model is showing and to let Dramatic Shapes finish its own first-run
+Stadium model is showing and to let Dramaless Shape finish its own first-run
 model extraction screen first. It also reads the live voxel level,
 staged-battle mode, projected shot scale, and model footprints. When the attack
-camera is enabled, it composes a temporary move shot through Dramatic Shapes'
-runtime camera function. When Dramatic Shapes owns the transformed animation
-layer, this mod retains classic Gen1 effect anchors and lets Dramatic Shapes
+camera is enabled, it composes a temporary move shot through Dramaless Shape's
+runtime camera function. When Dramaless Shape owns the transformed animation
+layer, this mod retains classic Gen1 effect anchors and lets Dramaless Shape
 apply the resulting camera transform exactly once.
 
-This mod never writes to the Dramatic Shapes mod directory or its
-cache. When a compatible successor fork exports
-`Stadium.hit(side, effectiveness)`, landed damaging moves also request the
-target model's Stadium skeletal reaction at the effect's `impactAt` frame.
+This mod requires the `DRAMALESS_SHAPE` mod ID from
+[artyrambles/DRAMALESS_SHAPE](https://github.com/artyrambles/DRAMALESS_SHAPE).
+The fork currently uses the non-SemVer version `1.6.2.ST`, so the manifest
+cannot safely express a numeric version range and instead requires that exact
+mod ID. When it exports `Stadium.hit(side, effectiveness)`, landed damaging
+moves request the target model's Stadium skeletal reaction at the effect's
+`impactAt` frame.
 Misses, immunities, and status-only moves do not request a reaction. The
-integration is capability-checked and remains a safe no-op on older forks.
+integration is capability-checked and remains a safe no-op until that API is
+available.
 
 If the fork also exports `Stadium.faint(side, disposition)`, this mod requests
 `collapse` for an unowned enemy in a wild encounter and `recall` for every
-trainer-owned Pokemon, including the player's Pokemon. Dramatic Shapes still
+trainer-owned Pokemon, including the player's Pokemon. Dramaless Shape still
 owns HP-drain synchronization, model animation, and the return-to-ball visual.
 Older forks keep their existing faint behavior.
 
 This mod's only writes are to its private cache path above; it never writes to
-the Dramatic Shapes mod directory or its `dramatic_shape/stadium/` cache.
+the Dramaless Shape mod directory or its `dramatic_shape/stadium/` cache.
 
-Dynamic Battle Cinematics v0.7.1 is supported as an optional camera companion.
-It replaces Dramatic Shapes' idle camera rig but does not replace the animation
-player or animation layer. The move-time attack director composes after that
-rig, while Dynamic Battle Cinematics returns to idle during committed actions.
-Dramatic Shapes projects the resulting live shot and transforms Stadium Attack
-Animations with the rest of the animation layer. Neither mod's files or saved
-settings are modified. The optional **BC ZOOM OUT** setting widens Battle
-Cinematics' complete battle framing by 10%, 25%, 35%, or 50%. It changes only
-the optical field of view, so the companion's collision-safe camera path and
-focus remain intact; **OFF** preserves its original framing.
+Dynamic Battle Cinematics v0.7.1 still hard-depends on the defunct
+`DRAMATIC_SHAPE` mod ID and therefore cannot currently load in a
+DRAMALESS_SHAPE installation. Stadium Attack Animations retains its composed
+camera adapter for a future compatible release, but does not patch or modify
+Battle Cinematics. Once that project accepts the new companion ID, the optional
+**BC ZOOM OUT** setting will continue to widen only its optical field of view.
 
 ## Installation and updates
 
@@ -175,6 +175,7 @@ camera source trail, shared-program model, and remaining calibration work.
 Research references:
 
 - Gen1Recomp — host engine and mod API
-- DramaticShapeVoxelMod — read-only companion and extraction precedent
+- Dramaless Shape — required live Stadium model and camera companion
+- DramaticShapeVoxelMod — original model-extraction research and architectural precedent
 - pret/pokestadium — structural source for Stadium's battle effects
 - PokemonStadiumRecomp — executable behavioral oracle

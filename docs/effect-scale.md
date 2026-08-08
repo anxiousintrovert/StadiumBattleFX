@@ -78,13 +78,13 @@ sizes can be source-accurate but absolute Gen1-screen pixels remain a
 calibration value. We should tune one projection anchor per camera/anchor
 class, not one arbitrary scale per move.
 
-## Dramatic Shapes projection ownership
+## Dramaless Shape projection ownership
 
-`lib/DramaticShapeState.lua` reads Dramatic Shapes' exported state without
+`lib/DramaticShapeState.lua` reads Dramaless Shape's exported state without
 writing to it: current voxel rung/angle, 3D-BTL Stadium mode, live projected
 shot, animation-layer scale, model visibility, and model footprint.
 
-When a live staged shot exists, Dramatic Shapes already transforms the whole
+When a live staged shot exists, Dramaless Shape already transforms the whole
 `BattleState.drawAnimLayer` from the classic Gen1 anchors to the current
 camera projection. Stadium Attack Animations therefore keeps its internal anchors at
 player `(26, 96)` and enemy `(124, 56)` and lets that wrapper move and scale

@@ -8,7 +8,7 @@ local stadiumMoves = V.require("effects/StadiumMoveRoster")
 
 local specs = {
   -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
-  -- independent primary VFX. Dramatic Shapes supplies the body motion.
+  -- independent primary VFX. Dramaless Shape supplies the body motion.
   { id = 1, key = "POUND", name = "Pound", kind = "tackle",
     primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
     assets = { "impact_ia", "impact_i" }, impactAt = 30, duration = 62 },

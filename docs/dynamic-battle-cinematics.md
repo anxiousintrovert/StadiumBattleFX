@@ -1,5 +1,12 @@
 # Dynamic Battle Cinematics compatibility
 
+> **Current DRAMALESS_SHAPE limitation:** Dynamic Battle Cinematics v0.7.1
+> declares `DRAMATIC_SHAPE` as a hard dependency and queries that old mod ID at
+> startup. It cannot load beside the required `DRAMALESS_SHAPE` fork until its
+> own manifest and companion lookup are updated. Stadium Attack Animations
+> does not modify that mod's files; the composition below remains ready for a
+> compatible future release.
+
 Compatibility was checked against the official `Battle_Cinematics-v0.7.1.zip`
 release asset (SHA-256
 `4164f10d6948068ba7a4bfef78219427a90237944be19dbde34aa488e3227f32`).

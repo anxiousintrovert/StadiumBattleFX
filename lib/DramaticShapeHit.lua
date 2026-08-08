@@ -1,4 +1,4 @@
--- Optional bridge to Dramatic Shapes' public Stadium hit-reaction API.
+-- Bridge to Dramaless Shape's public Stadium hit-reaction API.
 -- This module never reaches into the companion's private session and never
 -- writes to its installation or cache.
 
@@ -16,14 +16,14 @@ local function stadiumModule(companion)
   local exports = found and found.exports
   local lib = exports and exports.lib
   if not (lib and type(lib.require) == "function") then
-    return nil, "Dramatic Shapes library is unavailable"
+    return nil, "Dramaless Shape library is unavailable"
   end
   local ok, Stadium = pcall(lib.require, "Stadium")
   if not ok or type(Stadium) ~= "table" then
-    return nil, "Dramatic Shapes Stadium module is unavailable"
+    return nil, "Dramaless Shape Stadium module is unavailable"
   end
   if type(Stadium.hit) ~= "function" then
-    return nil, "installed Dramatic Shapes fork does not export Stadium.hit"
+    return nil, "installed Dramaless Shape does not export Stadium.hit"
   end
   return Stadium
 end
@@ -51,7 +51,7 @@ function Hit.request(companion, side, effectiveness)
     return false, state.lastError
   end
   if accepted == false then
-    state.lastError = "Dramatic Shapes declined the hit reaction"
+    state.lastError = "Dramaless Shape declined the hit reaction"
     return false, state.lastError
   end
 

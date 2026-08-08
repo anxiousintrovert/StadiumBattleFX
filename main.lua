@@ -45,6 +45,10 @@ local DramaticShapeFaint = namespace.require("DramaticShapeFaint")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
 local AttackCinematics = namespace.require("AttackCinematics")
 
+local function dramalessCompanion()
+  return mod.find("DRAMALESS_SHAPE")
+end
+
 mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
@@ -67,8 +71,9 @@ mod.exports.hitReactions = DramaticShapeHit.status
 mod.exports.faintReactions = DramaticShapeFaint.status
 mod.exports.textureStatus = StadiumAssets.status
 mod.exports.dramaticShape = function()
-  return mod.find("DRAMATIC_SHAPE")
+  return dramalessCompanion()
 end
+mod.exports.dramalessShape = dramalessCompanion
 mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
@@ -87,7 +92,7 @@ end)
 
 -- BattleState creates one AnimPlayer per battle. Replacing that instance with
 -- a narrow adapter preserves the engine's queue/draw contract and also lets
--- Dramatic Shapes keep transforming the ordinary animation layer. The
+-- Dramaless Shape keeps transforming the ordinary animation layer. The
 -- adapter now owns a presentation for the complete 165-move Gen 1 roster.
 mod.events:on("battle.started", function(payload)
   local battle = payload and payload.battle
@@ -106,7 +111,7 @@ mod.events:on("battle.started", function(payload)
   end
 
   AttackCinematics.configure(
-    function() return mod.find("DRAMATIC_SHAPE") end,
+    dramalessCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
     function()
       if mod.options:get("enabled") == false then return "off" end
@@ -117,7 +122,7 @@ mod.events:on("battle.started", function(payload)
     battle.animPlayer,
     function() return mod.options:get("enabled") ~= false end,
     mod.log,
-    function() return mod.find("DRAMATIC_SHAPE") end,
+    dramalessCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
     function() return mod.options:get("attack_camera") ~= false end,
     function() return mod.options:get("hit_reactions") ~= false end)
@@ -152,7 +157,7 @@ mod.events:on("battle.fainted", function(payload)
   if not (battle and battler) then return end
   local side = battler.isPlayer and "player" or "enemy"
   DramaticShapeFaint.request(
-    function() return mod.find("DRAMATIC_SHAPE") end,
+    dramalessCompanion,
     side, DramaticShapeFaint.disposition(battle, battler))
 end)
 

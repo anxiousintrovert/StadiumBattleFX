@@ -37,5 +37,5 @@ and uploaded successfully. A cache is accepted only when every expected
 record and file exists and both its length and checksum match. Old, partial,
 or corrupt caches therefore fall back to a rebuild from the player's ROM.
 
-The cache path is owned exclusively by Stadium Attack Animations. Dramatic Shapes'
+The cache path is owned exclusively by Stadium Attack Animations. Dramaless Shape's
 model packs and marker use a different directory and are never modified.

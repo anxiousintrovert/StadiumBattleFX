@@ -36,19 +36,20 @@ continues using the original player as its sound clock, and reports its own
 completion to the existing queue. This keeps the intervention narrow and
 avoids changing damage or turn logic.
 
-## DramaticShape Stadium pipeline
+## Dramaless Shape Stadium pipeline
 
-`DramaticShapeVoxelMod/main.lua` exports its namespace through
-`mod.exports.lib`. A dependent mod can obtain it through Gen1Recomp's supported
-`mod.find("DRAMATIC_SHAPE")` API without reading or changing the mod directory.
+`DRAMALESS_SHAPE/main.lua` exports its namespace through `mod.exports.lib`. A
+dependent mod can obtain it through Gen1Recomp's supported
+`mod.find("DRAMALESS_SHAPE")` API without reading or changing the mod directory.
 
-The exported `Stadium` module currently provides read-only high-level state:
+The exported `Stadium` module provides high-level state and a reaction request:
 
 - `animOf(side)`
 - `showing(side)`
 - `scaleOf(side)`
 - `footprint(side)`
 - `standing()`
+- `hit(side, effectiveness)`
 
 It does not expose per-frame animation time, active model objects, bone
 matrices, or attachment world positions. Version 0.2 therefore reads only

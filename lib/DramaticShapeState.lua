@@ -1,6 +1,6 @@
--- Read-only view of Dramatic Shapes presentation state.
+-- Read-only view of Dramaless Shape presentation state.
 --
--- Dramatic Shapes transforms BattleState.drawAnimLayer from the fixed Gen1
+-- Dramaless Shape transforms BattleState.drawAnimLayer from the fixed Gen1
 -- anchors into its live staged-battle shot. Stadium Attack Animations must detect
 -- that ownership and avoid applying the same camera transform twice.
 
