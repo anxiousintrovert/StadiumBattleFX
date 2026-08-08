@@ -12,7 +12,6 @@ return {
       "Runtime .z64/.n64/.v64 loading from the shared baseroms folder",
       "Versioned private effect cache in the Gen1Recomp save directory",
       "First-run attack-effect caching progress screen",
-      "Composed Dramaless Shape and Battle Cinematics / Stadium Camera compatibility",
       "Optional Dramaless Shape integration, strongly recommended for Stadium models and camera staging",
       "Windup, travel, impact, and recovery camera staging for Stadium battles",
       "Animated Stadium attachment origins and impact-synchronized skeletal hit reactions",

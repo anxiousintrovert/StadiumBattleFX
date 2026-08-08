@@ -10,7 +10,7 @@ local modules = {
   DramaticShapeState = {
     read = function()
       return { layerOwnsProjection = true, externalCamera = true,
-               battleCinematicsVersion = "0.7.6" }
+               battleCinematicsVersion = "0.7.1" }
     end,
   },
   DramaticShapeHit = {
@@ -40,7 +40,7 @@ local modules = {
 local V = { require = function(name) return assert(modules[name], name) end }
 local Player = chunk(V)
 local player = Player.new({}, function() return true end, nil,
-  function() return {} end, function() return { exports = { version = "0.7.6" } } end)
+  function() return {} end, function() return { exports = { version = "0.7.1" } } end)
 
 player.attackerIsPlayer = true
 player.dsState = {
@@ -102,4 +102,4 @@ assert(math.abs(aax - 52) < 1e-6 and math.abs(aay - 101) < 1e-6,
        "attacker attachment was projected twice")
 assert(math.abs(atx - 113) < 1e-6 and math.abs(aty - 41) < 1e-6,
        "target attachment was projected twice")
-print("ok Battle Cinematics / Stadium Camera projection ownership")
+print("ok dynamic battle cinematics projection ownership")

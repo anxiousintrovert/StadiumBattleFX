@@ -29,7 +29,7 @@ end
 local zoomOption = "25"
 local cameraAvailable = true
 local cameraCompanion = function()
-  return cameraAvailable and { exports = { version = "0.7.6" } } or nil
+  return cameraAvailable and { exports = { version = "0.7.1" } } or nil
 end
 
 local arena = { player = { -24, 0 }, enemy = { 24, 0 } }

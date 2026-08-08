@@ -59,11 +59,6 @@ Pokemon Stadium footage.
   models, skeletal animations, attachment points, hit reactions, and attack
   cameras
 
-Battle Cinematics / Stadium Camera is also an optional integration. Version
-0.7.6 and newer support the current Dramaless Shape backend plus newer camera
-backends and fallbacks. StadiumBattleFX detects it lazily and remains fully
-usable without the companion.
-
 ## Installation
 
 1. Install the versioned `STADIUM_BATTLE_FX-<version>.zip` through
@@ -248,7 +243,6 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | **STADIUM FX** | On | Enables Stadium move presentations and effect-cache loading. |
 | **ATTACK CAMERA** | On | Enables staged move cameras when the required Stadium model integration is available. |
 | **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
-| **BC ZOOM OUT** | Off | Optionally widens Battle Cinematics / Stadium Camera's optical field of view by 10%, 25%, 35%, or 50%. |
 
 ## ROM data and private cache
 

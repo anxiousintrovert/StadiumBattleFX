@@ -10,8 +10,7 @@
   "priority": 110,
   "dependencies": [],
   "optional_dependencies": [
-    "DRAMALESS_SHAPE",
-    "BATTLE_CINEMATICS@>=0.7.6"
+    "DRAMALESS_SHAPE"
   ],
   "conflicts": [],
   "incompatible": [],
@@ -21,5 +20,5 @@
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,
-  "description": "Recreates Stadium battle effects with optional Battle Cinematics / Stadium Camera integration and locally generated announcer audio."
+  "description": "Recreates Stadium battle effects with optional locally generated announcer audio."
 }

@@ -12,8 +12,3 @@ texture is missing, stale, or still rebuilding in the private cache.
 
 The complete 165-move roster and the 1.0.0 timing/presentation profiles are
 otherwise unchanged.
-
-## Compatibility
-
-Battle Cinematics / Stadium Camera v0.7.6 or newer is supported as an optional
-camera companion, including its newer backends and fallbacks.
