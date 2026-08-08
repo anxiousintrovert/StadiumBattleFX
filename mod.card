@@ -15,12 +15,15 @@ return {
       "Composed Dramaless Shape and Battle Cinematics camera compatibility",
       "Optional Dramaless Shape integration, strongly recommended for Stadium models and camera staging",
       "Windup, travel, impact, and recovery camera staging for Stadium battles",
+      "Animated Stadium attachment origins and impact-synchronized skeletal hit reactions",
+      "Optional local voice-pack playback for Gym Leaders, the Elite Four, all 151 Pokemon names, and all 165 moves",
     },
     known = {
       "Portable stage timing, scale, tint and particle motion remain provisional",
       "Moves outside the exact traced subset use source-driven procedural presentations",
       "Growl and Splash are body-only and require Dramaless Shape models",
-      "Hit and faint reactions are staged but disabled until Dramaless Shape publishes its public API",
+      "Animated attachments and hit reactions require a Dramaless Shape release with its public companion APIs",
+      "Announcer audio is silent unless the user builds a personalized ZIP from their own Pokemon Stadium ROM",
     },
   },
   credits = {
@@ -29,6 +32,7 @@ return {
     { who = "DramaticShapeVoxelMod", for_ = "original Stadium model-extraction research and architectural precedent" },
     { who = "pret/pokestadium", for_ = "the Pokemon Stadium decompilation used for structural research" },
     { who = "PokemonStadiumRecomp", for_ = "the executable recompilation used as a behavioral oracle" },
+    { who = "SubDrag and N64 Sound Tool contributors", for_ = "the public-domain Pokemon Stadium MORT decoder research" },
   },
   compat = { engine = ">=0.1.37 <2.0.0", modApi = 2 },
 }

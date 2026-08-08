@@ -48,6 +48,7 @@ SELF_EFFECTS = (
     "METRONOME", "MIMIC", "MIRROR_MOVE", "SPLASH",
 )
 SCREEN_EFFECTS = ("HAZE", "LIGHT_SCREEN", "REFLECT", "MIST", "EXPLODE")
+SCREEN_MOVES = {"FLASH", "HAZE", "LIGHT_SCREEN", "MIST", "REFLECT"}
 BEAMS = {
     "AURORA_BEAM", "BUBBLEBEAM", "HYPER_BEAM", "ICE_BEAM", "PSYBEAM",
     "SOLARBEAM", "THUNDERBOLT",
@@ -124,10 +125,33 @@ TRANSFORMS = {
 }
 EXPLOSIONS = {"SELFDESTRUCT", "EXPLOSION"}
 
+# Portable timings are calibrated by presentation family instead of giving
+# almost every move the old 28/38/46-tick placeholder. They remain behavior-
+# calibrated fallbacks; only StadiumFidelityProfiles may claim ROM/source
+# calibration.
+TIMING = {
+    "impact": (30, 28), "rush": (32, 30), "slash": (34, 30),
+    "punch": (32, 28), "kick": (35, 30), "bite": (36, 32),
+    "grapple": (40, 38), "needle": (42, 34), "leaf": (48, 38),
+    "orb": (46, 34), "wind": (50, 38), "sound": (34, 34),
+    "stream": (52, 42), "wave": (58, 48), "beam": (56, 44),
+    "storm": (58, 46), "electric": (50, 42), "psychic": (48, 42),
+    "drain": (50, 48), "ground": (44, 46), "status": (28, 34),
+    "barrier": (34, 44), "heal": (40, 48), "transform": (36, 46),
+    "explosion": (50, 70), "flash": (18, 44), "mist": (32, 48),
+    "haze": (28, 48),
+}
+
 
 def visual_program(row: dict[str, object]) -> str:
     """Choose a shared portable program for the move's complete staging."""
     key = row["key"]
+    if key == "FLASH":
+        return "flash"
+    if key == "MIST":
+        return "mist"
+    if key == "HAZE":
+        return "haze"
     if key in EXPLOSIONS:
         return "explosion"
     if key in GROUND:
@@ -186,7 +210,7 @@ def cinematic_program(row: dict[str, object], visual: str, hits: int) -> str:
     effect = row["effect"]
     if visual == "explosion":
         return "explosion"
-    if visual in {"ground", "wave", "storm", "barrier"}:
+    if visual in {"ground", "wave", "storm", "barrier", "flash", "mist", "haze"}:
         return "field"
     if visual in {"transform", "heal"}:
         return "self"
@@ -210,7 +234,9 @@ def presentation(row: dict[str, object]) -> dict[str, object]:
     if "EXPLODE" in effect:
         delivery, anchor = "screen", "attacker"
     elif status:
-        delivery = "screen" if any(x in effect for x in SCREEN_EFFECTS) else "status"
+        delivery = "screen" if key in SCREEN_MOVES or any(
+            x in effect for x in SCREEN_EFFECTS
+        ) else "status"
         anchor = "attacker" if any(x in effect for x in SELF_EFFECTS) else "target"
     elif key in BEAMS or "HYPER_BEAM" in effect:
         delivery, anchor = "beam", "target"
@@ -227,14 +253,14 @@ def presentation(row: dict[str, object]) -> dict[str, object]:
     elif "TRAPPING" in effect:
         hits = 3
     cinematic = cinematic_program(row, visual, hits)
-    impact_at = 38 if delivery == "contact" else 46
-    if delivery in {"status", "screen"}:
-        impact_at = 28
-    duration = impact_at + 34 + (hits - 1) * 10
+    impact_at, tail = TIMING[visual]
+    if power >= 100 and not status:
+        impact_at += 4
+    if power >= 140 and not status:
+        impact_at += 4
+    duration = impact_at + tail + (hits - 1) * 10
     if "CHARGE" in effect or "FLY_EFFECT" in effect or "HYPER_BEAM" in effect:
         duration += 24
-    if "EXPLODE" in effect:
-        duration = 110
     return {
         **row,
         "kind": "generic",
@@ -245,6 +271,7 @@ def presentation(row: dict[str, object]) -> dict[str, object]:
         "cinematic": cinematic,
         "impactAt": impact_at,
         "duration": duration,
+        "calibration": "portable-behavior-v2",
     }
 
 
@@ -275,7 +302,8 @@ def write_lua(path: Path, rows: list[dict[str, object]]) -> None:
                 f"visual = {lua_string(row['visual'])}, cinematic = {lua_string(row['cinematic'])},",
                 "    "
                 f"impactAt = {row['impactAt']}, duration = {row['duration']}, "
-                "resources = {}, assets = {} },",
+                f"calibration = {lua_string(row['calibration'])},",
+                "    resources = {}, assets = {} },",
             ]
         )
     lines.extend(["}", ""])

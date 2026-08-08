@@ -1,6 +1,8 @@
 -- Complete-roster Stadium-style procedural renderer.
 -- Exact source-traced move renderers override this module where available.
 
+local V = ...
+local ScreenFx = V.require("effects/StadiumScreenFx")
 local Renderer = {}
 
 local COLORS = {
@@ -111,6 +113,7 @@ local function impact(self, Assets, age, hitIndex)
   local family = self.spec.type or "NORMAL"
   local fade = 1 - age / 24
   local strength = clamp((self.spec.power or 40) / 80, 0.55, 1.35)
+    * (self.spec.impactScale or 1)
   local ia, ii = Assets.get("impact_ia"), Assets.get("impact_i")
   tint(g, family, fade, 1.15)
   if ia then drawAsset(g, ia, math.floor(age / 3) + 1, x, y - 11,
@@ -122,6 +125,52 @@ local function impact(self, Assets, age, hitIndex)
     glyph(g, family, x + math.cos(angle) * (5 + age * 0.45),
       y - 11 + math.sin(angle) * (4 + age * 0.35),
       1.4 + strength, angle + age * 0.1, fade * 0.78)
+  end
+end
+
+-- Layer the exact cartridge texture selected by the move's fragment-62
+-- resource signature over the portable geometry. This keeps the complete
+-- roster recognizable even where an effect program has not yet received a
+-- dedicated source port. Attachment-specific origins are intentionally not
+-- consulted here.
+local function sourceTexture(self, Assets)
+  local value = self.spec.primaryAsset and Assets.get(self.spec.primaryAsset)
+  if not value then return end
+  local g = love.graphics
+  local delivery = self.spec.delivery or "projectile"
+  local ax, ay = self:anchor("attacker")
+  local bx, by = self:anchor(self.spec.anchor or "target")
+  local unit = self.spec.particleScale or 1
+  local base = (value.frameWidth >= 64 and 0.17 or 0.28) * unit
+  local fade = clamp((self.spec.duration - self.tick) / 18, 0, 1)
+
+  if delivery == "projectile" or delivery == "beam" then
+    for i = 0, 5 do
+      local delay = i * (delivery == "beam" and 3 or 5)
+      local age = self.tick - delay
+      if age >= 0 then
+        local p = clamp(age / math.max(1, self.spec.impactAt - delay * 0.2), 0, 1)
+        local x, y = between(ax, ay - 12, bx, by - 12, p,
+          math.sin(i * 2.3 + self.tick * 0.16) * (delivery == "beam" and 3 or 6))
+        drawAsset(g, value, math.floor(age / 3) + i + 1, x,
+          y - math.sin(p * math.pi) * 5, age * 0.08 + i,
+          base * (delivery == "beam" and 0.82 or 1), fade * 0.72)
+      end
+    end
+  elseif delivery == "contact" then
+    local age = self.tick - self.spec.impactAt + 8
+    if age >= 0 and age < 30 then
+      drawAsset(g, value, math.floor(age / 3) + 1, bx, by - 12,
+        age * 0.08, base * (1 + age * 0.012), (1 - age / 30) * 0.82)
+    end
+  elseif delivery == "status" then
+    local x, y = self:anchor(self.spec.anchor or "target")
+    for i = 0, 3 do
+      local angle = self.tick * 0.055 + i * math.pi / 2
+      drawAsset(g, value, math.floor(self.tick / 4) + i + 1,
+        x + math.cos(angle) * 16, y - 13 + math.sin(angle) * 10,
+        -angle, base * 0.78, fade * 0.62)
+    end
   end
 end
 
@@ -217,8 +266,8 @@ local function screen(self)
   local g = love.graphics
   local family = self.spec.type or "NORMAL"
   local pulse = 0.5 + 0.5 * math.sin(self.tick * 0.16)
-  tint(g, family, 0.06 + pulse * 0.08)
-  g.rectangle("fill", 0, 0, 160, 144)
+  local color = COLORS[family] or COLORS.NORMAL
+  ScreenFx.fill(g, color, 0.06 + pulse * 0.08, self)
   tint(g, family, 0.35)
   for i = 1, 7 do
     local r = ((self.tick * 1.4 + i * 19) % 100)
@@ -449,8 +498,8 @@ local function psychic(self)
         3 + age * 0.22 + math.sin(age * 0.25 + i) * 2)
     end
   end
-  tint(g, "PSYCHIC", 0.035 + 0.035 * math.sin(self.tick * 0.2))
-  g.rectangle("fill", 0, 0, 160, 144)
+  ScreenFx.fill(g, COLORS.PSYCHIC,
+    0.035 + 0.035 * math.sin(self.tick * 0.2), self)
 end
 
 local function drain(self)
@@ -537,8 +586,9 @@ local function explosion(self)
   local age = self.tick
   local peak = clamp(age / 28, 0, 1)
   local fade = clamp((self.spec.duration - age) / 45, 0, 1)
-  tint(g, "FIRE", fade * 0.30)
-  g.rectangle("fill", 0, 0, 160, 144)
+  ScreenFx.fill(g, COLORS.FIRE, fade * 0.30, self)
+  ScreenFx.flash(g, age, math.max(0, self.spec.impactAt - 8), 14,
+    { 1, 0.94, 0.66 }, 0.40, self)
   for i = 1, 8 do
     local r = peak * (9 + i * 8) + math.sin(age * 0.2 + i) * 3
     tint(g, i % 2 == 0 and "FIRE" or "NORMAL", fade * (0.85 - i * 0.06), 1.2)
@@ -577,6 +627,7 @@ local VISUAL = {
 
 function Renderer.draw(self, Assets)
   local delivery = self.spec.delivery or "projectile"
+  if ScreenFx.drawMove(self) then return end
   local draw = VISUAL[self.spec.visual]
   if draw then draw(self)
   elseif delivery == "beam" then beam(self)
@@ -584,6 +635,8 @@ function Renderer.draw(self, Assets)
   elseif delivery == "contact" then contact(self)
   elseif delivery == "status" then status(self)
   elseif delivery == "screen" then screen(self) end
+
+  sourceTexture(self, Assets)
 
   if delivery ~= "status" and delivery ~= "screen" then
     for hit = 1, self.spec.hits or 1 do

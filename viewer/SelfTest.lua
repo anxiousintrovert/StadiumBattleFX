@@ -28,22 +28,34 @@ function love.load()
   for _, path in ipairs({
     "lib/StadiumAssets.lua",
     "lib/DramaticShapeState.lua",
+    "lib/DramaticShapeAttachment.lua",
+    "lib/DramaticShapeHit.lua",
     "lib/AttackCinematics.lua",
     "lib/effects/MoveSpecs.lua",
     "lib/effects/StadiumFidelityProfiles.lua",
+    "lib/effects/StadiumTimingProfiles.lua",
+    "lib/effects/StadiumRosterCalibration.lua",
     "lib/effects/AllMoveSpecs.lua",
     "lib/effects/StadiumMoveRoster.lua",
     "lib/effects/StadiumFxPlayer.lua",
     "lib/effects/StadiumAuthenticRenderer.lua",
     "lib/effects/GenericMoveRenderer.lua",
+    "lib/effects/StadiumScreenFx.lua",
     "lib/effects/ThunderShockSpec.lua",
   }) do
     assert(love.filesystem.load(path), "runtime module did not compile: " .. path)
   end
   assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
+  assert(love.filesystem.load("tests/test_dramatic_shape_attachment.lua"))()
+  assert(love.filesystem.load("tests/test_dramatic_shape_hit.lua"))()
+  assert(love.filesystem.load("tests/test_hit_timing.lua"))()
+  assert(love.filesystem.load("tests/test_main_integration.lua"))()
   assert(love.filesystem.load("tests/test_camera_compat.lua"))()
   assert(love.filesystem.load("tests/test_attack_cinematics.lua"))()
   assert(love.filesystem.load("tests/test_full_roster.lua"))()
+  assert(love.filesystem.load("tests/test_roster_calibration.lua"))()
+  assert(love.filesystem.load("tests/test_timing_profiles.lua"))()
+  assert(love.filesystem.load("tests/test_screen_fx.lua"))()
   assert(love.filesystem.load("tests/test_stadium_fidelity.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
@@ -110,11 +122,13 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "0.7.0", "wrong mod export version")
+  assert(mod.exports.version == "1.0.0", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
-  assert(handlers["battle.damage_dealt"] == nil,
-         "unreleased hit-reaction event must remain disabled")
+  assert(type(handlers["hook:render.hud"]) == "function",
+         "borderless screen compositor hook was not registered")
+  assert(type(handlers["battle.damage_dealt"]) == "function",
+         "hit-reaction event was not registered")
   assert(handlers["battle.fainted"] == nil,
          "unreleased faint-reaction event must remain disabled")
   local liveInner = {}

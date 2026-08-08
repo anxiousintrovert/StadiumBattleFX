@@ -19,6 +19,9 @@ local Player = chunk({ require = function(name)
     return { scaleProfiles = {}, portableWorldToPixel = 0.1 }
   end
   if name == "DramaticShapeState" then return { read = function() return nil end } end
+  if name == "DramaticShapeAttachment" then
+    return { position = function() return nil end }
+  end
   if name == "DramaticShapeHit" then
     return {
       effectiveness = function(n) return n > 10 and "super" or "neutral" end,
@@ -31,6 +34,9 @@ local Player = chunk({ require = function(name)
   if name == "effects/GenericMoveRenderer" then return { draw = function() end } end
   if name == "effects/StadiumAuthenticRenderer" then
     return { draw = function() return false end }
+  end
+  if name == "effects/StadiumScreenFx" then
+    return { clear = function() end }
   end
   if name == "AttackCinematics" then
     return { start = function() end, setTick = function() end, stop = function() end }

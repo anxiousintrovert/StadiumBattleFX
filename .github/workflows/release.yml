@@ -64,26 +64,15 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
+          python3 tools/package_runtime.py \
+            --output "dist/STADIUM_BATTLE_FX-${VERSION}.zip"
           python3 - <<'PY'
           import hashlib
           import os
-          import zipfile
 
-          from tools.package_runtime import FILES as files
           version = os.environ["VERSION"]
-          os.makedirs("dist", exist_ok=True)
           name = f"STADIUM_BATTLE_FX-{version}.zip"
           path = os.path.join("dist", name)
-
-          with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-              for relative in files:
-                  if not os.path.isfile(relative):
-                      raise SystemExit(f"missing runtime file: {relative}")
-                  info = zipfile.ZipInfo(relative, (1980, 1, 1, 0, 0, 0))
-                  info.compress_type = zipfile.ZIP_DEFLATED
-                  info.external_attr = 0o100644 << 16
-                  with open(relative, "rb") as handle:
-                      archive.writestr(info, handle.read())
 
           with open(path, "rb") as handle:
               digest = hashlib.sha256(handle.read()).hexdigest()
@@ -103,9 +92,14 @@ jobs:
             echo "::error::Release $TAG already exists"
             exit 1
           fi
+          notes=(--generate-notes)
+          notes_file="RELEASE_NOTES_${VERSION}.md"
+          if [[ -f "$notes_file" ]]; then
+            notes=(--notes-file "$notes_file")
+          fi
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "Stadium Attack Animations $VERSION" \
-            --generate-notes \
+            --title "StadiumBattleFX $VERSION" \
+            "${notes[@]}" \
             "dist/STADIUM_BATTLE_FX-${VERSION}.zip" \
             "dist/sha256sums.txt"

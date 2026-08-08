@@ -57,7 +57,8 @@ assert(widenedStatus.compatibilityZoom == 0.25,
 assert(Director.start(spec, true, companion), "disc cinematic did not start")
 Director.setTick(20)
 local directed = BattleCam.rig(arena, 0, false)
-assert(directed.fov < math.rad(42), "attack shot did not tighten its lens")
+assert(directed.fov >= math.rad(42),
+  "attack shot cropped tighter than the idle composition")
 assert(directed.focus[1] < 0, "windup shot did not favor the attacker")
 assert(directed.eye[1] ~= 0 or directed.eye[3] ~= 95,
   "disc shot did not apply its safe orbit")

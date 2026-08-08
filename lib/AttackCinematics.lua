@@ -190,7 +190,11 @@ local function apply(base, pitch, arena, groundY, canonical)
     mix(previousFocus[2], currentFocus[2], cut),
     mix(previousFocus[3], currentFocus[3], cut),
   }
-  local zoom = mix(previous.zoom or 1, current.zoom or 1, cut)
+  -- Never crop more tightly than Dramaless Shape's idle composition. The
+  -- original 0.62-0.76 profile values magnified the staged map by roughly
+  -- 32-61 percent, which made scenery and large models fill the screen.
+  -- Values above 1 remain legitimate wide establishing shots.
+  local zoom = math.max(1, mix(previous.zoom or 1, current.zoom or 1, cut))
   local orbit = mix(previous.orbit or 0, current.orbit or 0, cut)
 
   local enter = smooth(state.tick / 6)

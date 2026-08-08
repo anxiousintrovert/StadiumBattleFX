@@ -5,9 +5,11 @@ local Registry = V.require("effects/MoveSpecs")
 local Assets = V.require("StadiumAssets")
 local ThunderShock = V.require("effects/ThunderShockSpec")
 local DramaticShapeState = V.require("DramaticShapeState")
+local DramaticShapeAttachment = V.require("DramaticShapeAttachment")
 local DramaticShapeHit = V.require("DramaticShapeHit")
 local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
 local StadiumAuthenticRenderer = V.require("effects/StadiumAuthenticRenderer")
+local ScreenFx = V.require("effects/StadiumScreenFx")
 local AttackCinematics = V.require("AttackCinematics")
 
 local Player = {}
@@ -95,6 +97,7 @@ end
 
 function Player:start(moveId, attackerIsPlayer, opts)
   AttackCinematics.stop()
+  ScreenFx.clear(self)
   self.custom, self.spec = false, nil
   self.activeHit, self.hitTriggered = nil, false
   local spec = Registry.get(moveId)
@@ -133,10 +136,38 @@ function Player:triggerHitReaction()
     self.companion, self.activeHit.targetSide, self.activeHit.effectiveness)
 end
 
-function Player:anchor(which)
+function Player:anchorSide(which)
   local attackerSide = self.attackerIsPlayer and "player" or "enemy"
   local targetSide = self.attackerIsPlayer and "enemy" or "player"
-  local side = which == "attacker" and attackerSide or targetSide
+  -- The battle event is authoritative for the actual combatants.  The
+  -- animation queue normally agrees, but camera/dramatic-animation paths can
+  -- reuse or flip an animation row.  Resolving from the event keeps a
+  -- target-locked effect on the defender rather than on the lower player slot.
+  local combatant = self.context
+    and self.context[which == "attacker" and "user" or "target"]
+  local side
+  if combatant and type(combatant.isPlayer) == "boolean" then
+    side = combatant.isPlayer and "player" or "enemy"
+  else
+    side = which == "attacker" and attackerSide or targetSide
+  end
+  return side
+end
+
+function Player:attachmentTag(which)
+  local tags = self.spec and self.spec.attachments
+  if tags and tags[which] == false then return nil end
+  if tags and tags[which] ~= nil then return tags[which] end
+  local side = self:anchorSide(which)
+  local stage = which == "attacker" and "primary" or "impact"
+  local native = DramaticShapeAttachment.tags(
+    self.companion, side, self.spec and self.spec.id, stage)
+  if native ~= nil then return native end
+  return 0x64
+end
+
+function Player:anchor(which)
+  local side = self:anchorSide(which)
   local p = ANCHOR[side]
 
   -- DS transforms the complete animation layer after this draw. Its camera
@@ -148,12 +179,18 @@ function Player:anchor(which)
   local transform = state and state.layerTransform
   local projected = state and state.projectedAnchors
   local desired = projected and projected[side]
+  local tag = self.spec and self:attachmentTag(which)
+  if tag then
+    local x, y = DramaticShapeAttachment.position(self.companion, side, tag)
+    if x then desired = { x, y } end
+  end
   if transform and desired and transform.scale > 0 then
     local authoredCenter = transform.authoredCenter
     local projectedCenter = transform.projectedCenter
     return authoredCenter[1] + (desired[1] - projectedCenter[1]) / transform.scale,
            authoredCenter[2] + (desired[2] - projectedCenter[2]) / transform.scale
   end
+  if desired then return desired[1], desired[2] end
   return p[1], p[2]
 end
 
@@ -443,8 +480,7 @@ local function drawConfusion(self)
     end
   end
   local wash = clamp(math.sin(self.tick * 0.11) * 0.06 + 0.06, 0, 0.12)
-  g.setColor(0.55, 0.08, 0.72, wash)
-  g.rectangle("fill", 0, 0, 160, 144)
+  ScreenFx.fill(g, { 0.55, 0.08, 0.72 }, wash, self)
   drawHit(self, self.tick - self.spec.impactAt, "psychic")
 end
 
@@ -483,6 +519,7 @@ local function drawCustom(self)
   -- captured when the move started.
   self.dsState = DramaticShapeState.read(
     self.companion, self.attackerIsPlayer, self.cameraCompanion)
+  ScreenFx.activate(self)
   local oldMode, oldAlpha = g.getBlendMode()
   local oldWidth = g.getLineWidth and g.getLineWidth() or 1
   local r, gg, b, a = g.getColor()
@@ -517,6 +554,7 @@ end
 
 function Player:release()
   AttackCinematics.stop()
+  ScreenFx.clear(self)
   self.custom, self.spec, self.context = false, nil, nil
   self.activeHit, self.hitTriggered = nil, false
   self.damageByMove = {}

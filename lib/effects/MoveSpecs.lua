@@ -1,11 +1,13 @@
 -- Party move registry. Dispatch opcodes and resource members are traced from
--- fragment 62. Portable stage offsets remain first-pass synchronization
--- values until native Stadium captures can resolve the battle controller.
+-- fragment 62. Roster timing is generated from its shared effect-controller
+-- cursors and completion signals; curated native comparisons override it.
 
 local V = ...
 local allMoves = V.require("effects/AllMoveSpecs")
 local stadiumMoves = V.require("effects/StadiumMoveRoster")
+local timingProfiles = V.require("effects/StadiumTimingProfiles")
 local fidelityProfiles = V.require("effects/StadiumFidelityProfiles")
+local rosterCalibration = V.require("effects/StadiumRosterCalibration")
 
 local specs = {
   -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
@@ -72,6 +74,7 @@ local specs = {
 
 local byId, byKey = {}, {}
 for _, spec in ipairs(specs) do
+  spec.calibration = spec.calibration or "stadium-dispatch-traced"
   byId[spec.id], byId[tostring(spec.id)] = spec, spec
   byKey[spec.key] = spec
 end
@@ -103,6 +106,13 @@ for _, generated in ipairs(allMoves) do
       generated.bodyOnly = true
       generated.kind = "body_only"
     end
+    rosterCalibration.apply(generated, trace)
+  end
+  local timing = timingProfiles[generated.id]
+  if timing then
+    for key, value in pairs(timing) do generated[key] = value end
+    generated.timingSource = "stadium-fragment62-controller"
+    generated.calibration = "stadium-timing-calibrated-v1"
   end
   local spec = byId[generated.id]
   if spec then
@@ -125,6 +135,7 @@ for id, profile in pairs(fidelityProfiles) do
     for key, value in pairs(profile) do spec[key] = value end
     spec.kind = "generic"
     spec.fidelity = "stadium1-source-calibrated"
+    spec.calibration = "stadium1-source-calibrated"
   end
 end
 

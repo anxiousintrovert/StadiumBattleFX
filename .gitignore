@@ -12,6 +12,9 @@ cache/
 generated/
 reports/private/
 promo/frames/
+research/announcer_mort/
+research/announcer_samples/
+research/announcer_transcripts.auto.json
 
 # Tooling noise
 __pycache__/
@@ -20,6 +23,9 @@ __pycache__/
 .coverage
 
 # Packaged artifacts
+build/
 dist/
+tools/mort_decoder/mort_decoder.exe
+tools/mort_decoder/mort_decoder.pdb
 *.love
 *.zip

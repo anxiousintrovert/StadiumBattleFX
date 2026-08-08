@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -21,5 +21,5 @@
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,
-  "description": "Recreates Pokemon Stadium battle move effects from a player-supplied Stadium ROM."
+  "description": "Recreates Stadium battle effects, with optional locally generated Gym and Elite Four announcer audio."
 }

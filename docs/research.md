@@ -50,11 +50,12 @@ The exported `Stadium` module provides high-level state and a reaction request:
 - `footprint(side)`
 - `standing()`
 - `hit(side, effectiveness)`
+- `attachment(side, tag)`
 
 It does not expose per-frame animation time, active model objects, bone
-matrices, or attachment world positions. Version 0.2 therefore reads only
-`showing(side)` for body-only fallback and the exported `StadiumInstall` state
-to sequence the two independent first-run cache screens.
+matrices, or private session state. Version 1.0 consumes only the projected
+attachment coordinate, high-level presentation state, and the public hit
+request; Dramaless Shape retains ownership of its model and cache.
 
 DramaticShape's model extraction establishes that:
 

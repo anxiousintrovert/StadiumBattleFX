@@ -1,0 +1,220 @@
+{
+  "format": "Pokemon Stadium announcer event catalog v1",
+  "revision": "Pokemon Stadium (USA) v1.0",
+  "scope": "Gym battles and Elite Four battles",
+  "review_status": "starter catalog; selected generic lines reviewed, remaining ranges provisional",
+  "index_ranges": [
+    {
+      "start": 0,
+      "end": 150,
+      "kind": "pokemon_name_call",
+      "mapping": "species_id = index + 1",
+      "use": "short send-out call"
+    },
+    {
+      "start": 151,
+      "end": 164,
+      "kind": "pikachu_voice_variant",
+      "mapping": "fourteen special Pikachu vocalizations",
+      "use": "optional Pikachu-only flavor; do not treat as announcer speech"
+    },
+    {
+      "start": 165,
+      "end": 165,
+      "kind": "transition_fragment"
+    },
+    {
+      "start": 166,
+      "end": 199,
+      "kind": "battle_state_and_short_reaction"
+    },
+    {
+      "start": 200,
+      "end": 221,
+      "kind": "tournament_and_rules_intro",
+      "use": "exclude from Gym/Elite Four mode"
+    },
+    {
+      "start": 222,
+      "end": 235,
+      "kind": "gym_leader_castle_intro"
+    },
+    {
+      "start": 236,
+      "end": 244,
+      "kind": "event_and_gym_series_intro"
+    },
+    {
+      "start": 245,
+      "end": 255,
+      "kind": "switch"
+    },
+    {
+      "start": 256,
+      "end": 260,
+      "kind": "turn_setup"
+    },
+    {
+      "start": 261,
+      "end": 347,
+      "kind": "damage_effectiveness_failure_and_status"
+    },
+    {
+      "start": 348,
+      "end": 368,
+      "kind": "faint_and_battle_result"
+    },
+    {
+      "start": 369,
+      "end": 519,
+      "kind": "pokemon_send_out_sentence",
+      "mapping": "species_id = index - 368",
+      "use": "Oh! It's [Pokemon]!"
+    },
+    {
+      "start": 520,
+      "end": 583,
+      "kind": "ongoing_move_status_and_timer"
+    },
+    {
+      "start": 584,
+      "end": 748,
+      "kind": "move_name_call",
+      "mapping": "move_id = index - 583"
+    },
+    {
+      "start": 749,
+      "end": 822,
+      "kind": "battle_flow_commentary"
+    }
+  ],
+  "encounter_intros": {
+    "gym_leader_castle": { "index": 222, "confidence": "reviewed" },
+    "brock": { "index": 223, "confidence": "reviewed" },
+    "misty": { "index": 224, "confidence": "reviewed" },
+    "lt_surge": { "index": 225, "confidence": "reviewed" },
+    "erika": { "index": 226, "confidence": "reviewed" },
+    "koga": { "index": 227, "confidence": "reviewed" },
+    "sabrina": { "index": 228, "confidence": "reviewed" },
+    "blaine": { "index": 229, "confidence": "reviewed" },
+    "giovanni": { "index": 230, "confidence": "reviewed" },
+    "lorelei": { "index": 231, "confidence": "reviewed" },
+    "bruno": { "index": 232, "confidence": "reviewed" },
+    "agatha": { "index": 233, "confidence": "reviewed" },
+    "lance": { "index": 234, "confidence": "reviewed" },
+    "rival_champion": { "index": 235, "confidence": "reviewed" }
+  },
+  "gym_series_intros": {
+    "first_opponent_decisive": { "index": 239, "confidence": "reviewed" },
+    "first_opponent_easy": { "index": 240, "confidence": "reviewed" },
+    "second_opponent": { "index": 241, "confidence": "reviewed" },
+    "second_opponent_variant": { "index": 242, "confidence": "reviewed" },
+    "third_opponent": { "index": 243, "confidence": "reviewed" },
+    "third_opponent_variant": { "index": 244, "confidence": "reviewed" }
+  },
+  "events": {
+    "send_out": [
+      { "index_formula": "368 + species_id", "style": "sentence", "confidence": "reviewed" },
+      { "index_formula": "species_id - 1", "style": "short", "confidence": "provisional" }
+    ],
+    "first_move": [
+      { "index": 181, "quote": "Here's the first move!" },
+      { "index": 182, "quote": "What'll it lead with?" }
+    ],
+    "turn_prompt": [
+      { "index": 183, "quote": "What will the trainer do now?" },
+      { "index": 184, "quote": "What will the other side do?" },
+      { "index": 185, "quote": "What now?" },
+      { "index": 186, "quote": "What's next?" },
+      { "index": 188, "quote": "What'll it do?" }
+    ],
+    "move_used": [
+      { "index_formula": "583 + move_id", "confidence": "reviewed" }
+    ],
+    "switch_player": [
+      { "index": 245, "quote": "Here's a Pokemon change!" },
+      { "index": 246, "quote": "The Pokemon returns to its Poke Ball." },
+      { "index": 247, "quote": "Oh! There's going to be a change of Pokemon!" },
+      { "index": 248, "quote": "The trainer's changing Pokemon." },
+      { "index": 251, "quote": "Another Pokemon change!" }
+    ],
+    "switch_opponent": [
+      { "index": 253, "quote": "The other trainer also changes Pokemon." }
+    ],
+    "super_effective": [
+      { "index": 261, "quote": "Nailed the weak spot!" },
+      { "index": 262, "quote": "Super effective!" },
+      { "index": 267, "quote": "Pow! That's an effective hit!" }
+    ],
+    "not_very_effective": [
+      { "index": 270, "quote": "The attack wasn't effective." },
+      { "index": 317, "quote": "It didn't do much damage!" },
+      { "index": 319, "quote": "It's not very effective." }
+    ],
+    "miss": [
+      { "index": 289, "quote": "Oh! The attack missed!" },
+      { "index": 293, "quote": "Oh! It's another miss!" },
+      { "index": 299, "quote": "Oops! That's a miss!" },
+      { "index": 337, "quote": "Missed the target!" },
+      { "index": 339, "quote": "Oh! Nothing but air!" }
+    ],
+    "move_failed": [
+      { "index": 290, "quote": "The move failed to click!" },
+      { "index": 291, "quote": "That had no effect!" },
+      { "index": 335, "quote": "The move failed!" },
+      { "index": 336, "quote": "It didn't work!" }
+    ],
+    "critical_hit": [
+      { "index": 311, "quote": "Drilled that weak spot!" },
+      { "index": 312, "quote": "Hit the weak spot!" }
+    ],
+    "status_inflicted": {
+      "sleep": { "index": 285, "quote": "Oh no! It fell asleep!" },
+      "freeze": { "index": 286, "quote": "Oh! It's frozen solid!" },
+      "paralysis": { "index": 287, "quote": "Oops! It's paralyzed!" },
+      "confusion": { "index": 300, "quote": "It's confused!" },
+      "poison": { "index": 301, "quote": "It's been poisoned!" },
+      "burn": { "index": 346, "quote": "It suffered a burn!" }
+    },
+    "faint": [
+      { "index": 349, "quote": "Oh! It's down!" },
+      { "index": 351, "quote": "And it's down!" },
+      { "index": 357, "quote": "It's finally taken down!" },
+      { "index": 358, "quote": "It goes down after a good fight!" }
+    ],
+    "double_faint": [
+      { "index": 360, "quote": "Wow! They're down! They're both down!" },
+      { "index": 821, "quote": "What a wild turn of events!" }
+    ],
+    "battle_won": [
+      { "index": 365, "quote": "And there goes the battle!" }
+    ],
+    "champion_decided": [
+      { "index": 366, "quote": "Congratulations! The champion has been decided!" }
+    ],
+    "stage_clear": [
+      { "index": 367, "quote": "That's it! Stage clear!" },
+      { "index": 368, "quote": "Congratulations! You've cleared the Gym Leader Castle!" }
+    ],
+    "last_pokemon": [
+      { "index": 166, "quote": "There's nothing left in reserve." },
+      { "index": 167, "quote": "We're down to the last Pokemon!" },
+      { "index": 783, "quote": "There's only one Pokemon left in reserve!" },
+      { "index": 784, "quote": "Both combatants are down to their last Pokemon!" }
+    ],
+    "awaiting_replacement": [
+      { "index": 782, "quote": "What will the next Pokemon be?" },
+      { "index": 785, "quote": "Which Pokemon is coming out?" },
+      { "index": 786, "quote": "The next Pokemon is being prepped!" },
+      { "index": 812, "quote": "We're waiting for the next Pokemon!" }
+    ],
+    "battle_flow_hot": [
+      { "index": 756, "quote": "What a furious battle!" },
+      { "index": 762, "quote": "The intense battle continues!" },
+      { "index": 780, "quote": "The combatants are making sparks fly!" },
+      { "index": 790, "quote": "Fireworks are flying in this battle!" },
+      { "index": 814, "quote": "The heated battle rages on!" },
+      { "index": 820, "quote": "Sparks are flying in this heated match!" }
+    ]
+  }
+}

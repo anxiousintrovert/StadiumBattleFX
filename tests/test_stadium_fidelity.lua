@@ -1,6 +1,12 @@
 local loader = love and love.filesystem and love.filesystem.load or loadfile
 local profiles = assert(loader("lib/effects/StadiumFidelityProfiles.lua"))()
-local renderer = assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))()
+local screenFx = assert(loader("lib/effects/StadiumScreenFx.lua"))()
+local renderer = assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))({
+  require = function(name)
+    assert(name == "effects/StadiumScreenFx", name)
+    return screenFx
+  end,
+})
 
 local expected = {
   52, 53, 55, 56, 57, 58, 59, 60, 63, 71, 72, 75, 76, 85, 87, 89,
@@ -44,6 +50,13 @@ for _, id in ipairs(expected) do
     assert(ok, ("profile %d failed at tick %d: %s"):format(id, tick, tostring(err)))
   end
 end
+
+local boltLine
+love.graphics.line = function(points) boltLine = points end
+player.spec, player.tick = profiles[85], 36
+renderer.draw(player, Assets)
+assert(boltLine and boltLine[1] == 124 and boltLine[2] == -20,
+  "Thunderbolt must begin above the target rather than at the attacker")
 
 love = hostLove
 

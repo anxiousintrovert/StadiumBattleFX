@@ -1,5 +1,7 @@
 -- ROM-textured Stadium 1 renderer for the curated fidelity roster.
 
+local V = ...
+local ScreenFx = V.require("effects/StadiumScreenFx")
 local Renderer = {}
 
 local function clamp(v, lo, hi)
@@ -39,18 +41,11 @@ local function tinted(g, value, frame, x, y, rotation, scale, color, alpha)
   return true
 end
 
-local function tile(g, value, frame, color, alpha, ox, oy, scale)
-  if not value then return end
-  local c, s = color or { 1, 1, 1 }, scale or 1
-  local w, h = value.frameWidth * s, value.frameHeight * s
-  g.setColor(c[1], c[2], c[3], alpha or 1)
-  local q = value.quads[math.floor(frame or 0) % value.frames + 1]
-  ox, oy = (ox or 0) % w - w, (oy or 0) % h - h
-  for y = oy, 144 + h, h do
-    for x = ox, 160 + w, w do
-      g.draw(value.image, q, x, y, 0, s, s)
-    end
-  end
+local function tile(g, value, frame, color, alpha, ox, oy, scale, owner)
+  return ScreenFx.tile(g, value, frame, {
+    color = color, alpha = alpha, x = ox, y = oy, scale = scale,
+    owner = owner,
+  })
 end
 
 local function impact(self, Assets, color, scale)
@@ -108,10 +103,10 @@ local function water(self, Assets)
     local g = love.graphics
     local cycle = asset(Assets, "water_cycle")
     local rise = clamp(self.tick / 42, 0, 1)
-    g.setColor(0.12, 0.50, 0.96, 0.16 + rise * 0.18)
-    g.rectangle("fill", 0, 144 - rise * 82, 160, rise * 82)
+    ScreenFx.region(g, { 0.12, 0.50, 0.96 }, 0.16 + rise * 0.18,
+      0, 144 - rise * 82, 160, rise * 82, self)
     tile(g, cycle, self.tick / 4, { 0.35, 0.76, 1 }, 0.38,
-      -self.tick * 0.8, self.tick * 0.25, 1.1)
+      -self.tick * 0.8, self.tick * 0.25, 1.1, self)
   else
     stream(self, Assets, { "beam_core", "beam_spark", "water_cycle" },
       { 0.20, 0.68, 1 }, false, variant == "pump" and 9 or 4)
@@ -144,6 +139,13 @@ end
 local function ice(self, Assets)
   local g = love.graphics
   if self.spec.variant == "storm" then
+    local fieldFade = ScreenFx.envelope(self.tick, self.spec.duration, 16, 26)
+    ScreenFx.fill(g, { 0.58, 0.78, 0.92 }, 0.08 * fieldFade, self)
+    tile(g, asset(Assets, "screen_grain"), self.tick / 6,
+      { 0.72, 0.92, 1 }, 0.13 * fieldFade,
+      -self.tick * 0.55, self.tick * 0.85, 1, self)
+    ScreenFx.flash(g, self.tick, self.spec.impactAt - 4, 10,
+      { 0.86, 0.98, 1 }, 0.26, self)
     local x, y = self:anchor("target")
     for i = 1, 24 do
       local age = self.tick - (i - 1) * 2
@@ -184,7 +186,14 @@ local function electric(self, Assets)
   local g = love.graphics
   local bx, by = self:anchor("target")
   local fromX, fromY = self:anchor("attacker")
-  if self.spec.variant == "thunder" then fromX, fromY = bx, -8 end
+  -- Thunderbolt is a target-locked lightning strike. In a dramatic shot the
+  -- attacker can be intentionally framed outside the animation layer, so a
+  -- cross-screen source can bend the visible bolt toward the lower edge.
+  -- Give both electric strikes a target-local origin to keep their endpoint
+  -- nailed to the defending Pokemon.
+  if self.spec.variant == "thunder" or self.spec.variant == "bolt" then
+    fromX, fromY = bx, -8
+  end
   local grow = clamp(self.tick / math.max(1, self.spec.impactAt * 0.72), 0, 1)
   for band = -2, 2 do
     local pts = { fromX, fromY - 12 }
@@ -221,8 +230,8 @@ local function psychic(self, Assets)
   local g = love.graphics
   local x, y = self:anchor("target")
   local fade = clamp((self.spec.duration - self.tick) / 26, 0, 1)
-  g.setColor(0.62, 0.08, 0.82, (0.05 + 0.04 * math.sin(self.tick * 0.22)) * fade)
-  g.rectangle("fill", 0, 0, 160, 144)
+  ScreenFx.fill(g, { 0.62, 0.08, 0.82 },
+    (0.05 + 0.04 * math.sin(self.tick * 0.22)) * fade, self)
   for i = 0, 7 do
     local age = self.tick - i * 5
     if age >= 0 and age < 52 then
@@ -238,7 +247,7 @@ local function poison(self, Assets)
   local g = love.graphics
   local fade = clamp((self.spec.duration - self.tick) / 24, 0, 1)
   tile(g, asset(Assets, "poison_field"), 0, { 0.66, 0.15, 0.82 },
-    0.10 * fade, self.tick * 0.3, -self.tick * 0.2, 1)
+    0.10 * fade, self.tick * 0.3, -self.tick * 0.2, 1, self)
   local x, y = self:anchor("target")
   for i = 1, 12 do
     local age = (self.tick + i * 9) % 58
@@ -271,7 +280,7 @@ local function barrier(self, Assets)
   local grow = clamp(self.tick / 22, 0, 1)
   local fade = clamp((self.spec.duration - self.tick) / 24, 0, 1)
   tile(g, asset(Assets, "screen_dual"), self.tick / 8, color,
-    0.035 * fade, self.tick * 0.18, 0, 1)
+    0.035 * fade, self.tick * 0.18, 0, 1, self)
   for i = 0, 3 do
     tinted(g, asset(Assets, "screen_pulse"), self.tick / 3 + i,
       x, y - 13, i * math.pi / 2, (0.34 + i * 0.12) * grow,
@@ -283,7 +292,7 @@ local function ground(self, Assets)
   local g = love.graphics
   local age = math.max(0, self.tick - 12)
   tile(g, asset(Assets, "screen_grain"), 0, { 0.62, 0.40, 0.16 },
-    clamp(age / 60, 0, 0.14), age * 1.7, 0, 1)
+    clamp(age / 60, 0, 0.14), age * 1.7, 0, 1, self)
   local x, y = self:anchor("target")
   g.setColor(0.54, 0.34, 0.12, 0.82)
   g.setLineWidth(1.8)
@@ -301,8 +310,9 @@ local function explosion(self, Assets)
   local age = self.tick
   local grow = clamp(age / 34, 0, 1)
   local fade = clamp((self.spec.duration - age) / 42, 0, 1)
-  g.setColor(1, 0.36, 0.04, fade * 0.24)
-  g.rectangle("fill", 0, 0, 160, 144)
+  ScreenFx.fill(g, { 1, 0.36, 0.04 }, fade * 0.24, self)
+  ScreenFx.flash(g, age, math.max(0, self.spec.impactAt - 8), 14,
+    { 1, 0.92, 0.55 }, 0.46, self)
   for i = 0, 7 do
     tinted(g, asset(Assets, i % 2 == 0 and "large_burst" or "screen_pulse"),
       age / 3 + i, x + math.cos(i * math.pi / 4) * grow * 25,

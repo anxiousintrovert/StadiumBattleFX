@@ -18,12 +18,19 @@ local registry = moveChunk({ require = function(name)
   if name == "effects/StadiumFidelityProfiles" then
     return assert(loader("lib/effects/StadiumFidelityProfiles.lua"))()
   end
+  if name == "effects/StadiumTimingProfiles" then
+    return assert(loader("lib/effects/StadiumTimingProfiles.lua"))()
+  end
+  if name == "effects/StadiumRosterCalibration" then
+    return assert(loader("lib/effects/StadiumRosterCalibration.lua"))()
+  end
   error(name)
 end })
 assert(#registry.list == 165, "merged move registry must contain 165 moves")
 
 local seen = {}
 local bodyOnly = {}
+local calibration = {}
 for id = 1, 165 do
   local spec = assert(registry.get(id), "missing move " .. id)
   assert(not seen[spec.id], "duplicate move " .. spec.id)
@@ -33,11 +40,35 @@ for id = 1, 165 do
   assert(spec.primaryOpcodes and spec.impactOpcodes,
          "move has no Stadium dispatch metadata " .. id)
   if spec.bodyOnly then bodyOnly[#bodyOnly + 1] = id end
+  calibration[spec.calibration] = (calibration[spec.calibration] or 0) + 1
 end
 assert(table.concat(bodyOnly, ",") == "39,45,46,107,150,156",
        "body-only roster did not match Stadium's empty VFX entries")
+assert(calibration["stadium1-source-calibrated"] == 24,
+       "source-calibrated coverage changed unexpectedly")
+assert(calibration["stadium-dispatch-traced"] == 19,
+       "dispatch-traced coverage changed unexpectedly")
+assert(calibration["stadium-timing-calibrated-v1"] == 122,
+       "Stadium timing profiles must cover every remaining move")
 
-local generic = assert(loader("lib/effects/GenericMoveRenderer.lua"))()
+local slash = registry.get(163)
+assert(slash.stadiumDispatch.primary == "0D" and slash.primaryAsset == "scratch_claw",
+       "Slash did not inherit its Stadium scratch program texture")
+assert(slash.geometrySource == "stadium-fragment62-resources",
+       "Slash has no Stadium geometry provenance")
+assert(slash.timingSource == "stadium-fragment62-controller",
+       "Slash has no Stadium timing provenance")
+local rockSlide = registry.get(157)
+assert(rockSlide.stadiumDispatch.primary == "3F" and rockSlide.assetFootprint.width >= 24,
+       "Rock Slide has no dispatch-specific footprint")
+
+local screenFx = assert(loader("lib/effects/StadiumScreenFx.lua"))()
+local generic = assert(loader("lib/effects/GenericMoveRenderer.lua"))({
+  require = function(name)
+    assert(name == "effects/StadiumScreenFx", name)
+    return screenFx
+  end,
+})
 local assets = { get = function() return nil end }
 local player = { attackerIsPlayer = true }
 function player:anchor(which)
@@ -71,6 +102,9 @@ local Player = playerChunk({ require = function(name)
       return { attackerShowing = true, targetShowing = true }
     end }
   end
+  if name == "DramaticShapeAttachment" then
+    return { position = function() return nil end }
+  end
   if name == "DramaticShapeHit" then
     return {
       effectiveness = function(n)
@@ -81,8 +115,14 @@ local Player = playerChunk({ require = function(name)
   end
   if name == "effects/GenericMoveRenderer" then return generic end
   if name == "effects/StadiumAuthenticRenderer" then
-    return assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))()
+    return assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))({
+      require = function(innerName)
+        assert(innerName == "effects/StadiumScreenFx", innerName)
+        return screenFx
+      end,
+    })
   end
+  if name == "effects/StadiumScreenFx" then return screenFx end
   if name == "AttackCinematics" then
     return { start = function() return false end, setTick = function() end,
       stop = function() end }

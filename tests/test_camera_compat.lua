@@ -17,8 +17,23 @@ local modules = {
     effectiveness = function() return "neutral" end,
     request = function() return false end,
   },
+  DramaticShapeAttachment = {
+    tags = function(_, side, moveId, stage)
+      if moveId == 84 and side == "player" and stage == "primary" then
+        return 0x07, 0xFF
+      end
+      if moveId == 84 and side == "enemy" and stage == "impact" then
+        return 0x64, 0xFF
+      end
+    end,
+    position = function(_, side, tag)
+      if tag == 0x07 and side == "player" then return 52, 101 end
+      if tag == 0x64 and side == "enemy" then return 113, 41 end
+    end,
+  },
   ["effects/GenericMoveRenderer"] = { draw = function() end },
   ["effects/StadiumAuthenticRenderer"] = { draw = function() return false end },
+  ["effects/StadiumScreenFx"] = { fill = function() return false end },
   AttackCinematics = { start = function() return false end,
     setTick = function() end, stop = function() end },
 }
@@ -61,4 +76,30 @@ assert(math.abs(ex - 118) < 1e-6 and math.abs(ey - 36) < 1e-6,
        "reversed attacker did not land on the enemy mark")
 assert(math.abs(px - 48) < 1e-6 and math.abs(py - 110) < 1e-6,
        "reversed target did not land on the player mark")
+
+-- A queued animation can report the wrong polarity after a dramatic camera
+-- transition.  The battle.move_used context remains authoritative and must
+-- keep a target-locked effect on the defender.
+player.context = { user = { isPlayer = true }, target = { isPlayer = false } }
+ax, ay = player:anchor("attacker")
+tx, ty = player:anchor("target")
+local cax, cay = projected(ax, ay)
+local ctx, cty = projected(tx, ty)
+assert(math.abs(cax - 48) < 1e-6 and math.abs(cay - 110) < 1e-6,
+       "event-context attacker did not land on the player mark")
+assert(math.abs(ctx - 118) < 1e-6 and math.abs(cty - 36) < 1e-6,
+       "event-context target did not land on the enemy mark")
+
+-- A live attachment is already projected into GB coordinates by Dramaless.
+-- Inverse-map it here so the companion's outer layer transform lands it on
+-- that point exactly once.
+player.spec = { id = 84 }
+ax, ay = player:anchor("attacker")
+tx, ty = player:anchor("target")
+local aax, aay = projected(ax, ay)
+local atx, aty = projected(tx, ty)
+assert(math.abs(aax - 52) < 1e-6 and math.abs(aay - 101) < 1e-6,
+       "attacker attachment was projected twice")
+assert(math.abs(atx - 113) < 1e-6 and math.abs(aty - 41) < 1e-6,
+       "target attachment was projected twice")
 print("ok dynamic battle cinematics projection ownership")

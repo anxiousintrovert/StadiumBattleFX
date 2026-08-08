@@ -1,5 +1,71 @@
 # Changelog
 
+## 1.0.0 - 2026-08-08
+
+- Added optional, failure-isolated Stadium announcer playback for the eight Gym
+  Leaders, Elite Four, Champion, all 151 Pokemon send-out names, all 165 move
+  names, and selected switch/damage/status/faint/result reactions. Missing
+  voice packs or individual WAVs leave the effects mod fully operational.
+- Added a deterministic local ZIP patcher that validates the 823-file mono
+  16-bit/16 kHz bank, preserves the official release, injects a private marker,
+  and produces a personalized non-redistributable mod ZIP.
+- Added a small single-file Windows announcer builder with ROM, base-pack, and
+  output selectors plus live extraction, conversion, and compression progress.
+  It performs the complete ROM-to-personalized-ZIP workflow locally and cleans
+  its temporary decoded files automatically.
+
+- Standardized local and GitHub release artifacts on directly installable
+  `.zip` files; `.modpkg` packaging is no longer used.
+
+- Calibrated all 165 move lifecycles through a reproducible fragment-62
+  controller pass. Shared programs now preserve their cursor phase changes,
+  explicit completion markers, final primary emission, and defender-effect
+  envelope; the existing 24 comparison-tuned profiles remain authoritative.
+
+- Added capability-checked integration with Dramaless Shape's public
+  attachment APIs. Move origins now use byte 2 of the active species' move
+  row, impacts use the defender's native context-row attachment, and the
+  `0xFF` body-origin sentinel no longer aliases tag `0x64`. Byte 3 is retained
+  and exposed for dual-origin renderer ports. All resolved points follow the
+  live animated model pose and safely fall back to staged anchors.
+- Enabled impact-synchronized skeletal hit reactions through Dramaless Shape's
+  public `Stadium.hit(side, effectiveness)` API. Gen1Recomp damage is recorded
+  while its queue is built, but the reaction is requested only at the move's
+  authored impact frame.
+
+- Made full-screen move fields borderless-aware. Screen washes and cartridge
+  tiles now cancel Dramaless Shape's combatant-pair transform and continue at
+  the same pixel scale and phase into all four desktop margins after frame
+  composition, while target-anchored particles keep their model projection.
+- Prevent attack-camera shots from cropping tighter than Dramaless Shape's
+  idle composition while retaining focus, orbit, and impact movement.
+- Made Thunderbolt target-locked, striking down onto the defender from above
+  instead of bending toward an off-screen attacker in dramatic shots.
+- Added a shared 160x144 screen-effect compositor for solid washes, scrolling
+  cartridge textures, timed flashes, and attack/release envelopes.
+- Implemented true full-screen programs for Flash, Mist, and Haze instead of
+  routing them through local status/barrier shapes.
+- Completed Blizzard's declared screen-grain field and impact flash, and moved
+  Psychic, Confusion, Explosion, and generic screen washes onto the shared
+  compositor.
+- Replaced the remaining roster's four placeholder lifecycle timings with
+  presentation-family timing envelopes for all contact, projectile, field,
+  status, recovery, transform, and explosion programs. Runtime then promotes
+  these entries to `stadium-timing-calibrated-v1` after applying their source
+  dispatch, controller timing, resource, geometry, and texture metadata; the
+  24 dedicated cartridge-backed profiles remain `stadium1-source-calibrated`.
+- Added full-layer coverage tests for Flash, Mist, Haze, and texture tiling,
+  plus calibration-tier accounting across all 165 moves.
+- Calibrated the remaining 122 roster entries against Stadium's exact
+  fragment-62 primary, alternate, impact, and resource signatures. Shared
+  source programs now share canonical 24/32/64-pixel footprint classes and
+  select compatible cartridge textures instead of relying on type alone.
+- Added exact-texture overlays for projectile, beam, contact, and status
+  fallback programs, including source-matched scratch, spectrum, energy,
+  leaf, electric, sand, water, poison, and recovery resources.
+- Kept all model, rig, matrix, and cache ownership inside Dramaless Shape; the
+  integration consumes only its projected read-only attachment coordinates.
+
 ## 0.7.0 - 2026-08-07
 
 - Expanded the private Pokemon Stadium 1 cache from 8 to 36 exact texture

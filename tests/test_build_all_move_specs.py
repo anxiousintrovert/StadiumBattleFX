@@ -32,7 +32,7 @@ class CompleteMoveSpecTests(unittest.TestCase):
                 "grapple", "needle", "leaf", "orb", "wind", "sound",
                 "stream", "wave", "beam", "storm", "electric", "psychic",
                 "drain", "ground", "status", "barrier", "heal", "transform",
-                "explosion",
+                "explosion", "flash", "mist", "haze",
             })
             self.assertIn(spec["cinematic"], {
                 "melee", "combo", "sustained", "aerial", "field", "status",
@@ -40,6 +40,7 @@ class CompleteMoveSpecTests(unittest.TestCase):
             })
             self.assertGreaterEqual(spec["hits"], 1)
             self.assertGreater(spec["duration"], spec["impactAt"])
+            self.assertEqual("portable-behavior-v2", spec["calibration"])
 
     def test_representative_special_cases(self):
         by_key = {row["key"]: module.presentation(row) for row in self.rows}
@@ -50,6 +51,10 @@ class CompleteMoveSpecTests(unittest.TestCase):
         self.assertEqual("slash", by_key["SLASH"]["visual"])
         self.assertEqual("ground", by_key["EARTHQUAKE"]["visual"])
         self.assertEqual("explosion", by_key["EXPLOSION"]["cinematic"])
+        self.assertEqual("screen", by_key["FLASH"]["delivery"])
+        self.assertEqual("flash", by_key["FLASH"]["visual"])
+        self.assertEqual("mist", by_key["MIST"]["visual"])
+        self.assertEqual("haze", by_key["HAZE"]["visual"])
         self.assertEqual(
             by_key["DOUBLESLAP"]["cinematic"],
             by_key["FURY_ATTACK"]["cinematic"],
