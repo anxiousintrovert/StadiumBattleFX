@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.3 - 2026-08-09
+
+- Fixed all screen-wide move layers on Android and windowed desktop layouts.
+  Washes, partial fields, scrolling tiles, and flashes now always cancel the
+  staged battle camera transform; only extending effects into desktop margins
+  remains borderless-specific. This fixes Surf, Blizzard, Toxic, Psychic,
+  Confusion, Light Screen, Reflect, Earthquake, Explosion, Flash, Mist, Haze,
+  and generic screen effects rendering as a reduced center rectangle.
+- Expanded the screen-effect regression test to exercise every shared
+  full-screen primitive and dedicated screen program outside borderless mode.
+
 ## 1.0.2 - 2026-08-09
 
 - Added in-game **STADIUM ROM** import/replace and **REFRESH FX CACHE** action

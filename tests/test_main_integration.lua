@@ -28,7 +28,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.2")
+assert(mod.exports.version == "1.0.3")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
 assert(#schemas.attack_speed.choices == 11
        and schemas.attack_speed.choices[1][2] == "100"
@@ -58,4 +58,4 @@ handlers["battle.move_used"]({ battle = battle, move = { index = 84 } })
 handlers["battle.damage_dealt"]({ battle = battle, damage = 12, typeMult = 20 })
 assert(movePayload and movePayload.move.index == 84)
 assert(damagePayload and damagePayload.damage == 12 and damagePayload.typeMult == 20)
-print("ok 1.0.2 runtime event wiring")
+print("ok 1.0.3 runtime event wiring")

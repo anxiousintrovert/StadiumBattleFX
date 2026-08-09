@@ -120,7 +120,7 @@ Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
 
 ## Stadium animations
 
-Version 1.0.2 covers the complete 165-move Gen 1 roster. Each move is generated
+Version 1.0.3 covers the complete 165-move Gen 1 roster. Each move is generated
 from Gen1Recomp's canonical move data and matched with decoded Pokemon Stadium
 primary, alternate, impact, and resource dispatch metadata.
 
@@ -304,7 +304,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.2.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.3.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

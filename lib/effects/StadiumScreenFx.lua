@@ -1,10 +1,11 @@
 -- Shared screen-space presentation primitives.
 --
--- Effects are authored on Gen1's 160x144 animation layer. In borderless mode
--- Dramaless Shape may transform that layer around the projected combatants,
+-- Effects are authored on Gen1's 160x144 animation layer. Dramaless Shape may
+-- transform that layer around the projected combatants in every video mode,
 -- while Gen1Recomp composites it into a larger desktop surface. Screen-wide
--- primitives cancel the combatant transform and are replayed only into the
--- outer margins after composition. Anchored particles keep the normal path.
+-- primitives always cancel the combatant transform; in borderless mode they
+-- are also replayed into the outer margins after composition. Anchored
+-- particles keep the normal path.
 
 local ScreenFx = {}
 
@@ -46,7 +47,11 @@ end
 local function transform(owner)
   local state = owner and owner.dsState
   local value = state and state.layerTransform
-  if not (borderless and value and value.scale and value.scale > 0
+  -- The staged battle's animation-layer transform exists on Android and in
+  -- windowed desktop mode too.  `borderless` controls only the post-compose
+  -- margin pass below; tying this inverse transform to it shrinks a supposed
+  -- full-screen field (notably Surf) to the active camera rectangle.
+  if not (value and value.scale and value.scale > 0
       and value.authoredCenter and value.projectedCenter) then return nil end
   return value
 end
