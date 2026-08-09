@@ -16,6 +16,7 @@ local Player = {}
 Player.__index = Player
 
 local ANCHOR = { player = { 26, 96 }, enemy = { 124, 56 } }
+local TICK_EPSILON = 1e-9
 
 local function call(inner, name, ...)
   local fn = inner and inner[name]
@@ -46,15 +47,23 @@ local function stadiumParticleScale(callback, age, seed)
 end
 
 function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions,
-                    hitOptions, failureReporter)
+                    hitOptions, failureReporter, playbackOptions)
   return setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, cameraCompanion = cameraCompanion,
     cameraOptions = cameraOptions or function() return true end,
     hitOptions = hitOptions or function() return true end,
     failureReporter = failureReporter,
-    custom = false, tick = 0, warned = {},
+    playbackOptions = playbackOptions or function() return 1 end,
+    custom = false, tick = 0, innerTick = 0, warned = {},
     drawWarned = false, context = nil, damageByMove = {},
     activeHit = nil, hitTriggered = false }, Player)
+end
+
+function Player:playbackScale()
+  local ok, value = pcall(self.playbackOptions)
+  value = ok and tonumber(value) or 1
+  if not value then value = 1 end
+  return clamp(value, 0, 1)
 end
 
 function Player:reportFailure(reason, spec)
@@ -107,7 +116,8 @@ function Player:warn(key, reason)
   if self.warned[key] then return end
   self.warned[key] = true
   if self.logger and self.logger.warn then
-    self.logger:warn("%s falls back to the Gen1 animation: %s", tostring(key), tostring(reason))
+    self.logger:warn("%s uses procedural Stadium FX because cartridge textures "
+      .. "are unavailable: %s", tostring(key), tostring(reason))
   end
 end
 
@@ -126,6 +136,12 @@ function Player:start(moveId, attackerIsPlayer, opts)
   if not spec or not self.options() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
+  -- Zero is an OFF rung, not a paused clock. A genuinely frozen custom
+  -- animation would keep BattleState waiting forever, so it delegates the
+  -- move to the ordinary Gen1 player and starts no attack camera.
+  if self:playbackScale() <= 0 then
+    return call(self.inner, "start", moveId, attackerIsPlayer, opts)
+  end
 
   self.attackerIsPlayer = attackerIsPlayer and true or false
   self.dsState = DramaticShapeState.read(
@@ -138,14 +154,13 @@ function Player:start(moveId, attackerIsPlayer, opts)
   if #assets > 0 then ok, err = Assets.has(assets) end
   if not ok then
     self:warn(spec.key, err)
-    self:reportFailure(err, spec)
-    return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
 
   -- Keep the original player as the audio clock, but suppress its GB sprites
   -- and screen effects while a Stadium presentation is active.
   call(self.inner, "start", moveId, attackerIsPlayer, opts)
-  self.custom, self.spec, self.tick = true, spec, 0
+  self.custom, self.spec, self.tick, self.innerTick = true, spec, 0, 0
+  self.assetsReady, self.assetError = ok and true or false, err
   local damage = self.damageByMove[spec.id]
   self.activeHit = damage and table.remove(damage, 1) or nil
   if self.cameraOptions() ~= false then
@@ -221,18 +236,43 @@ end
 
 function Player:update()
   if not self.custom then return call(self.inner, "update") end
-  self.tick = self.tick + 1
+  local scale = self:playbackScale()
+  -- If the option is moved to zero during an attack, hand the already-started
+  -- inner animation back immediately instead of stranding the battle on a
+  -- clock that can no longer reach its duration.
+  if scale <= 0 then
+    AttackCinematics.stop()
+    ScreenFx.clear(self)
+    self.custom, self.spec = false, nil
+    self.activeHit, self.hitTriggered = nil, false
+    return call(self.inner, "update")
+  end
+
+  -- The portable VFX, hit frame and camera all consume this same fractional
+  -- clock. Fractional ticks are important here: holding an integer camera
+  -- frame for ten updates at 10% would look like a new series of jumps.
+  self.tick = self.tick + scale
   AttackCinematics.setTick(self.tick)
-  if self.spec and self.tick >= (self.spec.impactAt or math.huge) then
+  if self.spec and self.tick + TICK_EPSILON
+      >= (self.spec.impactAt or math.huge) then
     self:triggerHitReaction()
   end
-  if self.inner and not call(self.inner, "isDone") then call(self.inner, "update") end
+  -- The delegated Gen1 player is retained as the sound/effect-event clock.
+  -- Step it at the selected rate as well so an impact sound does not arrive
+  -- at 100% while its slowed camera and VFX are still winding up.
+  self.innerTick = self.innerTick + scale
+  while self.innerTick + TICK_EPSILON >= 1 do
+    self.innerTick = self.innerTick - 1
+    if self.innerTick < 0 then self.innerTick = 0 end
+    if not self.inner or call(self.inner, "isDone") then break end
+    call(self.inner, "update")
+  end
 end
 
 function Player:isDone()
   if not self.custom then return call(self.inner, "isDone") ~= false end
   if self.spec.bodyOnly then return call(self.inner, "isDone") ~= false end
-  return self.tick >= self.spec.duration
+  return self.tick + TICK_EPSILON >= self.spec.duration
 end
 
 function Player:pollEffects()
@@ -247,6 +287,7 @@ end
 
 local function drawAsset(g, asset, frame, x, y, rotation, sx, sy, ox, oy)
   if not asset then return end
+  frame = math.floor(tonumber(frame) or 1)
   frame = (frame - 1) % asset.frames + 1
   g.draw(asset.image, asset.quads[frame], x, y, rotation or 0,
     sx or 1, sy or sx or 1, ox or asset.frameWidth / 2, oy or asset.frameHeight / 2)
@@ -529,9 +570,8 @@ local DRAW = {
   single_kick = function(self) drawHit(self, self.tick - self.spec.impactAt, "kick") end,
   tackle = function(self) drawHit(self, self.tick - self.spec.impactAt) end,
   generic = function(self)
-    if not StadiumAuthenticRenderer.draw(self, Assets) then
-      GenericMoveRenderer.draw(self, Assets)
-    end
+    if self.assetsReady and StadiumAuthenticRenderer.draw(self, Assets) then return end
+    GenericMoveRenderer.draw(self, Assets)
   end,
   body_only = function() end,
 }
@@ -549,7 +589,10 @@ local function drawCustom(self)
   local oldWidth = g.getLineWidth and g.getLineWidth() or 1
   local r, gg, b, a = g.getColor()
   g.setBlendMode("alpha", "alphamultiply")
-  local draw = DRAW[self.spec.kind]
+  -- Dedicated and cartridge-authentic programs assume their declared texture
+  -- set exists. When the private cache cannot be read, keep the Stadium move
+  -- lifecycle and camera but render its deterministic procedural equivalent.
+  local draw = self.assetsReady and DRAW[self.spec.kind] or DRAW.generic
   local ok, err = pcall(function()
     if draw then draw(self) end
   end)

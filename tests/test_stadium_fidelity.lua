@@ -24,6 +24,12 @@ for id, profile in pairs(profiles) do
 end
 assert(count == #expected, "unexpected Stadium fidelity profile count")
 for _, id in ipairs(expected) do assert(profiles[id], "missing profile " .. id) end
+assert(profiles[57].optionalAssets and profiles[57].optionalAssets[1] == "water_cycle",
+  "Surf's screen texture must not gate its overlay program")
+for _, id in ipairs({ 92, 109, 113, 115 }) do
+  assert(profiles[id].optionalAssets,
+    "overlay profile " .. id .. " must not require an unused/presentation asset")
+end
 
 local hostLove = love
 love = { graphics = {} }

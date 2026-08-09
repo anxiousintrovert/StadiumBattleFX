@@ -139,6 +139,45 @@ local function isFile(path)
   return ok and info and true or false
 end
 
+-- LÖVE only guarantees creation of the directory named by one call; builds
+-- used by Gen1Recomp do not consistently create missing parent directories.
+-- Build the private cache path one segment at a time so a genuinely fresh
+-- save directory behaves the same as one left behind by an older release.
+local function ensureDirectory(path)
+  local f = love and love.filesystem
+  if not (f and f.createDirectory) then
+    return false, "filesystem cache directory creation is unavailable"
+  end
+
+  local current = ""
+  for part in tostring(path):gmatch("[^/]+") do
+    current = current == "" and part or (current .. "/" .. part)
+    local exists = false
+    if f.getInfo then
+      local okInfo, info = pcall(f.getInfo, current, "directory")
+      exists = okInfo and info and (not info.type or info.type == "directory")
+    end
+    if not exists then
+      local okMake, made, makeErr = pcall(f.createDirectory, current)
+      if not (okMake and made) then
+        -- A concurrent creator, or an implementation with an unusual return
+        -- value, is harmless if the directory is visible after the call.
+        local nowExists = false
+        if f.getInfo then
+          local okInfo, info = pcall(f.getInfo, current, "directory")
+          nowExists = okInfo and info
+            and (not info.type or info.type == "directory")
+        end
+        if not nowExists then
+          return false, tostring(makeErr or made
+            or ("could not create cache directory " .. current))
+        end
+      end
+    end
+  end
+  return true
+end
+
 local function checksum(bytes)
   local a, b = 1, 0
   for i = 1, #bytes do
@@ -184,6 +223,13 @@ function Reader.new(bytes)
     return nil, "needs Pokemon Stadium (USA) v1.0"
   end
   return self
+end
+
+-- Used by the in-game importer before it replaces the preferred baserom.
+-- Keeping validation here ensures picker and cache builds accept the exact
+-- same cartridge revisions and byte orders.
+function Assets.validateRom(bytes)
+  return Reader.new(bytes)
 end
 
 function Reader:sourceOffset(offset)
@@ -333,7 +379,8 @@ end
 
 local function readCache(names)
   local f = love and love.filesystem
-  if not (f and isFile(CACHE_MARKER)) then return nil end
+  if not f then return nil, "filesystem cache is unavailable" end
+  if not isFile(CACHE_MARKER) then return nil, "effect cache marker is missing" end
   local ok, marker = pcall(f.read, CACHE_MARKER)
   if not (ok and type(marker) == "string") then return nil, "could not read effect cache marker" end
   local lines = {}
@@ -365,7 +412,8 @@ end
 local function writeCache(raw)
   local f = love and love.filesystem
   if not (f and f.write) then return false, "filesystem cache is unavailable" end
-  if f.createDirectory then pcall(f.createDirectory, CACHE_DIR) end
+  local made, makeErr = ensureDirectory(CACHE_DIR)
+  if not made then return false, makeErr end
   local lines = { CACHE_FORMAT .. " " .. CACHE_REV }
   for _, spec in ipairs(SPECS) do
     local bytes = raw[spec.name]
@@ -518,7 +566,7 @@ local function loadCachedSubset(names)
   if #missing == 0 then return true end
 
   local raw, err = readCache(missing)
-  if not raw then return nil, err or "effect cache is unavailable" end
+  if not raw then return nil, err end
   for _, name in ipairs(missing) do
     local spec = byName[name]
     local asset, makeErr = makeAsset(spec, raw[name], "cache")
@@ -556,9 +604,9 @@ end
 -- subsequent step() calls decompress one archive member, write one primitive,
 -- or upload one texture. That makes progress visible and keeps a long burst
 -- of work out of the first attack animation.
-function Assets.begin()
+function Assets.begin(force)
   if job and progress.state == "building" then return true end
-  if Assets.ready() then
+  if not force and Assets.ready() then
     progress.state, progress.done = "done", progress.total
     progress.current, progress.error = "READY", nil
     return true
@@ -571,9 +619,8 @@ function Assets.begin()
   end
   local reader, err = Reader.new(bytes)
   if not reader then return false, err end
-  if love.filesystem.createDirectory then
-    pcall(love.filesystem.createDirectory, CACHE_DIR)
-  end
+  local made, makeErr = ensureDirectory(CACHE_DIR)
+  if not made then return false, makeErr end
   job = {
     reader = reader, bytes = bytes, raw = {}, member = 1, write = 1,
     make = 1, phase = "extract", marker = nil, path = path,
@@ -582,6 +629,16 @@ function Assets.begin()
   progress.current, progress.error = "READING STADIUM ROM", nil
   attempted, lastError, lastSource = false, nil, nil
   return true
+end
+
+-- Rebuild from the player-supplied ROM even when the current marker is valid.
+-- The new files and marker replace the old cache only as each extraction step
+-- completes, so an interrupted refresh still leaves procedural effects usable.
+function Assets.refresh()
+  Assets.cancel()
+  loaded, cachedRaw, cacheReady = {}, nil, nil
+  attempted, lastError, lastSource, cacheError = false, nil, nil, nil
+  return Assets.begin(true)
 end
 
 local function failJob(err)
@@ -713,7 +770,11 @@ function Assets.has(names)
   local ok, err = Assets.preload()
   if not ok then
     local subsetOk, subsetErr = loadCachedSubset(names)
-    if not subsetOk then return nil, subsetErr or err end
+    -- `preload` also checks whether the player supplied a usable ROM and is
+    -- therefore normally the more actionable diagnosis. 1.0.1 preferred the
+    -- subset error here, turning missing-ROM, wrong-ROM, and integrity errors
+    -- alike into the unhelpful "effect cache is unavailable" message.
+    if not subsetOk then return nil, err or subsetErr end
   end
   for _, name in ipairs(names) do
     if not loaded[name] then
@@ -731,6 +792,12 @@ function Assets.status()
     cachePath = CACHE_MARKER, cacheError = cacheError,
     state = progress.state, done = progress.done, total = progress.total,
     current = progress.current, error = progress.error or lastError }
+end
+
+-- Kept narrow and explicitly internal so the fresh-save behavior can be
+-- regression-tested without manufacturing a complete 32 MiB Stadium ROM.
+function Assets._ensureCacheDirectory()
+  return ensureDirectory(CACHE_DIR)
 end
 
 return Assets

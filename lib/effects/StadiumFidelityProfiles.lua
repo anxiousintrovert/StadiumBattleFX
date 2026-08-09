@@ -22,7 +22,11 @@ return {
     assets = { "beam_core", "beam_ring", "water_cycle", "large_burst" } },
   [57] = { stadiumProgram = "water", variant = "surf",
     impactAt = 58, duration = 118,
-    assets = { "water_cycle", "screen_grain", "screen_pulse" } },
+    assets = { "water_cycle", "screen_grain", "screen_pulse" },
+    -- Surf's wave texture is a screen presentation layer, not an emitter.
+    -- Do not let a missing/stale copy of it select the generic, canvas-only
+    -- fallback; the authentic program still supplies the rising water wash.
+    optionalAssets = { "water_cycle" } },
   [58] = { stadiumProgram = "ice", variant = "beam",
     impactAt = 56, duration = 110,
     assets = { "spectrum_cycle", "spectrum_glint", "beam_impact" } },
@@ -60,7 +64,10 @@ return {
     assets = { "screen_grain", "large_burst", "impact_i" } },
   [92] = { stadiumProgram = "poison", variant = "toxic",
     impactAt = 48, duration = 100,
-    assets = { "poison_field", "beam_core", "screen_pulse" } },
+    assets = { "poison_field", "beam_core", "screen_pulse" },
+    -- The tiled poison field is optional presentation polish; the target
+    -- bubbles remain a valid Toxic effect without it.
+    optionalAssets = { "poison_field" } },
   [94] = { stadiumProgram = "psychic", variant = "psychic",
     impactAt = 54, duration = 108,
     assets = { "screen_pulse", "energy_core", "large_burst" } },
@@ -69,13 +76,19 @@ return {
     assets = { "heal_ring", "heal_star_a", "heal_star_b" } },
   [109] = { stadiumProgram = "psychic", variant = "confuse",
     impactAt = 48, duration = 96,
-    assets = { "screen_pulse", "spectrum_cycle", "beam_ring" } },
+    assets = { "screen_pulse", "spectrum_cycle", "beam_ring" },
+    -- beam_ring belongs to the source resource bundle but is not consumed by
+    -- this program, so it must not make Confusion lose its screen treatment.
+    optionalAssets = { "beam_ring" } },
   [113] = { stadiumProgram = "barrier", variant = "light",
     impactAt = 36, duration = 92,
-    assets = { "screen_dual", "screen_pulse", "beam_ring" } },
+    assets = { "screen_dual", "screen_pulse", "beam_ring" },
+    -- Barrier uses the two screen textures above; beam_ring is not drawn.
+    optionalAssets = { "beam_ring" } },
   [115] = { stadiumProgram = "barrier", variant = "reflect",
     impactAt = 36, duration = 92,
-    assets = { "screen_dual", "screen_pulse", "beam_ring" } },
+    assets = { "screen_dual", "screen_pulse", "beam_ring" },
+    optionalAssets = { "beam_ring" } },
   [126] = { stadiumProgram = "fire", variant = "blast",
     impactAt = 60, duration = 116,
     assets = { "energy_orb", "energy_column", "large_burst", "screen_grain" } },

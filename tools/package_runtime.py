@@ -30,6 +30,7 @@ FILES = (
     "lib/Announcer.lua",
     "lib/FailureNotice.lua",
     "lib/EffectCacheScreen.lua",
+    "lib/StadiumRomPicker.lua",
     "lib/effects/MoveSpecs.lua",
     "lib/effects/StadiumFidelityProfiles.lua",
     "lib/effects/StadiumTimingProfiles.lua",
