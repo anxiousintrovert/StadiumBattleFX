@@ -46,6 +46,7 @@ local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
 local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
+local StadiumRomPicker = namespace.require("StadiumRomPicker")
 local AttackCinematics = namespace.require("AttackCinematics")
 local Announcer = namespace.require("Announcer")
 local FailureNotice = namespace.require("FailureNotice")
@@ -57,6 +58,13 @@ end
 mod.options:define({
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
+  { key = "attack_speed", label = "ATTACK SPEED", type = "choice", default = "100",
+    choices = {
+      { "100%", "100" }, { "90%", "90" }, { "80%", "80" },
+      { "70%", "70" }, { "60%", "60" }, { "50%", "50" },
+      { "40%", "40" }, { "30%", "30" }, { "20%", "20" },
+      { "10%", "10" }, { "0% (OFF)", "0" },
+    } },
   { key = "announcer", label = "STADIUM ANNOUNCER", type = "toggle", default = true },
   { key = "battle_cinematics_zoom", label = "BC ZOOM OUT", type = "choice",
     default = "off",
@@ -66,7 +74,7 @@ mod.options:define({
     } },
 })
 
-mod.exports.version = "1.0.1"
+mod.exports.version = "1.0.2"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
@@ -88,6 +96,10 @@ mod.hooks:wrap("input.step", function(next, game, dt)
   local result = next(game, dt)
   Announcer.update(dt)
   FailureNotice.update(dt)
+  -- Android's Storage Access Framework returns from the picker asynchronously.
+  -- Poll before first-run detection so an imported ROM can start its cache
+  -- build on the very frame the app regains focus.
+  pcall(StadiumRomPicker.poll, game)
   if mod.options:get("enabled") ~= false then
     local ok, err = pcall(EffectCacheScreen.maybePush, game)
     if not ok then mod.log:warn("attack cache screen unavailable: %s", tostring(err)) end
@@ -123,7 +135,8 @@ mod.events:on("battle.started", function(payload)
       mod.log:info("loaded %d Stadium effect primitives from %s",
         tonumber(status.assets) or 0, tostring(status.source or "runtime"))
     else
-      mod.log:warn("Stadium effect cache unavailable: %s", tostring(err))
+      mod.log:warn("Stadium cartridge textures unavailable; procedural FX "
+        .. "remain enabled: %s", tostring(err))
     end
   end
 
@@ -143,7 +156,20 @@ mod.events:on("battle.started", function(payload)
     function() return mod.find("BATTLE_CINEMATICS") end,
     function() return mod.options:get("attack_camera") ~= false end,
     nil,
-    function(subject, reason) FailureNotice.show(subject, reason) end)
+    function(subject, reason) FailureNotice.show(subject, reason) end,
+    function()
+      return (tonumber(mod.options:get("attack_speed")) or 100) / 100
+    end)
+end)
+
+-- These are actions, not persisted mod settings: importing replaces the
+-- player-owned ROM and rebuilding refreshes derived cache data immediately.
+mod.hooks:wrap("ui.options.rows", function(next, game, rows)
+  local out = next(game, rows)
+  if type(out) ~= "table" then return out end
+  out[#out + 1] = StadiumRomPicker.importRow()
+  out[#out + 1] = StadiumRomPicker.refreshRow()
+  return out
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter

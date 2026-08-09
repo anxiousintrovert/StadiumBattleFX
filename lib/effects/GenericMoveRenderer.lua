@@ -100,6 +100,7 @@ end
 
 local function drawAsset(g, asset, frame, x, y, rotation, scale, alpha)
   if not asset then return end
+  frame = math.floor(tonumber(frame) or 1)
   frame = (frame - 1) % asset.frames + 1
   g.setColor(1, 1, 1, alpha)
   g.draw(asset.image, asset.quads[frame], x, y, rotation or 0,
@@ -433,9 +434,12 @@ local function wave(self)
   local bx, by = self:anchor("target")
   local p = clamp(self.tick / math.max(1, self.spec.impactAt), 0, 1)
   local x, y = between(ax, ay, bx, by, p, 0)
-  tint(g, self.spec.type, 0.22)
-  g.polygon("fill", 0, 144, 160, 144, 160, y + 18,
-    x + 35, y + 8, x, y - 7, math.max(0, x - 40), y + 13, 0, y + 21)
+  -- This is a screen-space wash.  Routing it through ScreenFx keeps the
+  -- fallback usable under Dramaless Shape and extends it into borderless
+  -- margins just like the texture-backed Surf program.
+  local waterline = clamp(y + 8, 0, 144)
+  ScreenFx.region(g, COLORS[self.spec.type] or COLORS.WATER, 0.22,
+    0, waterline, 160, 144 - waterline, self)
   tint(g, self.spec.type, 0.8, 1.2)
   g.setLineWidth(2)
   for i = 0, 3 do

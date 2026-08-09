@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.2 - 2026-08-09
+
+- Added in-game **STADIUM ROM** import/replace and **REFRESH FX CACHE** action
+  rows. Android uses the system document picker; refresh forces a rebuild even
+  when an existing cache marker is valid.
+- Added an Attack Speed setting from 100% down to 0% in 10% steps. Stadium
+  VFX, impact reactions, sound events, and attack-camera motion share the
+  slowed fractional clock; 0% safely uses the normal Gen1 presentation.
+- Fixed the 1.0.1 cache regression that masked missing-ROM, stale-cache, and
+  integrity errors as only "effect cache is unavailable." Missing cartridge
+  textures now use procedural Stadium FX without disabling move timelines or
+  attack cameras, and logs retain the actionable cache or ROM diagnosis.
+- Fixed first-run cache creation on Gen1Recomp builds that create only one
+  directory level per call. Every parent is now created and checked before
+  extraction, instead of silently attempting to write into a missing tree.
+
 ## 1.0.1 - 2026-08-08
 
 - Made cosmetic screen overlays and Blizzard snow textures optional so a

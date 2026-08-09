@@ -27,6 +27,8 @@ end
 function love.load()
   for _, path in ipairs({
     "lib/StadiumAssets.lua",
+    "lib/EffectCacheScreen.lua",
+    "lib/StadiumRomPicker.lua",
     "lib/DramaticShapeState.lua",
     "lib/DramaticShapeAttachment.lua",
     "lib/DramaticShapeHit.lua",
@@ -54,7 +56,10 @@ function love.load()
   assert(love.filesystem.load("tests/test_camera_compat.lua"))()
   assert(love.filesystem.load("tests/test_attack_cinematics.lua"))()
   assert(love.filesystem.load("tests/test_full_roster.lua"))()
+  assert(love.filesystem.load("tests/test_attack_speed.lua"))()
+  assert(love.filesystem.load("tests/test_cache_directory.lua"))()
   assert(love.filesystem.load("tests/test_cache_subset.lua"))()
+  assert(love.filesystem.load("tests/test_cache_free_fallback.lua"))()
   assert(love.filesystem.load("tests/test_player_fallback.lua"))()
   assert(love.filesystem.load("tests/test_roster_calibration.lua"))()
   assert(love.filesystem.load("tests/test_timing_profiles.lua"))()
@@ -125,7 +130,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "1.0.1", "wrong mod export version")
+  assert(mod.exports.version == "1.0.2", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   assert(type(handlers["hook:render.hud"]) == "function",

@@ -46,6 +46,8 @@ assert(status.assets == 1 and not status.ready,
 local missing, missingErr = Assets.has({ "screen_grain" })
 assert(not missing and type(missingErr) == "string",
   "missing cache entry did not retain a clean fallback")
+assert(missingErr:find("no .z64", 1, true),
+  "subset recovery masked the actionable missing-ROM diagnosis")
 
 love = hostLove
 print("ok required cache subsets survive missing cosmetic entries")

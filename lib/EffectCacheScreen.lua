@@ -56,12 +56,14 @@ local function wrapped(value, limit)
   return lines
 end
 
-function Screen.new(game)
-  return setmetatable({ game = game, hold = 0 }, Screen)
+function Screen.new(game, refresh)
+  return setmetatable({ game = game, hold = 0, refresh = refresh and true or false }, Screen)
 end
 
 function Screen:enter()
-  local ok, err = Assets.begin()
+  local ok, err
+  if self.refresh then ok, err = Assets.refresh()
+  else ok, err = Assets.begin() end
   if not ok then
     self.startError = tostring(err or "could not start cache")
   end

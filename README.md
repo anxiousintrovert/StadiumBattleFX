@@ -64,11 +64,17 @@ Pokemon Stadium footage.
 1. Install the versioned `STADIUM_BATTLE_FX-<version>.zip` through
    Gen1Recomp's mod manager.
 2. Enable **StadiumBattleFX**.
-3. Create the shared `baseroms` folder if it does not already exist.
-4. Place your Pokemon Stadium ROM directly inside that folder. The filename
-   does not matter, and `.z64`, `.n64`, and `.v64` byte orders are supported.
-5. Restart Gen1Recomp. On the first overworld load, the **STADIUM ATTACK FX**
+3. In the in-game **OPTIONS** menu, choose **STADIUM ROM → IMPORT** and select
+   your legally obtained Pokemon Stadium (USA v1.0) ROM. Android opens the
+   system document picker and stores the selected file for future rebuilds.
+   Alternatively, create the shared `baseroms` folder and place the ROM there.
+   The filename does not matter, and `.z64`, `.n64`, and `.v64` byte orders
+   are supported.
+4. On the first overworld load, the **STADIUM ATTACK FX**
    screen builds the private effect cache and closes automatically.
+
+Use **OPTIONS → REFRESH FX CACHE → REBUILD** after replacing the ROM or if a
+cache build was interrupted. It re-extracts the effects immediately.
 
 When upgrading from an older release, use the mod manager's update or
 reinstall action. If the displayed version does not change, remove every old
@@ -114,7 +120,7 @@ Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
 
 ## Stadium animations
 
-Version 1.0.1 covers the complete 165-move Gen 1 roster. Each move is generated
+Version 1.0.2 covers the complete 165-move Gen 1 roster. Each move is generated
 from Gen1Recomp's canonical move data and matched with decoded Pokemon Stadium
 primary, alternate, impact, and resource dispatch metadata.
 
@@ -248,7 +254,10 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | --- |:---:| --- |
 | **STADIUM FX** | On | Enables Stadium move presentations and effect-cache loading. |
 | **ATTACK CAMERA** | On | Enables staged move cameras when the required Stadium model integration is available. |
+| **ATTACK SPEED** | 100% | Slows Stadium VFX, impact timing, sound events, and the attack camera together in 10% steps. At 0%, the normal Gen1 presentation is used with no Stadium attack camera. |
 | **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
+| **STADIUM ROM** | Import/Replace | Opens the system ROM picker; Android uses its document picker. |
+| **REFRESH FX CACHE** | Rebuild | Forces a fresh effect-cache extraction from the stored ROM. |
 
 ## ROM data and private cache
 
@@ -265,7 +274,10 @@ The cache never contains the ROM, a complete archive member, or a decompressed
 Stadium fragment. Cache revision 3 intentionally replaces the older
 eight-asset cache.
 
-StadiumBattleFX writes only to this private cache and does not alter the ROM.
+This directory is generated at runtime inside Gen1Recomp's save directory; it
+is intentionally absent from the mod ZIP and source checkout. StadiumBattleFX
+creates every parent directory on a fresh install, writes only to this private
+cache, and does not alter the ROM.
 
 ## Fidelity and known limitations
 
@@ -292,7 +304,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.1.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.2.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,
