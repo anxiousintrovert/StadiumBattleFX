@@ -261,6 +261,7 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
 | **STADIUM ROM** | Import/Replace | Opens the system ROM picker; Android uses its document picker. |
 | **REFRESH FX CACHE** | Rebuild | Forces a fresh effect-cache extraction from the stored ROM. |
+| **EXPORT ANIMATION LOG** | Export | Opens a save dialog and exports the recent StadiumBattleFX diagnostics for a bug report. Android requires a Gen1Recomp build that provides `love.system.exportFile`. |
 
 ## ROM data and private cache
 

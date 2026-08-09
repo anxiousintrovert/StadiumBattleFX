@@ -134,12 +134,14 @@ function Player:start(moveId, attackerIsPlayer, opts)
   self.activeHit, self.hitTriggered = nil, false
   local spec = Registry.get(moveId)
   if not spec or not self.options() then
+    if self.logger then self.logger:info("animation delegated: move=%s reason=%s", tostring(moveId), spec and "disabled" or "unmapped") end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
   -- Zero is an OFF rung, not a paused clock. A genuinely frozen custom
   -- animation would keep BattleState waiting forever, so it delegates the
   -- move to the ordinary Gen1 player and starts no attack camera.
   if self:playbackScale() <= 0 then
+    if self.logger then self.logger:info("animation delegated: move=%s reason=attack speed off", tostring(moveId)) end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
 
@@ -147,6 +149,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   self.dsState = DramaticShapeState.read(
     self.companion, self.attackerIsPlayer, self.cameraCompanion)
   if spec.bodyOnly and not self:stadiumModelShowing() then
+    if self.logger then self.logger:info("animation delegated: move=%s (%s) reason=model unavailable", tostring(moveId), tostring(spec.key)) end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
   local assets = requiredAssets(spec)
@@ -161,6 +164,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   call(self.inner, "start", moveId, attackerIsPlayer, opts)
   self.custom, self.spec, self.tick, self.innerTick = true, spec, 0, 0
   self.assetsReady, self.assetError = ok and true or false, err
+  if self.logger then self.logger:info("animation started: move=%s key=%s side=%s assets=%s", tostring(moveId), tostring(spec.key), self.attackerIsPlayer and "player" or "enemy", ok and "ready" or "procedural") end
   local damage = self.damageByMove[spec.id]
   self.activeHit = damage and table.remove(damage, 1) or nil
   if self.cameraOptions() ~= false then
@@ -172,8 +176,10 @@ function Player:triggerHitReaction()
   if self.hitTriggered or not self.activeHit then return false end
   self.hitTriggered = true
   if self.hitOptions() == false then return false end
-  return DramaticShapeHit.request(
+  local requested = DramaticShapeHit.request(
     self.companion, self.activeHit.targetSide, self.activeHit.effectiveness)
+  if self.logger then self.logger:info("hit reaction: move=%s target=%s effectiveness=%s requested=%s", tostring(self.spec and self.spec.key), tostring(self.activeHit.targetSide), tostring(self.activeHit.effectiveness), tostring(requested)) end
+  return requested
 end
 
 function Player:anchorSide(which)
@@ -241,6 +247,7 @@ function Player:update()
   -- inner animation back immediately instead of stranding the battle on a
   -- clock that can no longer reach its duration.
   if scale <= 0 then
+    if self.logger then self.logger:info("animation cancelled: move=%s reason=attack speed changed to off", tostring(self.spec and self.spec.key)) end
     AttackCinematics.stop()
     ScreenFx.clear(self)
     self.custom, self.spec = false, nil

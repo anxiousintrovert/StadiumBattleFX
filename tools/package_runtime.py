@@ -22,6 +22,8 @@ FILES = (
     "lib/StadiumRom.lua",
     "lib/StadiumTexture.lua",
     "lib/StadiumAssets.lua",
+    "lib/StadiumLog.lua",
+    "lib/StadiumLogExport.lua",
     "lib/DramaticShapeState.lua",
     "lib/DramaticShapeAttachment.lua",
     "lib/DramaticShapeHit.lua",

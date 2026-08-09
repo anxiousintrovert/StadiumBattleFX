@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.6 - 2026-08-09
+
+- Added a bounded persistent animation diagnostic log. It records battle and
+  move events, Stadium/delegated presentation choice, asset fallback, hit
+  reaction, draw-fallback, and cancellation outcomes.
+- Added **EXPORT ANIMATION LOG** to the mod options menu. Windows opens a
+  save dialog; Android opens the system document picker through a dedicated
+  export bridge that never reuses the pending game-save export file.
+
 ## 1.0.5 - 2026-08-09
 
 - Released the screen-compositor correction for desktop borderless mode.

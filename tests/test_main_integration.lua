@@ -28,7 +28,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.5")
+assert(mod.exports.version == "1.0.6")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
 assert(#schemas.attack_speed.choices == 11
        and schemas.attack_speed.choices[1][2] == "100"
@@ -44,9 +44,10 @@ assert(type(handlers["hook:ui.options.rows"]) == "function",
   "cache import/rebuild option rows were not registered")
 local optionRows = handlers["hook:ui.options.rows"](
   function(_, rows) return rows end, {}, {})
-assert(optionRows[#optionRows - 1].id == "STADIUM_BATTLE_FX:stadiumRom"
-    and optionRows[#optionRows].id == "STADIUM_BATTLE_FX:refreshCache",
-  "cache action rows were not appended")
+assert(optionRows[#optionRows - 2].id == "STADIUM_BATTLE_FX:stadiumRom"
+    and optionRows[#optionRows - 1].id == "STADIUM_BATTLE_FX:refreshCache"
+    and optionRows[#optionRows].id == "STADIUM_BATTLE_FX:exportLog",
+  "cache and log action rows were not appended")
 
 local movePayload, damagePayload
 local player = {
@@ -58,4 +59,4 @@ handlers["battle.move_used"]({ battle = battle, move = { index = 84 } })
 handlers["battle.damage_dealt"]({ battle = battle, damage = 12, typeMult = 20 })
 assert(movePayload and movePayload.move.index == 84)
 assert(damagePayload and damagePayload.damage == 12 and damagePayload.typeMult == 20)
-print("ok 1.0.5 runtime event wiring")
+print("ok 1.0.6 runtime event wiring")

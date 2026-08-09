@@ -27,6 +27,8 @@ end
 function love.load()
   for _, path in ipairs({
     "lib/StadiumAssets.lua",
+    "lib/StadiumLog.lua",
+    "lib/StadiumLogExport.lua",
     "lib/EffectCacheScreen.lua",
     "lib/StadiumRomPicker.lua",
     "lib/DramaticShapeState.lua",

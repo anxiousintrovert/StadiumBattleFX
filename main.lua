@@ -15,6 +15,8 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
+mod.exports.version = "1.0.6"
+
 local namespace = { mod = mod, path = mod.path }
 local modules = {}
 
@@ -40,6 +42,8 @@ function namespace.require(name)
 end
 
 local StadiumRom = namespace.require("StadiumRom")
+local StadiumLog = namespace.require("StadiumLog")
+namespace.log = StadiumLog.new(mod.log)
 local ThunderShockSpec = namespace.require("effects/ThunderShockSpec")
 local StadiumAssets = namespace.require("StadiumAssets")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
@@ -50,6 +54,7 @@ local StadiumRomPicker = namespace.require("StadiumRomPicker")
 local AttackCinematics = namespace.require("AttackCinematics")
 local Announcer = namespace.require("Announcer")
 local FailureNotice = namespace.require("FailureNotice")
+local StadiumLogExport = namespace.require("StadiumLogExport")
 
 local function dramalessCompanion()
   return mod.find("DRAMALESS_SHAPE")
@@ -74,7 +79,6 @@ mod.options:define({
     } },
 })
 
-mod.exports.version = "1.0.5"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
@@ -102,7 +106,7 @@ mod.hooks:wrap("input.step", function(next, game, dt)
   pcall(StadiumRomPicker.poll, game)
   if mod.options:get("enabled") ~= false then
     local ok, err = pcall(EffectCacheScreen.maybePush, game)
-    if not ok then mod.log:warn("attack cache screen unavailable: %s", tostring(err)) end
+    if not ok then namespace.log:warn("attack cache screen unavailable: %s", tostring(err)) end
   end
   return result
 end)
@@ -122,6 +126,7 @@ end)
 -- adapter now owns a presentation for the complete 165-move Gen 1 roster.
 mod.events:on("battle.started", function(payload)
   local battle = payload and payload.battle
+  namespace.log:info("battle started; animation adapter=%s", battle and battle.animPlayer and "available" or "missing")
   Announcer.beginBattle(battle)
   if not (battle and battle.animPlayer) then return end
   if getmetatable(battle.animPlayer) == StadiumFxPlayer then return end
@@ -132,10 +137,10 @@ mod.events:on("battle.started", function(payload)
     local ready, err = StadiumAssets.preload()
     if ready then
       local status = StadiumAssets.status()
-      mod.log:info("loaded %d Stadium effect primitives from %s",
+      namespace.log:info("loaded %d Stadium effect primitives from %s",
         tonumber(status.assets) or 0, tostring(status.source or "runtime"))
     else
-      mod.log:warn("Stadium cartridge textures unavailable; procedural FX "
+      namespace.log:warn("Stadium cartridge textures unavailable; procedural FX "
         .. "remain enabled: %s", tostring(err))
     end
   end
@@ -151,7 +156,7 @@ mod.events:on("battle.started", function(payload)
   battle.animPlayer = StadiumFxPlayer.new(
     battle.animPlayer,
     function() return mod.options:get("enabled") ~= false end,
-    mod.log,
+    namespace.log,
     dramalessCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
     function() return mod.options:get("attack_camera") ~= false end,
@@ -169,6 +174,7 @@ mod.hooks:wrap("ui.options.rows", function(next, game, rows)
   if type(out) ~= "table" then return out end
   out[#out + 1] = StadiumRomPicker.importRow()
   out[#out + 1] = StadiumRomPicker.refreshRow()
+  out[#out + 1] = StadiumLogExport.row()
   return out
 end)
 
@@ -179,6 +185,8 @@ mod.events:on("battle.move_used", function(payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.setMoveContext then player:setMoveContext(payload) end
+  local move = payload and payload.move
+  namespace.log:info("move used: id=%s called=%s", tostring(move and (move.index or move.id)), tostring(payload and payload.isCalled == true))
   Announcer.moveUsed(payload)
 end)
 
@@ -189,6 +197,7 @@ mod.events:on("battle.damage_dealt", function(payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.recordDamage then player:recordDamage(payload) end
+  namespace.log:info("damage event: move=%s damage=%s multiplier=%s", tostring(payload and payload.move and (payload.move.index or payload.move.id)), tostring(payload and payload.damage), tostring(payload and payload.typeMult))
   Announcer.damageDealt(payload)
 end)
 
@@ -197,6 +206,7 @@ mod.events:on("battle.status_inflicted", Announcer.statusInflicted)
 mod.events:on("battle.fainted", Announcer.fainted)
 
 mod.events:on("battle.ended", function(payload)
+  namespace.log:info("battle ended")
   Announcer.finishBattle(payload)
   AttackCinematics.stop()
   StadiumScreenFx.clear()

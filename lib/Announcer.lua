@@ -307,9 +307,10 @@ function Announcer.beginBattle(battle)
   local intro = introFor(battle)
   if not intro then return false end
   if not packReady() then
-    if not state.warnedMissingPack and mod.log and mod.log.info then
+    local logger = namespace.log or mod.log
+    if not state.warnedMissingPack and logger and logger.info then
       state.warnedMissingPack = true
-      mod.log:info("optional Stadium announcer voice pack not installed; battle audio unchanged")
+      logger:info("optional Stadium announcer voice pack not installed; battle audio unchanged")
     end
     return false
   end
