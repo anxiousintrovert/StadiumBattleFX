@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.5 - 2026-08-09
+
+- Released the screen-compositor correction for desktop borderless mode.
+  Screen-wide washes, flashes, and tiled fields now cancel the staged battle
+  transform on the game layer and replay seamlessly into each outer margin,
+  while Pokemon-anchored effects remain attached to their projected targets.
+- Added regression coverage for the borderless margin pass and non-borderless
+  full-screen rendering paths.
+
 ## 1.0.4 - 2026-08-09
 
 - Added a validated persistent announcer cache. A personalized local package
