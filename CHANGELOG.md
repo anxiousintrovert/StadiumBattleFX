@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4 - 2026-08-09
+
+- Added a validated persistent announcer cache. A personalized local package
+  imports its 823 clips into save data once; later voice-free updates reuse the
+  cached audio automatically.
+
 ## 1.0.3 - 2026-08-09
 
 - Fixed all screen-wide move layers on Android and windowed desktop layouts.

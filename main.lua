@@ -74,7 +74,7 @@ mod.options:define({
     } },
 })
 
-mod.exports.version = "1.0.3"
+mod.exports.version = "1.0.4"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs

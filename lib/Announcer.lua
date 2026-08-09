@@ -1,7 +1,8 @@
 -- Optional Pokemon Stadium announcer playback for Gym Leader and Elite Four
 -- battles. Voice files are never part of the public mod: the local Windows
 -- builder injects assets/announcer/voicepack.json and numbered WAVs into a
--- personalized copy of the release ZIP.
+-- personalized copy of the release ZIP. On first use that pack is imported
+-- into save data, so later voice-free updates retain the local audio.
 
 local namespace = ...
 local mod = namespace.mod
@@ -10,6 +11,10 @@ local Announcer = {}
 
 local VOICE_ROOT = "assets/announcer"
 local PACK_MARKER = VOICE_ROOT .. "/voicepack.json"
+local CACHE_DIR = "stadium_battle_fx/announcer/v1"
+local CACHE_MARKER = CACHE_DIR .. "/cache.info"
+local CACHE_FORMAT = "SFXA1"
+local CLIP_COUNT = 823
 local GAP_SECONDS = 0.12
 local MAX_QUEUE = 8
 
@@ -61,6 +66,8 @@ local state = {
   gap = 0,
   packChecked = false,
   packReady = false,
+  packSource = nil,
+  cacheError = nil,
   missing = {},
   warnedMissingPack = false,
 }
@@ -68,6 +75,94 @@ local state = {
 local function enabled()
   return not (mod.options and mod.options.get)
       or mod.options:get("announcer") ~= false
+end
+
+local function isFile(path)
+  local f = love and love.filesystem
+  if not (f and f.getInfo) then return false end
+  local ok, info = pcall(f.getInfo, path, "file")
+  return ok and info and true or false
+end
+
+local function ensureDirectory(path)
+  local f = love and love.filesystem
+  if not (f and f.createDirectory) then return false, "filesystem unavailable" end
+  local current = ""
+  for part in path:gmatch("[^/]+") do
+    current = current == "" and part or current .. "/" .. part
+    if not isFile(current) then
+      local ok, made, err = pcall(f.createDirectory, current)
+      if not (ok and made) then
+        local visible = false
+        if f.getInfo then
+          local exists, info = pcall(f.getInfo, current, "directory")
+          visible = exists and info and true or false
+        end
+        if not visible then return false, tostring(err or made) end
+      end
+    end
+  end
+  return true
+end
+
+local function checksum(bytes)
+  local a, b = 1, 0
+  for i = 1, #bytes do
+    a = (a + bytes:byte(i)) % 65521
+    b = (b + a) % 65521
+  end
+  return b * 65536 + a
+end
+
+local function cacheClip(index)
+  return ("%s/%03d.wav"):format(CACHE_DIR, index)
+end
+
+local function cacheReady(expectedStamp)
+  local f = love and love.filesystem
+  if not (f and f.read) or not isFile(CACHE_MARKER) then return false end
+  local ok, marker = pcall(f.read, CACHE_MARKER)
+  local stamp = ok and type(marker) == "string" and marker:match("^" .. CACHE_FORMAT .. " (%d+)\n")
+  if not stamp or (expectedStamp and tonumber(stamp) ~= expectedStamp) then
+    return false
+  end
+  for index = 0, CLIP_COUNT - 1 do
+    if not isFile(cacheClip(index)) then return false end
+  end
+  return true
+end
+
+local function sourceMarker()
+  local ok, marker = pcall(mod.read, mod, PACK_MARKER)
+  if not (ok and type(marker) == "string" and #marker > 0) then return nil end
+  -- The builder writes a complete 823-clip manifest. This guards against
+  -- accidentally caching an arbitrary or interrupted package.
+  if not marker:match('"clip_count"%s*:%s*823') then return nil end
+  return marker
+end
+
+local function importPack(marker)
+  local f = love and love.filesystem
+  if not (f and f.write) then return false, "filesystem unavailable" end
+  local made, makeErr = ensureDirectory(CACHE_DIR)
+  if not made then return false, makeErr end
+  -- Invalidate an older cache before replacing its clips. The completed marker
+  -- is written last, so an interrupted import cannot be mistaken for a pack.
+  local invalidated, result, err = pcall(f.write, CACHE_MARKER, CACHE_FORMAT .. " PENDING\n")
+  if not (invalidated and result) then return false, tostring(err or result) end
+  for index = 0, CLIP_COUNT - 1 do
+    local relative = ("%s/%03d.wav"):format(VOICE_ROOT, index)
+    local ok, bytes = pcall(mod.read, mod, relative)
+    if not (ok and type(bytes) == "string" and #bytes > 44) then
+      return false, "voice pack is missing clip " .. tostring(index)
+    end
+    local wrote, result, err = pcall(f.write, cacheClip(index), bytes)
+    if not (wrote and result) then return false, tostring(err or result) end
+  end
+  local saved, result, err = pcall(f.write, CACHE_MARKER,
+    CACHE_FORMAT .. " " .. checksum(marker) .. "\n" .. marker)
+  if not (saved and result) then return false, tostring(err or result) end
+  return true
 end
 
 local function stopSource(source)
@@ -85,8 +180,20 @@ end
 local function packReady()
   if state.packChecked then return state.packReady end
   state.packChecked = true
-  local ok, marker = pcall(mod.read, mod, PACK_MARKER)
-  state.packReady = ok and type(marker) == "string" and #marker > 0
+  local marker = sourceMarker()
+  if cacheReady(marker and checksum(marker) or nil) then
+    state.packReady, state.packSource = true, "cache"
+    return true
+  end
+  if not marker then return false end
+  local imported, err = importPack(marker)
+  if imported and cacheReady() then
+    state.packReady, state.packSource = true, "cache"
+  else
+    -- The mounted personalized ZIP is still a usable, non-persistent fallback
+    -- when save storage is unavailable.
+    state.packReady, state.packSource, state.cacheError = true, "package", err
+  end
   return state.packReady
 end
 
@@ -95,6 +202,7 @@ local function clipRelative(index)
 end
 
 local function clipPath(index)
+  if state.packSource == "cache" then return cacheClip(index) end
   local relative = clipRelative(index)
   if mod.assets and mod.assets.path then
     return mod.assets:path(relative)
@@ -296,6 +404,9 @@ end
 function Announcer.status()
   return {
     packReady = packReady(),
+    source = state.packSource,
+    cachePath = CACHE_DIR,
+    cacheError = state.cacheError,
     active = state.battle ~= nil,
     intro = state.intro,
     current = state.currentIndex,

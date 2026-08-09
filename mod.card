@@ -11,6 +11,7 @@ return {
     added = {
       "Runtime .z64/.n64/.v64 loading from the shared baseroms folder",
       "Versioned private effect cache in the Gen1Recomp save directory",
+      "Persistent local announcer cache that survives normal mod updates",
       "First-run attack-effect caching progress screen",
       "Optional Dramaless Shape integration, strongly recommended for Stadium models and camera staging",
       "Windup, travel, impact, and recovery camera staging for Stadium battles",

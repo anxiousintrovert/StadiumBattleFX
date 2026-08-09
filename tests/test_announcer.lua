@@ -1,5 +1,22 @@
 local hostLove = _G.love
 
+local completeMarker = '{"clip_count":823,"content_sha256":"test"}'
+
+local function memoryFilesystem()
+  local files, dirs = {}, {}
+  return {
+    getInfo = function(path, kind)
+      local file = files[path]
+      if file and (not kind or kind == "file") then return { type = "file" } end
+      if dirs[path] and (not kind or kind == "directory") then return { type = "directory" } end
+      return nil
+    end,
+    createDirectory = function(path) dirs[path] = true; return true end,
+    read = function(path) return files[path] end,
+    write = function(path, value) files[path] = value; return true end,
+  }
+end
+
 local function source()
   local self = { playing = false, stopped = false }
   function self:play() self.playing = true end
@@ -12,7 +29,7 @@ local function loadAnnouncer(opts)
   opts = opts or {}
   local played = {}
   _G.love = {
-    filesystem = hostLove and hostLove.filesystem,
+    filesystem = opts.filesystem or (hostLove and hostLove.filesystem),
     event = hostLove and hostLove.event,
     audio = {
       newSource = function(path, kind)
@@ -29,7 +46,10 @@ local function loadAnnouncer(opts)
     path = "mounted/STADIUM_BATTLE_FX",
     read = function(_, path)
       if path == "assets/announcer/voicepack.json" and opts.pack ~= false then
-        return "{}"
+        return completeMarker
+      end
+      if opts.sourceClips and path:match("^assets/announcer/%d%d%d%.wav$") then
+        return string.rep("w", 45)
       end
       return nil
     end,
@@ -56,6 +76,21 @@ local function battle(oppClass, partyIndex)
     player = { isPlayer = true, mon = { species = "BULBASAUR" } },
     enemy = { isPlayer = false, mon = { species = "RATTATA" } },
   }
+end
+
+-- A personalized package is only an import source. Once imported, a later
+-- voice-free update reads the save-data copy instead of requiring a second ZIP.
+do
+  local filesystem = memoryFilesystem()
+  local announcer, played = loadAnnouncer({ filesystem = filesystem, sourceClips = true })
+  assert(announcer.beginBattle(battle("OPP_BROCK")) == true)
+  assert(announcer.status().source == "cache")
+  assert(played[1].path:match("stadium_battle_fx/announcer/v1/223%.wav$"))
+
+  local updated, afterUpdate = loadAnnouncer({ filesystem = filesystem, pack = false })
+  assert(updated.beginBattle(battle("OPP_MISTY")) == true)
+  assert(updated.status().source == "cache")
+  assert(#afterUpdate == 1)
 end
 
 -- A complete pack starts the leader intro, then both Pokedex-ordered species

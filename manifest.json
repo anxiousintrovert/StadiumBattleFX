@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",

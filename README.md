@@ -204,16 +204,19 @@ run it, then select:
 Choose **Build Announcer Pack**. The builder verifies the ROM and base mod,
 extracts and converts the 823 clips, adds them under `assets/announcer/`, and
 writes a local validation marker. It creates a new `-local-announcer.zip`; it
-does not modify the official download.
+does not modify the official download. Launch that personalized package once:
+StadiumBattleFX imports the validated clips into its private save-data cache.
+After that, install normal voice-free updates as usual; they reuse the cached
+announcer pack and do not require rebuilding it.
 
 Install the personalized ZIP through Gen1Recomp's mod manager and remove or
 replace the voice-free copy. Both intentionally use the same mod ID and should
 not be enabled together.
 
 Nothing is uploaded. The ROM is never copied into the output, and temporary
-audio is deleted after the build. The personalized ZIP is the only retained
-ROM-derived artifact. Do not redistribute it. Run the builder again whenever
-you update the official mod ZIP.
+audio is deleted after the build. The personalized ZIP and private cache are
+ROM-derived artifacts; do not redistribute either. Run the builder again only
+when you want to replace the cached announcer pack.
 
 Developers can build the single-file Windows application with Python,
 PyInstaller, and `ziglang` installed:
@@ -304,7 +307,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.3.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.4.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,
