@@ -152,9 +152,17 @@ local function ice(self, Assets)
       if age >= 0 and age < 48 then
         local px = x + math.sin(i * 12.9898) * 38
         local py = y - 62 + age * (1.1 + (i % 4) * 0.16)
-        tinted(g, asset(Assets, i % 3 == 0 and "beam_star" or "spectrum_cycle"),
-          age / 3 + i, px, py, age * 0.08, 0.22 + i % 3 * 0.06,
-          { 0.62, 0.96, 1 }, 1 - age / 48)
+        local flake = asset(Assets,
+          i % 3 == 0 and "beam_star" or "spectrum_cycle")
+        if flake then
+          tinted(g, flake, age / 3 + i, px, py, age * 0.08,
+            0.22 + i % 3 * 0.06, { 0.62, 0.96, 1 }, 1 - age / 48)
+        else
+          g.setColor(0.72, 0.94, 1, 1 - age / 48)
+          local size = 1 + (i % 3) * 0.6
+          g.line(px - size, py, px + size, py)
+          g.line(px, py - size, px, py + size)
+        end
       end
     end
   else

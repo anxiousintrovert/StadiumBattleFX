@@ -317,7 +317,21 @@ local function assetOffset(fragment, wantedSlot)
   error(("effect asset slot 0x%X is missing"):format(wantedSlot))
 end
 
-local function readCache()
+local function cacheSpecs(names)
+  if names == nil then return SPECS end
+  local selected, seen = {}, {}
+  for _, name in ipairs(names) do
+    local spec = byName[name]
+    if not spec then return nil, "unknown Stadium asset " .. tostring(name) end
+    if not seen[name] then
+      seen[name] = true
+      selected[#selected + 1] = spec
+    end
+  end
+  return selected
+end
+
+local function readCache(names)
   local f = love and love.filesystem
   if not (f and isFile(CACHE_MARKER)) then return nil end
   local ok, marker = pcall(f.read, CACHE_MARKER)
@@ -332,8 +346,10 @@ local function readCache()
     local name, size, sum = lines[i]:match("^(%S+)%s+(%d+)%s+(%d+)$")
     if name then records[name] = { size = tonumber(size), sum = tonumber(sum) } end
   end
+  local specs, selectErr = cacheSpecs(names)
+  if not specs then return nil, selectErr end
   local raw = {}
-  for _, spec in ipairs(SPECS) do
+  for _, spec in ipairs(specs) do
     local rec = records[spec.name]
     if not (rec and isFile(spec.path)) then return nil, "effect cache is incomplete" end
     local okRead, bytes = pcall(f.read, spec.path)
@@ -489,6 +505,28 @@ local function build()
     result[spec.name] = asset
   end
   return result
+end
+
+-- A damaged cosmetic entry must not make otherwise valid cached primitives
+-- unusable. The normal preload remains strict and builds the complete set;
+-- this path validates and uploads only the assets a particular move requires.
+local function loadCachedSubset(names)
+  local missing = {}
+  for _, name in ipairs(names or {}) do
+    if not loaded[name] then missing[#missing + 1] = name end
+  end
+  if #missing == 0 then return true end
+
+  local raw, err = readCache(missing)
+  if not raw then return nil, err or "effect cache is unavailable" end
+  for _, name in ipairs(missing) do
+    local spec = byName[name]
+    local asset, makeErr = makeAsset(spec, raw[name], "cache")
+    if not asset then return nil, makeErr end
+    loaded[name] = asset
+  end
+  lastSource = lastSource or "cache"
+  return true
 end
 
 -- A marker is accepted only after every cached primitive passes its size and
@@ -664,10 +702,23 @@ function Assets.get(name)
 end
 
 function Assets.has(names)
+  names = names or {}
+  if #names == 0 then return true end
+  local present = true
+  for _, name in ipairs(names) do
+    if not loaded[name] then present = false break end
+  end
+  if present then return true end
+
   local ok, err = Assets.preload()
-  if not ok then return nil, err end
-  for _, name in ipairs(names or {}) do
-    if not loaded[name] then return nil, "missing Stadium asset " .. tostring(name) end
+  if not ok then
+    local subsetOk, subsetErr = loadCachedSubset(names)
+    if not subsetOk then return nil, subsetErr or err end
+  end
+  for _, name in ipairs(names) do
+    if not loaded[name] then
+      return nil, "missing Stadium asset " .. tostring(name)
+    end
   end
   return true
 end

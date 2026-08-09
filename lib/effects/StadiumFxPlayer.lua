@@ -46,14 +46,36 @@ local function stadiumParticleScale(callback, age, seed)
 end
 
 function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions,
-                    hitOptions)
+                    hitOptions, failureReporter)
   return setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, cameraCompanion = cameraCompanion,
     cameraOptions = cameraOptions or function() return true end,
     hitOptions = hitOptions or function() return true end,
+    failureReporter = failureReporter,
     custom = false, tick = 0, warned = {},
     drawWarned = false, context = nil, damageByMove = {},
     activeHit = nil, hitTriggered = false }, Player)
+end
+
+function Player:reportFailure(reason, spec)
+  if type(self.failureReporter) ~= "function" then return end
+  spec = spec or self.spec
+  local subject = spec and (spec.name or spec.key) or "STADIUM FX"
+  pcall(self.failureReporter, subject, tostring(reason or "unknown error"))
+end
+
+local function requiredAssets(spec)
+  local optional = {}
+  for _, name in ipairs(spec.optionalAssets or {}) do optional[name] = true end
+  local required = {}
+  for _, name in ipairs(spec.assets or {}) do
+    -- Screen-wide textures are presentation polish. A stale or incomplete
+    -- overlay cache must not disable the move's anchored animation.
+    if not optional[name] and not name:match("^screen_") then
+      required[#required + 1] = name
+    end
+  end
+  return required
 end
 
 function Player:setMoveContext(payload)
@@ -111,9 +133,12 @@ function Player:start(moveId, attackerIsPlayer, opts)
   if spec.bodyOnly and not self:stadiumModelShowing() then
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
-  local ok, err = Assets.has(spec.assets)
-  if not ok and #spec.assets > 0 then
+  local assets = requiredAssets(spec)
+  local ok, err = true, nil
+  if #assets > 0 then ok, err = Assets.has(assets) end
+  if not ok then
     self:warn(spec.key, err)
+    self:reportFailure(err, spec)
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
 
@@ -525,10 +550,13 @@ local function drawCustom(self)
   local r, gg, b, a = g.getColor()
   g.setBlendMode("alpha", "alphamultiply")
   local draw = DRAW[self.spec.kind]
-  if draw then draw(self) end
+  local ok, err = pcall(function()
+    if draw then draw(self) end
+  end)
   g.setColor(r or 1, gg or 1, b or 1, a or 1)
   if g.setLineWidth then g.setLineWidth(oldWidth) end
   g.setBlendMode(oldMode or "alpha", oldAlpha)
+  if not ok then error(err, 0) end
 end
 
 function Player:draw(...)
@@ -541,7 +569,16 @@ function Player:draw(...)
       self.logger:warn("Stadium effect draw failed; using Gen1 renderer: %s", tostring(err))
     end
   end
-  return call(self.inner, "draw", ...)
+  self:reportFailure(err)
+  -- drawCustom may already have emitted pixels before the error. Drawing the
+  -- Gen1 frame now would put the old animation on top of that partial Stadium
+  -- frame. Retire the custom presentation and let the already-running inner
+  -- player take over cleanly on the next frame instead.
+  AttackCinematics.stop()
+  ScreenFx.clear(self)
+  self.custom, self.spec = false, nil
+  self.activeHit, self.hitTriggered = nil, false
+  return nil
 end
 
 function Player:drawSprites(...)

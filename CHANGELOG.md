@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1 - 2026-08-08
+
+- Made cosmetic screen overlays and Blizzard snow textures optional so a
+  stale entry cannot disable the move's core Stadium presentation.
+- Added integrity-checked loading of required cache subsets when unrelated
+  cosmetic cache entries are missing or corrupt.
+- Changed draw-error fallback to restore graphics state, release camera and
+  overlay ownership, and let Gen1 rendering resume on the following frame
+  instead of layering it over a partially drawn Stadium frame.
+- Added a nine-second on-screen fallback banner naming the affected move and
+  failure reason for cache, asset, and renderer errors.
+- Added regression coverage for incomplete caches, optional-asset gates, and
+  mid-draw renderer failures.
+
 ## 1.0.0 - 2026-08-08
 
 - Added optional, failure-isolated Stadium announcer playback for the eight Gym

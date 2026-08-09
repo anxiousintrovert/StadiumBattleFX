@@ -24,7 +24,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.0")
+assert(mod.exports.version == "1.0.1")
 assert(type(handlers["battle.move_used"]) == "function")
 assert(type(handlers["battle.damage_dealt"]) == "function")
 assert(type(handlers["battle.battler_switched"]) == "function")
@@ -42,4 +42,4 @@ handlers["battle.move_used"]({ battle = battle, move = { index = 84 } })
 handlers["battle.damage_dealt"]({ battle = battle, damage = 12, typeMult = 20 })
 assert(movePayload and movePayload.move.index == 84)
 assert(damagePayload and damagePayload.damage == 12 and damagePayload.typeMult == 20)
-print("ok 1.0.0 runtime event wiring")
+print("ok 1.0.1 runtime event wiring")

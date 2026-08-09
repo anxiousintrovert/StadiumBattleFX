@@ -70,6 +70,12 @@ Pokemon Stadium footage.
 5. Restart Gen1Recomp. On the first overworld load, the **STADIUM ATTACK FX**
    screen builds the private effect cache and closes automatically.
 
+When upgrading from an older release, use the mod manager's update or
+reinstall action. If the displayed version does not change, remove every old
+**StadiumBattleFX / Stadium Attack Animations** copy, restart Gen1Recomp, and
+then install the new ZIP. This clears same-ID folders left by older mod-manager
+versions without deleting the private effect cache.
+
 Example ROM layout:
 
 ```text
@@ -108,7 +114,7 @@ Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
 
 ## Stadium animations
 
-Version 1.0.0 covers the complete 165-move Gen 1 roster. Each move is generated
+Version 1.0.1 covers the complete 165-move Gen 1 roster. Each move is generated
 from Gen1Recomp's canonical move data and matched with decoded Pokemon Stadium
 primary, alternate, impact, and resource dispatch metadata.
 
@@ -286,7 +292,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.0.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.1.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

@@ -48,6 +48,7 @@ local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
 local AttackCinematics = namespace.require("AttackCinematics")
 local Announcer = namespace.require("Announcer")
+local FailureNotice = namespace.require("FailureNotice")
 
 local function dramalessCompanion()
   return mod.find("DRAMALESS_SHAPE")
@@ -65,7 +66,7 @@ mod.options:define({
     } },
 })
 
-mod.exports.version = "1.0.0"
+mod.exports.version = "1.0.1"
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
@@ -86,6 +87,7 @@ end
 mod.hooks:wrap("input.step", function(next, game, dt)
   local result = next(game, dt)
   Announcer.update(dt)
+  FailureNotice.update(dt)
   if mod.options:get("enabled") ~= false then
     local ok, err = pcall(EffectCacheScreen.maybePush, game)
     if not ok then mod.log:warn("attack cache screen unavailable: %s", tostring(err)) end
@@ -98,6 +100,7 @@ end)
 mod.hooks:wrap("render.hud", function(next, game, viewport)
   local result = next(game, viewport)
   StadiumScreenFx.present(game, viewport)
+  FailureNotice.draw(viewport)
   return result
 end)
 
@@ -138,7 +141,9 @@ mod.events:on("battle.started", function(payload)
     mod.log,
     dramalessCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
-    function() return mod.options:get("attack_camera") ~= false end)
+    function() return mod.options:get("attack_camera") ~= false end,
+    nil,
+    function(subject, reason) FailureNotice.show(subject, reason) end)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter
