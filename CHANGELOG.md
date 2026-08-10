@@ -1,5 +1,53 @@
 # Changelog
 
+## 1.0.8 - 2026-08-09
+
+- Fixed Windows diagnostic-log exports failing silently after a Save dialog.
+  The options row now reports `SAVED`, `CANCELLED`, or `FAILED`; failed file
+  writes are recorded in the persistent diagnostic log instead of being
+  reported as success.
+
+## 1.0.7 - 2026-08-09
+
+- Added the Stadium-model faint bridge. Player and opponent Pokemon now queue
+  their held Stadium faint animation after the engine HP bar reaches zero;
+  older Dramaless Shape installs safely keep their normal faint behavior.
+
+## 1.0.6 - 2026-08-09
+
+- Added a bounded persistent animation diagnostic log. It records battle and
+  move events, Stadium/delegated presentation choice, asset fallback, hit
+  reaction, draw-fallback, and cancellation outcomes.
+- Added **EXPORT ANIMATION LOG** to the mod options menu. Windows opens a
+  save dialog; Android opens the system document picker through a dedicated
+  export bridge that never reuses the pending game-save export file.
+
+## 1.0.5 - 2026-08-09
+
+- Released the screen-compositor correction for desktop borderless mode.
+  Screen-wide washes, flashes, and tiled fields now cancel the staged battle
+  transform on the game layer and replay seamlessly into each outer margin,
+  while Pokemon-anchored effects remain attached to their projected targets.
+- Added regression coverage for the borderless margin pass and non-borderless
+  full-screen rendering paths.
+
+## 1.0.4 - 2026-08-09
+
+- Added a validated persistent announcer cache. A personalized local package
+  imports its 823 clips into save data once; later voice-free updates reuse the
+  cached audio automatically.
+
+## 1.0.3 - 2026-08-09
+
+- Fixed all screen-wide move layers on Android and windowed desktop layouts.
+  Washes, partial fields, scrolling tiles, and flashes now always cancel the
+  staged battle camera transform; only extending effects into desktop margins
+  remains borderless-specific. This fixes Surf, Blizzard, Toxic, Psychic,
+  Confusion, Light Screen, Reflect, Earthquake, Explosion, Flash, Mist, Haze,
+  and generic screen effects rendering as a reduced center rectangle.
+- Expanded the screen-effect regression test to exercise every shared
+  full-screen primitive and dedicated screen program outside borderless mode.
+
 ## 1.0.2 - 2026-08-09
 
 - Added in-game **STADIUM ROM** import/replace and **REFRESH FX CACHE** action

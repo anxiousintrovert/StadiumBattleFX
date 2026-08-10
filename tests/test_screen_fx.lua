@@ -43,16 +43,43 @@ assert(ScreenFx.tile(g, fake, 0, { alpha = 0.2, x = 3, y = 4 }))
 assert(calls.draws >= 30, "tile did not cover the full animation layer")
 assert(not ScreenFx.drawMove({ spec = { key = "TACKLE" } }))
 
--- Borderless screen layers cancel the combatant-pair scale, then replay only
--- into the composed desktop margins (the center already came from the canvas).
-ScreenFx.setBorderless(true)
+-- Screen layers cancel the combatant-pair scale in every video mode. Only the
+-- post-compose replay into desktop margins is specific to borderless mode.
+ScreenFx.setBorderless(false)
 player.dsState = { layerTransform = {
   authoredCenter = { 75, 76 }, projectedCenter = { 83, 73 }, scale = 0.8,
 } }
 ScreenFx.activate(player)
+local function assertUntransformed(label, draw)
+  calls.inverseScale = nil
+  draw()
+  assert(math.abs((calls.inverseScale or 0) - 1.25) < 1e-9,
+    label .. " did not cancel Dramaless Shape scale outside borderless mode")
+end
+
+-- Every screen-wide renderer path uses one of these primitives. Check the
+-- wash, partial field, tiled field, flash, and the dedicated move programs
+-- while the output is in Android/windowed-style (non-borderless) mode.
+assertUntransformed("full wash", function()
+  ScreenFx.fill(g, { 1, 1, 1 }, 0.25, player)
+end)
+assertUntransformed("partial field", function()
+  ScreenFx.region(g, { 1, 1, 1 }, 0.25, 0, 62, 160, 82, player)
+end)
+assertUntransformed("tiled field", function()
+  ScreenFx.tile(g, fake, 0, { alpha = 0.25, owner = player })
+end)
+assertUntransformed("flash", function()
+  ScreenFx.flash(g, 6, 4, 10, { 1, 1, 1 }, 0.25, player)
+end)
+for _, key in ipairs({ "FLASH", "MIST", "HAZE" }) do
+  player.spec = { key = key, duration = 72 }
+  assertUntransformed(key, function() ScreenFx.drawMove(player) end)
+end
+-- Isolate the margin-compositor assertion to a single recorded operation.
+ScreenFx.activate(player)
 ScreenFx.fill(g, { 1, 1, 1 }, 0.25, player)
-assert(math.abs(calls.inverseScale - 1.25) < 1e-9,
-  "screen layer did not cancel Dramaless Shape scale")
+ScreenFx.setBorderless(true)
 calls.scissors = 0
 assert(ScreenFx.present({ save = { options = { videoMode = "borderless" } } }, {
   width = 1920, height = 1080, gameX = 400, gameY = 36,

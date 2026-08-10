@@ -120,7 +120,7 @@ Linux:   ${XDG_DATA_HOME:-$HOME/.local/share}/love/pokemon-love2d/baseroms/
 
 ## Stadium animations
 
-Version 1.0.2 covers the complete 165-move Gen 1 roster. Each move is generated
+Version 1.0.3 covers the complete 165-move Gen 1 roster. Each move is generated
 from Gen1Recomp's canonical move data and matched with decoded Pokemon Stadium
 primary, alternate, impact, and resource dispatch metadata.
 
@@ -204,16 +204,19 @@ run it, then select:
 Choose **Build Announcer Pack**. The builder verifies the ROM and base mod,
 extracts and converts the 823 clips, adds them under `assets/announcer/`, and
 writes a local validation marker. It creates a new `-local-announcer.zip`; it
-does not modify the official download.
+does not modify the official download. Launch that personalized package once:
+StadiumBattleFX imports the validated clips into its private save-data cache.
+After that, install normal voice-free updates as usual; they reuse the cached
+announcer pack and do not require rebuilding it.
 
 Install the personalized ZIP through Gen1Recomp's mod manager and remove or
 replace the voice-free copy. Both intentionally use the same mod ID and should
 not be enabled together.
 
 Nothing is uploaded. The ROM is never copied into the output, and temporary
-audio is deleted after the build. The personalized ZIP is the only retained
-ROM-derived artifact. Do not redistribute it. Run the builder again whenever
-you update the official mod ZIP.
+audio is deleted after the build. The personalized ZIP and private cache are
+ROM-derived artifacts; do not redistribute either. Run the builder again only
+when you want to replace the cached announcer pack.
 
 Developers can build the single-file Windows application with Python,
 PyInstaller, and `ziglang` installed:
@@ -238,12 +241,14 @@ effect cache screen. During battle, the integration can use:
 - per-move attacker and defender attachment tags;
 - an optional second origin for dual-emitter moves;
 - impact-synchronized skeletal hit reactions; and
+- HP-drain-synchronized Stadium faint animations for either side; and
 - Dramaless Shape's temporary runtime camera function for attack shots.
 
 The integration is capability-checked. Older Dramaless Shape versions safely
 fall back to staged combatant anchors and omit unavailable skeletal reactions.
-Dramaless Shape owns faint animation timing, so StadiumBattleFX does not
-register a competing faint listener.
+Dramaless Shape owns faint animation timing. StadiumBattleFX forwards the
+engine faint event through its public bridge; the companion waits for the HP
+bar to empty before starting the player's or opponent's held faint animation.
 
 The companion is read-only. StadiumBattleFX never changes Dramaless Shape's
 files, settings, or `dramatic_shape/stadium/` model cache.
@@ -258,6 +263,7 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
 | **STADIUM ROM** | Import/Replace | Opens the system ROM picker; Android uses its document picker. |
 | **REFRESH FX CACHE** | Rebuild | Forces a fresh effect-cache extraction from the stored ROM. |
+| **EXPORT ANIMATION LOG** | Export | Opens a save dialog and exports the recent StadiumBattleFX diagnostics for a bug report. Android requires a Gen1Recomp build that provides `love.system.exportFile`. |
 
 ## ROM data and private cache
 
@@ -304,7 +310,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-1.0.2.zip
+  --output dist\STADIUM_BATTLE_FX-1.0.4.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

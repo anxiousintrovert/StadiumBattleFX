@@ -27,6 +27,8 @@ end
 function love.load()
   for _, path in ipairs({
     "lib/StadiumAssets.lua",
+    "lib/StadiumLog.lua",
+    "lib/StadiumLogExport.lua",
     "lib/EffectCacheScreen.lua",
     "lib/StadiumRomPicker.lua",
     "lib/DramaticShapeState.lua",
@@ -65,6 +67,7 @@ function love.load()
   assert(love.filesystem.load("tests/test_timing_profiles.lua"))()
   assert(love.filesystem.load("tests/test_screen_fx.lua"))()
   assert(love.filesystem.load("tests/test_stadium_fidelity.lua"))()
+  assert(love.filesystem.load("tests/test_stadium_log_export.lua"))()
   if os.getenv("STADIUM_FX_COMPILE_ONLY") == "1" then
     print("ok runtime modules compile")
     love.event.quit(0)
@@ -130,7 +133,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "1.0.2", "wrong mod export version")
+  assert(mod.exports.version == "1.0.3", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   assert(type(handlers["hook:render.hud"]) == "function",
