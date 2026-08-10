@@ -16,6 +16,14 @@ from pathlib import Path
 
 EXPECTED_SIZE = 32 * 1024 * 1024
 EXPECTED_MD5 = "ed1378bc12115f71209a77844965ba50"
+# MD5s of the original dump bytes, before byte-order normalization.  These
+# let the Windows announcer builder reject a bad ROM immediately while still
+# accepting the three standard N64 dump orders (.bin is detected as n64).
+EXPECTED_SOURCE_MD5 = {
+    "z64": "ed1378bc12115f71209a77844965ba50",
+    "v64": "3a7324ce816d5891dea074055690750a",
+    "n64": "f270920db049bf2f6b54812299c5c451",
+}
 BATTLE_DATA_BASE = 0x70D3A0
 SPECIES_BATTLE_STRIDE = 0xB90
 MOVE_ROW_WIDTH = 0x10
@@ -89,11 +97,19 @@ class Reader:
 
 
 def open_rom(path: Path) -> tuple[Reader, dict[str, object]]:
-    normalized, order = normalize(path.read_bytes())
+    source = path.read_bytes()
+    normalized, order = normalize(source)
     if len(normalized) != EXPECTED_SIZE:
         raise StadiumRomError(
             f"unsupported Stadium ROM size: {len(normalized)} bytes; "
             f"expected {EXPECTED_SIZE}"
+        )
+    source_digest = hashlib.md5(source).hexdigest()
+    expected_source_digest = EXPECTED_SOURCE_MD5[order]
+    if source_digest != expected_source_digest:
+        raise StadiumRomError(
+            f"unsupported {order} Stadium ROM MD5: {source_digest}; "
+            f"expected {expected_source_digest}"
         )
     digest = hashlib.md5(normalized).hexdigest()
     if digest != EXPECTED_MD5:
@@ -104,6 +120,7 @@ def open_rom(path: Path) -> tuple[Reader, dict[str, object]]:
     report = {
         "path": str(path.resolve()),
         "source_order": order,
+        "source_md5": source_digest,
         "normalized_magic": reader.read(0, 4).hex(),
         "size": len(normalized),
         "md5": digest,

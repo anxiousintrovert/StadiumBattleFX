@@ -49,7 +49,7 @@ class BuilderApp:
 
         self._file_row(
             outer, 2, "Pokemon Stadium ROM", self.rom, self.choose_rom,
-            "Select your Pokemon Stadium (USA) v1.0 .z64/.v64/.n64 ROM."
+            "Select your Pokemon Stadium (USA) v1.0 .z64/.v64/.n64/.bin ROM."
         )
         self._file_row(
             outer, 5, "StadiumBattleFX pack", self.pack, self.choose_pack,
@@ -104,7 +104,7 @@ class BuilderApp:
     def choose_rom(self) -> None:
         path = filedialog.askopenfilename(
             title="Select Pokemon Stadium ROM",
-            filetypes=[("Nintendo 64 ROM", "*.z64 *.v64 *.n64"), ("All files", "*.*")],
+            filetypes=[("Nintendo 64 ROM", "*.z64 *.v64 *.n64 *.bin"), ("All files", "*.*")],
         )
         if path:
             self.rom.set(path)

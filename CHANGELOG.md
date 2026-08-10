@@ -5,6 +5,8 @@
 - The Stadium effect-cache scan now verifies the normalized ROM MD5 as well
   as its size and header. Unsupported or modified ROMs stop the cache build
   with a clear incorrect-version-or-ROM error instead of extracting assets.
+- Rebuilt the Windows announcer decoder for the baseline x64 instruction set,
+  preventing unsupported-instruction failures on compatible older CPUs.
 
 ## 1.1.1 - 2026-08-10
 

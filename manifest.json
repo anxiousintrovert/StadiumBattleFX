@@ -8,10 +8,10 @@
   "category": "GRAPHICS",
   "game_version": "0.0.0-dev || >=0.1.37 <2.0.0",
   "priority": 110,
-  "dependencies": [],
-  "optional_dependencies": [
+  "dependencies": [
     "DRAMALESS_SHAPE"
   ],
+  "optional_dependencies": [],
   "conflicts": [],
   "incompatible": [],
   "permissions": [

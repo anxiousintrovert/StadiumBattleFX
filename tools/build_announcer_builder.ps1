@@ -18,6 +18,8 @@ $releaseZip = Join-Path $project "dist\StadiumBattleFX-Announcer-Builder-windows
     -std=c++17 `
     -O2 `
     -DNDEBUG `
+    -target x86_64-windows-gnu `
+    -mcpu=baseline `
     -Wno-format `
     -Wno-nullability-completeness `
     -o $decoder `

@@ -65,6 +65,13 @@ def _run_decoder_batch(decoder: Path, mort_dir: Path, wav_dir: Path) -> None:
     )
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()
+        if result.returncode == 0xC000001D:
+            detail = (
+                "Windows stopped the decoder with STATUS_ILLEGAL_INSTRUCTION "
+                "(0xC000001D). The decoder may require a CPU instruction the "
+                "computer does not support; install the baseline-compatible "
+                "Windows patcher build."
+            )
         raise AnnouncerBuildError(
             f"Decoder failed (exit {result.returncode}): {detail}"
         )

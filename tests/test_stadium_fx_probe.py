@@ -44,6 +44,11 @@ class StadiumRomUnitTests(unittest.TestCase):
             self.assertEqual(expected_order, order)
             self.assertEqual(self.z64, normalized)
 
+    def test_raw_hash_allowlist_uses_each_dump_order(self) -> None:
+        self.assertEqual("ed1378bc12115f71209a77844965ba50", PROBE.EXPECTED_SOURCE_MD5["z64"])
+        self.assertEqual("3a7324ce816d5891dea074055690750a", PROBE.EXPECTED_SOURCE_MD5["v64"])
+        self.assertEqual("f270920db049bf2f6b54812299c5c451", PROBE.EXPECTED_SOURCE_MD5["n64"])
+
     def test_bad_magic_is_rejected(self) -> None:
         with self.assertRaisesRegex(PROBE.StadiumRomError, "recognized N64"):
             PROBE.normalize(b"nope")
@@ -72,6 +77,7 @@ class StadiumRomIntegrationTests(unittest.TestCase):
     def test_supported_cartridge(self) -> None:
         report = PROBE.inspect_rom(Path(os.environ["STADIUM_ROM"]))
         self.assertEqual(PROBE.EXPECTED_MD5, report["md5"])
+        self.assertEqual(PROBE.EXPECTED_SOURCE_MD5[report["source_order"]], report["source_md5"])
         self.assertEqual(PROBE.EXPECTED_SIZE, report["size"])
         self.assertEqual("80371240", report["normalized_magic"])
 

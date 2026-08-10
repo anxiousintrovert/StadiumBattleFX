@@ -2,7 +2,6 @@
 -- first party-sized move set. Nothing here reads or writes another mod.
 
 local V = ...
-local StadiumRom = V and V.require and V.require("StadiumRom")
 local Assets = {}
 
 local ROM_SIZE = 32 * 1024 * 1024
@@ -232,11 +231,25 @@ local function validatedReader(bytes)
   -- The header CRC identifies the known build, but is not a complete
   -- integrity check: a modified ROM can retain its original header.  Require
   -- the canonical normalized MD5 before extracting anything into the cache.
-  if StadiumRom then
-    local report = StadiumRom.inspect(bytes)
-    if not report then return nil, ROM_VALIDATION_ERROR end
-    bytes = report.normalized
+  -- Dramaless Shape is required, so both companions judge the
+  -- player-supplied cartridge through one public StadiumRom reader.
+  local companion = V and V.mod and type(V.mod.find) == "function"
+    and V.mod.find("DRAMALESS_SHAPE")
+  local sharedLib = companion and companion.exports and companion.exports.lib
+  local sharedRom
+  if sharedLib and type(sharedLib.require) == "function" then
+    local ok, value = pcall(sharedLib.require, "StadiumRom")
+    if ok then sharedRom = value end
   end
+  if not sharedRom then return nil, ROM_VALIDATION_ERROR end
+  local opened = sharedRom.open(bytes)
+  -- isExpectedUS deliberately permits a missing hash service for
+  -- Dramaless's headless tooling.  This cache cannot do that: an MD5 is
+  -- mandatory before offsets are trusted.
+  if not opened or not opened:md5() or not opened:isExpectedUS() then
+    return nil, ROM_VALIDATION_ERROR
+  end
+  bytes = opened.data
   local reader = Reader.new(bytes)
   if not reader then return nil, ROM_VALIDATION_ERROR end
   return reader
