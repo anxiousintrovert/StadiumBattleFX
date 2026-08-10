@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 - 2026-08-10
+
+- The Stadium effect-cache scan now verifies the normalized ROM MD5 as well
+  as its size and header. Unsupported or modified ROMs stop the cache build
+  with a clear incorrect-version-or-ROM error instead of extracting assets.
+
 ## 1.1.1 - 2026-08-10
 
 - Fixed Stadium announcer faint calls playing when the battle first records a

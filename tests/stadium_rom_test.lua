@@ -39,4 +39,17 @@ local value, err = reader:u32be(#z64 - 3)
 eq(value, nil, "out-of-bounds value")
 eq(err.code, "out_of_bounds", "out-of-bounds code")
 
+-- The cache must only be built from the one cartridge revision its offsets
+-- describe.  Use an injected hash provider so this remains a unit test.
+local fullSizeRom = z64 .. string.rep("\0", StadiumRom.EXPECTED_SIZE - #z64)
+local accepted = assert(StadiumRom.inspect(fullSizeRom, function()
+  return StadiumRom.EXPECTED_MD5
+end))
+eq(accepted.md5, StadiumRom.EXPECTED_MD5, "expected ROM hash")
+local rejected, rejectedErr = StadiumRom.inspect(fullSizeRom, function()
+  return string.rep("0", 32)
+end)
+eq(rejected, nil, "wrong ROM rejected")
+eq(rejectedErr.code, "unsupported_revision", "wrong ROM error code")
+
 print("stadium_rom_test: ok")

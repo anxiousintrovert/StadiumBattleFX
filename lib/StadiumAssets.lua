@@ -1,6 +1,8 @@
 -- Private, ROM-derived cache for the shared Stadium primitives used by the
 -- first party-sized move set. Nothing here reads or writes another mod.
 
+local V = ...
+local StadiumRom = V and V.require and V.require("StadiumRom")
 local Assets = {}
 
 local ROM_SIZE = 32 * 1024 * 1024
@@ -10,6 +12,7 @@ local CRC1, CRC2 = 0x90F5D9B3, 0x9D0EDCF0
 local CACHE_DIR = "stadium_battle_fx/effects/v3"
 local CACHE_MARKER = CACHE_DIR .. "/cache.info"
 local CACHE_FORMAT, CACHE_REV = "SFXC3", 3
+local ROM_VALIDATION_ERROR = "cache failed incorrect version or rom"
 
 -- Each range is tied to a fragment asset-table entry and a renderer format
 -- in pret/pokestadium. Only these texture bytes are retained.
@@ -225,11 +228,25 @@ function Reader.new(bytes)
   return self
 end
 
+local function validatedReader(bytes)
+  -- The header CRC identifies the known build, but is not a complete
+  -- integrity check: a modified ROM can retain its original header.  Require
+  -- the canonical normalized MD5 before extracting anything into the cache.
+  if StadiumRom then
+    local report = StadiumRom.inspect(bytes)
+    if not report then return nil, ROM_VALIDATION_ERROR end
+    bytes = report.normalized
+  end
+  local reader = Reader.new(bytes)
+  if not reader then return nil, ROM_VALIDATION_ERROR end
+  return reader
+end
+
 -- Used by the in-game importer before it replaces the preferred baserom.
 -- Keeping validation here ensures picker and cache builds accept the exact
 -- same cartridge revisions and byte orders.
 function Assets.validateRom(bytes)
-  return Reader.new(bytes)
+  return validatedReader(bytes)
 end
 
 function Reader:sourceOffset(offset)
@@ -439,7 +456,7 @@ end
 local function extractAll(path)
   local okRead, bytes = pcall(love.filesystem.read, path)
   if not (okRead and type(bytes) == "string") then return nil, "could not read " .. path end
-  local reader, err = Reader.new(bytes)
+  local reader, err = Assets.validateRom(bytes)
   if not reader then return nil, err end
   local raw = {}
   local ok, extractErr = pcall(function()
