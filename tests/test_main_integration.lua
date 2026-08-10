@@ -32,7 +32,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.7")
+assert(mod.exports.version == "1.0.8")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
 assert(#schemas.attack_speed.choices == 11
        and schemas.attack_speed.choices[1][2] == "100"
@@ -86,4 +86,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 assert(#faintCalls == 1 and faintCalls[1][1] == "player"
        and faintCalls[1][2] == "recall",
        "player faint was not forwarded to Dramaless Shape")
-print("ok 1.0.7 runtime event wiring")
+print("ok 1.0.8 runtime event wiring")

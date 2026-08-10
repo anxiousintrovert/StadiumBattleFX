@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.8 - 2026-08-09
+
+- Fixed Windows diagnostic-log exports failing silently after a Save dialog.
+  The options row now reports `SAVED`, `CANCELLED`, or `FAILED`; failed file
+  writes are recorded in the persistent diagnostic log instead of being
+  reported as success.
+
 ## 1.0.7 - 2026-08-09
 
 - Added the Stadium-model faint bridge. Player and opponent Pokemon now queue

@@ -15,7 +15,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-mod.exports.version = "1.0.7"
+mod.exports.version = "1.0.8"
 
 local namespace = { mod = mod, path = mod.path }
 local modules = {}

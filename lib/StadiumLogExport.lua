@@ -5,6 +5,12 @@ local Logger = V.require("StadiumLog")
 local Export = {}
 local STAGED = "pending_stadium_battle_fx_log.txt"
 local SUGGESTED = "StadiumBattleFX-log.txt"
+local last = { state = "EXPORT", message = nil }
+
+local function result(state, message)
+  last = { state = state, message = message }
+  return state == "SAVED", message
+end
 
 local function osName()
   local ok, value = pcall(function() return love.system.getOS() end)
@@ -37,34 +43,57 @@ function Export.available()
   return io and io.open and io.popen and true or false
 end
 
+function Export.status()
+  return last.state, last.message
+end
+
 function Export.export()
   local logger = V.log
   if osName() == "Android" then
     if not Export.available() then
       logger:warn("log export unavailable: this Gen1Recomp build lacks love.system.exportFile")
-      return false
+      return result("UNAVAILABLE", "This Gen1Recomp build cannot open the Android export picker.")
     end
     local ok, err = logger:stage(STAGED)
-    if not ok then logger:error("log export staging failed: %s", err); return false end
+    if not ok then
+      logger:error("log export staging failed: %s", err)
+      return result("FAILED", "Could not prepare the diagnostic log: " .. tostring(err))
+    end
     local opened, shown = pcall(love.system.exportFile, STAGED, SUGGESTED)
-    if not (opened and shown) then logger:error("Android log export picker could not open") end
-    return opened and shown or false
+    if not (opened and shown) then
+      logger:error("Android log export picker could not open")
+      return result("FAILED", "The Android export picker could not open.")
+    end
+    return result("SAVED", "Choose a location in the Android document picker to finish exporting.")
   end
   local path = chooseDesktop()
-  if not path then return false end
+  if not path then return result("CANCELLED", "No log file was saved.") end
   local file = io.open(path, "wb")
-  if not file then logger:error("log export could not write selected desktop path"); return false end
-  file:write(logger:contents())
-  file:close()
-  logger:info("diagnostic log exported to desktop file picker")
-  return true
+  if not file then
+    logger:error("log export could not write selected desktop path: %s", path)
+    return result("FAILED", "Windows could not write the selected file.")
+  end
+  local wrote, writeErr = pcall(file.write, file, logger:contents())
+  local closed, closeErr = pcall(file.close, file)
+  if not (wrote and closed) then
+    logger:error("log export write failed: %s", tostring(writeErr or closeErr))
+    return result("FAILED", "Windows could not finish writing the selected file.")
+  end
+  logger:info("diagnostic log exported: %s", path)
+  return result("SAVED", path)
 end
 
 function Export.row()
   return {
     id = "STADIUM_BATTLE_FX:exportLog", label = "EXPORT ANIMATION LOG",
-    value = function() return Export.available() and "EXPORT" or "UNAVAILABLE" end,
-    step = function() Export.export(); return true end,
+    value = function()
+      if not Export.available() then return "UNAVAILABLE" end
+      return last.state
+    end,
+    step = function()
+      local ok = Export.export()
+      return ok
+    end,
   }
 end
 
