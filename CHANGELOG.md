@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 - 2026-08-10
+
+- Fixed Stadium announcer faint calls playing when the battle first records a
+  knockout. They now wait until the battle UI's HP bar has drained to zero.
+
 ## 1.1.0 - 2026-08-10
 
 - Added complete Stadium attachment handling: attack effects now make a

@@ -138,7 +138,20 @@ do
   assert(announcer.moveUsed({ battle = b, move = { index = 84 } }))
   assert(announcer.damageDealt({ battle = b, typeMult = 20 }))
   assert(announcer.statusInflicted({ battle = b, status = "PAR" }))
+  local queuedBeforeFaint = announcer.status().queued
+  b.enemy.mon.hp = 0
+  b.enemy.shownHP = 12
   assert(announcer.fainted({ battle = b, battler = b.enemy }))
+  assert(announcer.status().pendingFaints == true)
+  assert(announcer.status().queued == queuedBeforeFaint,
+    "faint call was queued before the displayed HP reached zero")
+  assert(announcer.status().current == 387,
+    "faint call started before the displayed HP reached zero")
+  b.enemy.shownHP = 0
+  announcer.update(0)
+  assert(announcer.status().pendingFaints == false)
+  assert(announcer.status().queued == queuedBeforeFaint + 1,
+    "faint call was not queued after the displayed HP reached zero")
 end
 
 -- Flow commentary becomes eligible only after several moves and waits for an

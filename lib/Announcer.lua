@@ -72,6 +72,7 @@ local state = {
   flowMoves = 0,
   flowPending = false,
   flowIndex = 0,
+  pendingFaints = {},
   packChecked = false,
   packReady = false,
   packSource = nil,
@@ -210,6 +211,7 @@ local function resetPlayback()
   state.idle = 0
   state.flowMoves = 0
   state.flowPending = false
+  state.pendingFaints = {}
 end
 
 local function packReady()
@@ -423,9 +425,35 @@ function Announcer.statusInflicted(payload)
     "status:" .. tostring(payload.status))
 end
 
+-- `battle.fainted` is emitted when the battle logic sets a Pokemon's real HP
+-- to zero.  The UI drains `shownHP` afterwards, so wait for that displayed
+-- value before playing the Stadium knockout call.
+local function faintReady(battler)
+  if not battler then return false end
+  if battler.shownHP ~= nil then
+    return tonumber(battler.shownHP) and tonumber(battler.shownHP) <= 0
+  end
+  local mon = battler.mon
+  return mon and tonumber(mon.hp) and tonumber(mon.hp) <= 0
+end
+
+local function playReadyFaints()
+  for battler, battle in pairs(state.pendingFaints) do
+    if battle ~= state.battle then
+      state.pendingFaints[battler] = nil
+    elseif faintReady(battler) then
+      state.pendingFaints[battler] = nil
+      enqueue(351, PRIORITY.faint, "faint")
+    end
+  end
+end
+
 function Announcer.fainted(payload)
-  if not payload or payload.battle ~= state.battle then return false end
-  return enqueue(351, PRIORITY.faint, "faint")
+  local battler = payload and payload.battler
+  if not battler or payload.battle ~= state.battle then return false end
+  if faintReady(battler) then return enqueue(351, PRIORITY.faint, "faint") end
+  state.pendingFaints[battler] = payload.battle
+  return true
 end
 
 function Announcer.finishBattle(payload)
@@ -458,6 +486,7 @@ function Announcer.update(dt)
   elseif state.gap > 0 then
     state.gap = math.max(0, state.gap - (tonumber(dt) or 0))
   end
+  playReadyFaints()
   if not state.current and #state.queue == 0 and state.gap <= 0 then
     state.idle = state.idle + math.max(0, tonumber(dt) or 0)
     if state.idle >= FLOW_IDLE_SECONDS then
@@ -487,6 +516,7 @@ function Announcer.status()
     intro = state.intro,
     current = state.currentIndex,
     queued = #state.queue,
+    pendingFaints = next(state.pendingFaints) ~= nil,
     flowPending = state.flowPending,
     missing = state.missing,
   }
