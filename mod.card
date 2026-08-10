@@ -16,6 +16,7 @@ return {
       "Optional Dramaless Shape integration, strongly recommended for Stadium models and camera staging",
       "Windup, travel, impact, and recovery camera staging for Stadium battles",
       "Animated Stadium attachment origins and impact-synchronized skeletal hit reactions",
+      "HP-drain-synchronized Stadium faint animations for player and opponent Pokemon when the companion supports the faint bridge",
       "Optional local voice-pack playback for Gym Leaders, the Elite Four, all 151 Pokemon names, and all 165 moves",
     },
     known = {

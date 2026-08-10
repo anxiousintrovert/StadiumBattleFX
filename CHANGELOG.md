@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.7 - 2026-08-09
+
+- Added the Stadium-model faint bridge. Player and opponent Pokemon now queue
+  their held Stadium faint animation after the engine HP bar reaches zero;
+  older Dramaless Shape installs safely keep their normal faint behavior.
+
 ## 1.0.6 - 2026-08-09
 
 - Added a bounded persistent animation diagnostic log. It records battle and

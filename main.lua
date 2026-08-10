@@ -15,7 +15,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-mod.exports.version = "1.0.6"
+mod.exports.version = "1.0.7"
 
 local namespace = { mod = mod, path = mod.path }
 local modules = {}
@@ -52,6 +52,7 @@ local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
 local EffectCacheScreen = namespace.require("EffectCacheScreen")
 local StadiumRomPicker = namespace.require("StadiumRomPicker")
 local AttackCinematics = namespace.require("AttackCinematics")
+local DramaticShapeFaint = namespace.require("DramaticShapeFaint")
 local Announcer = namespace.require("Announcer")
 local FailureNotice = namespace.require("FailureNotice")
 local StadiumLogExport = namespace.require("StadiumLogExport")
@@ -85,6 +86,7 @@ mod.exports.moves = MoveSpecs
 mod.exports.attackCinematics = AttackCinematics.status
 mod.exports.textureStatus = StadiumAssets.status
 mod.exports.announcerStatus = Announcer.status
+mod.exports.faintStatus = DramaticShapeFaint.status
 mod.exports.dramaticShape = function()
   return dramalessCompanion()
 end
@@ -203,7 +205,32 @@ end)
 
 mod.events:on("battle.battler_switched", Announcer.battlerSwitched)
 mod.events:on("battle.status_inflicted", Announcer.statusInflicted)
-mod.events:on("battle.fainted", Announcer.fainted)
+-- Dramaless Shape owns the model clip and waits for the engine's HP drain.
+-- We only forward the authoritative faint event, so the player's Pokemon
+-- reaches its Stadium faint animation without racing the battle queue.
+mod.events:on("battle.fainted", function(payload)
+  Announcer.fainted(payload)
+
+  local battle = payload and payload.battle
+  local battler = payload and payload.battler
+  local side
+  if battler and battle then
+    if battler == battle.player then side = "player"
+    elseif battler == battle.enemy then side = "enemy" end
+  end
+  if not side then
+    namespace.log:warn("faint event had no resolvable battle side")
+    return
+  end
+
+  local disposition = DramaticShapeFaint.disposition(battle, battler)
+  local ok, err = DramaticShapeFaint.request(dramalessCompanion, side, disposition)
+  if ok then
+    namespace.log:info("Stadium faint queued: side=%s disposition=%s", side, disposition)
+  else
+    namespace.log:info("Stadium faint unavailable: %s", tostring(err))
+  end
+end)
 
 mod.events:on("battle.ended", function(payload)
   namespace.log:info("battle ended")

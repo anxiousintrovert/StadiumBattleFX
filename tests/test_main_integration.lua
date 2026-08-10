@@ -2,10 +2,14 @@ local loader = love and love.filesystem and love.filesystem.load or loadfile
 local handlers = {}
 local values = {}
 local schemas = {}
+local companion
 local mod = {
   path = "",
   exports = {},
-  find = function() return nil end,
+  find = function(id)
+    if id == "DRAMALESS_SHAPE" then return companion end
+    return nil
+  end,
   read = function(_, path)
     if love and love.filesystem then return love.filesystem.read(path) end
     local file = assert(io.open(path, "rb"))
@@ -28,7 +32,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.6")
+assert(mod.exports.version == "1.0.7")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
 assert(#schemas.attack_speed.choices == 11
        and schemas.attack_speed.choices[1][2] == "100"
@@ -40,6 +44,7 @@ assert(type(handlers["battle.battler_switched"]) == "function")
 assert(type(handlers["battle.status_inflicted"]) == "function")
 assert(type(handlers["battle.fainted"]) == "function")
 assert(type(mod.exports.announcerStatus) == "function")
+assert(type(mod.exports.faintStatus) == "function")
 assert(type(handlers["hook:ui.options.rows"]) == "function",
   "cache import/rebuild option rows were not registered")
 local optionRows = handlers["hook:ui.options.rows"](
@@ -59,4 +64,26 @@ handlers["battle.move_used"]({ battle = battle, move = { index = 84 } })
 handlers["battle.damage_dealt"]({ battle = battle, damage = 12, typeMult = 20 })
 assert(movePayload and movePayload.move.index == 84)
 assert(damagePayload and damagePayload.damage == 12 and damagePayload.typeMult == 20)
-print("ok 1.0.6 runtime event wiring")
+
+local faintCalls = {}
+companion = {
+  exports = {
+    lib = {
+      require = function(name)
+        assert(name == "Stadium")
+        return {
+          faint = function(side, disposition)
+            faintCalls[#faintCalls + 1] = { side, disposition }
+            return true
+          end,
+        }
+      end,
+    },
+  },
+}
+local faintBattle = { player = {}, enemy = {}, kind = "trainer" }
+handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player })
+assert(#faintCalls == 1 and faintCalls[1][1] == "player"
+       and faintCalls[1][2] == "recall",
+       "player faint was not forwarded to Dramaless Shape")
+print("ok 1.0.7 runtime event wiring")

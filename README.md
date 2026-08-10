@@ -241,12 +241,14 @@ effect cache screen. During battle, the integration can use:
 - per-move attacker and defender attachment tags;
 - an optional second origin for dual-emitter moves;
 - impact-synchronized skeletal hit reactions; and
+- HP-drain-synchronized Stadium faint animations for either side; and
 - Dramaless Shape's temporary runtime camera function for attack shots.
 
 The integration is capability-checked. Older Dramaless Shape versions safely
 fall back to staged combatant anchors and omit unavailable skeletal reactions.
-Dramaless Shape owns faint animation timing, so StadiumBattleFX does not
-register a competing faint listener.
+Dramaless Shape owns faint animation timing. StadiumBattleFX forwards the
+engine faint event through its public bridge; the companion waits for the HP
+bar to empty before starting the player's or opponent's held faint animation.
 
 The companion is read-only. StadiumBattleFX never changes Dramaless Shape's
 files, settings, or `dramatic_shape/stadium/` model cache.
