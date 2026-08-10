@@ -32,8 +32,14 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "1.0.8")
+assert(mod.exports.version == "1.0.9")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
+assert(values.announcer_scope == "gym", "announcer scope did not default to Gym/Elite Four/Champion")
+assert(#schemas.announcer_scope.choices == 3
+       and schemas.announcer_scope.choices[1][2] == "gym"
+       and schemas.announcer_scope.choices[2][2] == "trainer"
+       and schemas.announcer_scope.choices[3][2] == "all",
+       "announcer scope did not expose the three requested battle ranges")
 assert(#schemas.attack_speed.choices == 11
        and schemas.attack_speed.choices[1][2] == "100"
        and schemas.attack_speed.choices[11][2] == "0",

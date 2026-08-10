@@ -15,7 +15,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-mod.exports.version = "1.0.8"
+mod.exports.version = "1.0.9"
 
 local namespace = { mod = mod, path = mod.path }
 local modules = {}
@@ -72,6 +72,13 @@ mod.options:define({
       { "10%", "10" }, { "0% (OFF)", "0" },
     } },
   { key = "announcer", label = "STADIUM ANNOUNCER", type = "toggle", default = true },
+  { key = "announcer_scope", label = "ANNOUNCER BATTLES", type = "choice",
+    default = "gym",
+    choices = {
+      { "GYM / ELITE 4 / CHAMPION", "gym" },
+      { "ALL TRAINER BATTLES", "trainer" },
+      { "ALL BATTLES", "all" },
+    } },
   { key = "battle_cinematics_zoom", label = "BC ZOOM OUT", type = "choice",
     default = "off",
     choices = {

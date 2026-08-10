@@ -52,6 +52,7 @@ function love.load()
   end
   assert(love.filesystem.load("tests/test_dramatic_shape_state.lua"))()
   assert(love.filesystem.load("tests/test_dramatic_shape_attachment.lua"))()
+  assert(love.filesystem.load("tests/test_attachment_passes.lua"))()
   assert(love.filesystem.load("tests/test_dramatic_shape_hit.lua"))()
   assert(love.filesystem.load("tests/test_hit_timing.lua"))()
   assert(love.filesystem.load("tests/test_main_integration.lua"))()

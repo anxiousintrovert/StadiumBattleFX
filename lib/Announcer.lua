@@ -17,6 +17,9 @@ local CACHE_FORMAT = "SFXA1"
 local CLIP_COUNT = 823
 local GAP_SECONDS = 0.12
 local MAX_QUEUE = 8
+local FLOW_IDLE_SECONDS = 0.8
+local FLOW_EVERY_MOVES = 2
+local FLOW = { 756, 762, 780, 790, 814, 820 }
 
 local PRIORITY = {
   ambient = 10,
@@ -62,8 +65,13 @@ local state = {
   champion = false,
   current = nil,
   currentIndex = nil,
+  currentPriority = nil,
   queue = {},
   gap = 0,
+  idle = 0,
+  flowMoves = 0,
+  flowPending = false,
+  flowIndex = 0,
   packChecked = false,
   packReady = false,
   packSource = nil,
@@ -75,6 +83,29 @@ local state = {
 local function enabled()
   return not (mod.options and mod.options.get)
       or mod.options:get("announcer") ~= false
+end
+
+-- Keep the original Gym/Elite Four/Champion behavior as the default for old
+-- saves.  Wider scopes still use the same complete voice bank; ordinary
+-- trainers and wild Pokemon simply have no dedicated entrance line.
+local function scope()
+  if not (mod.options and mod.options.get) then return "gym" end
+  local value = mod.options:get("announcer_scope")
+  if value == "all" or value == "trainer" then return value end
+  return "gym"
+end
+
+local function isTrainerBattle(battle)
+  -- `wild` is the engine's explicit non-trainer battle kind. Treat an absent
+  -- kind as a trainer battle too so older engine payloads remain compatible.
+  return battle and battle.kind ~= "wild"
+end
+
+local function eligible(battle, intro)
+  local selected = scope()
+  if selected == "all" then return battle ~= nil end
+  if selected == "trainer" then return isTrainerBattle(battle) end
+  return intro ~= nil
 end
 
 local function isFile(path)
@@ -173,8 +204,12 @@ local function resetPlayback()
   stopSource(state.current)
   state.current = nil
   state.currentIndex = nil
+  state.currentPriority = nil
   state.queue = {}
   state.gap = 0
+  state.idle = 0
+  state.flowMoves = 0
+  state.flowPending = false
 end
 
 local function packReady()
@@ -231,6 +266,7 @@ local function startNext()
       if ok then
         state.current = source
         state.currentIndex = item.index
+        state.currentPriority = item.priority
         return
       end
       state.missing[item.index] = true
@@ -250,6 +286,16 @@ local function enqueue(index, priority, key)
   if type(index) ~= "number" or index < 0 or index > 822 then return false end
   if not enabled() then return false end
   if not packReady() or alreadyQueued(index, key) then return false end
+  -- Commentary is deliberately disposable. A new battle event interrupts it
+  -- rather than leaving a move, faint, or switch waiting behind flavor text.
+  if state.current and state.currentPriority == PRIORITY.ambient
+      and (priority or 0) > PRIORITY.ambient then
+    stopSource(state.current)
+    state.current = nil
+    state.currentIndex = nil
+    state.currentPriority = nil
+    state.gap = 0
+  end
   local item = { index = index, priority = priority or 0, key = key }
   if #state.queue >= MAX_QUEUE then
     local lowest, lowestPriority = 1, state.queue[1].priority
@@ -272,6 +318,23 @@ local function enqueue(index, priority, key)
   if not inserted then state.queue[#state.queue + 1] = item end
   startNext()
   return true
+end
+
+local function noteMoveForFlow()
+  state.flowMoves = state.flowMoves + 1
+  if state.flowMoves >= FLOW_EVERY_MOVES then
+    state.flowMoves = 0
+    state.flowPending = true
+  end
+end
+
+local function startFlowCommentary()
+  if not state.flowPending or state.current or #state.queue > 0 or state.gap > 0 then
+    return false
+  end
+  state.flowPending = false
+  state.flowIndex = state.flowIndex % #FLOW + 1
+  return enqueue(FLOW[state.flowIndex], PRIORITY.ambient, "battle_flow")
 end
 
 local function introFor(battle)
@@ -305,7 +368,7 @@ function Announcer.beginBattle(battle)
   state.champion = false
   if not enabled() then return false end
   local intro = introFor(battle)
-  if not intro then return false end
+  if not eligible(battle, intro) then return false end
   if not packReady() then
     local logger = namespace.log or mod.log
     if not state.warnedMissingPack and logger and logger.info then
@@ -315,9 +378,9 @@ function Announcer.beginBattle(battle)
     return false
   end
   state.battle = battle
-  state.intro = intro.clip
-  state.champion = intro.champion or false
-  enqueue(intro.clip, PRIORITY.intro, "encounter_intro")
+  state.intro = intro and intro.clip or nil
+  state.champion = intro and intro.champion or false
+  if intro then enqueue(intro.clip, PRIORITY.intro, "encounter_intro") end
   -- Announce both initial combatants. Missing or mod-added species are simply
   -- skipped; they never disable the rest of the voice pack.
   announceBattler(battle, battle.enemy, "initial_enemy")
@@ -337,7 +400,9 @@ function Announcer.moveUsed(payload)
   if battle ~= state.battle then return false end
   local moveIndex = payload.move and tonumber(payload.move.index)
   if not moveIndex or moveIndex < 1 or moveIndex > 165 then return false end
-  return enqueue(583 + moveIndex, PRIORITY.move, "move:" .. tostring(moveIndex))
+  local queued = enqueue(583 + moveIndex, PRIORITY.move, "move:" .. tostring(moveIndex))
+  noteMoveForFlow()
+  return queued
 end
 
 function Announcer.damageDealt(payload)
@@ -387,10 +452,20 @@ function Announcer.update(dt)
     if not ok or not playing then
       state.current = nil
       state.currentIndex = nil
+      state.currentPriority = nil
       state.gap = GAP_SECONDS
     end
   elseif state.gap > 0 then
     state.gap = math.max(0, state.gap - (tonumber(dt) or 0))
+  end
+  if not state.current and #state.queue == 0 and state.gap <= 0 then
+    state.idle = state.idle + math.max(0, tonumber(dt) or 0)
+    if state.idle >= FLOW_IDLE_SECONDS then
+      state.idle = 0
+      startFlowCommentary()
+    end
+  else
+    state.idle = 0
   end
   startNext()
 end
@@ -412,6 +487,7 @@ function Announcer.status()
     intro = state.intro,
     current = state.currentIndex,
     queued = #state.queue,
+    flowPending = state.flowPending,
     missing = state.missing,
   }
 end
@@ -420,5 +496,7 @@ Announcer.INTRO = INTRO
 Announcer.PRIORITY = PRIORITY
 Announcer.clipRelative = clipRelative
 Announcer.introFor = introFor
+Announcer.scope = scope
+Announcer.eligible = eligible
 
 return Announcer

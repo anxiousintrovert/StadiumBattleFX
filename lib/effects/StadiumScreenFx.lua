@@ -72,6 +72,12 @@ function ScreenFx.pop(g, pushed)
 end
 
 function ScreenFx.region(g, color, alpha, x, y, width, height, owner, raw)
+  -- Secondary attachment passes replay localized particles only. Stadium's
+  -- second dispatch does not justify multiplying this mod's shared
+  -- presentation layer (camera, UI-wide wash, or borderless margin replay).
+  if owner and owner.attachmentPass and owner.attachmentPass.secondary then
+    return false
+  end
   if not g or (alpha or 0) <= 0 then return false end
   color = color or { 1, 1, 1 }
   record(owner, { kind = "region", color = color, alpha = alpha,
@@ -90,6 +96,10 @@ end
 function ScreenFx.tile(g, value, frame, options)
   if not (g and value) then return false end
   options = options or {}
+  if options.owner and options.owner.attachmentPass
+      and options.owner.attachmentPass.secondary then
+    return false
+  end
   local color = options.color or { 1, 1, 1 }
   local scale = options.scale or 1
   local width, height = value.frameWidth * scale, value.frameHeight * scale
@@ -178,6 +188,10 @@ function ScreenFx.drawMove(self)
   local key = self and self.spec and self.spec.key
   local draw = key and PROGRAMS[key]
   if not draw then return false end
+  -- These programs are entirely shared screen presentation (with only
+  -- incidental decoration).  A secondary attachment has no independent
+  -- screen layer, so consume the pass without replaying the program.
+  if self.attachmentPass and self.attachmentPass.secondary then return true end
   draw(self, love.graphics)
   return true
 end

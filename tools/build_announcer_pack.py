@@ -9,12 +9,11 @@ import os
 import subprocess
 import sys
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable
 
 from extract_stadium_announcer import StadiumRomError, inventory, open_rom
-from patch_announcer_zip import CLIP_COUNT, VoicePackError, inspect_wav, patch_zip
+from patch_announcer_zip import CLIP_COUNT, VoicePackError, patch_zip
 
 
 Progress = Callable[[float, str], None]
@@ -41,7 +40,15 @@ def default_decoder() -> Path:
     raise AnnouncerBuildError("The bundled MORT decoder is missing.")
 
 
-def _run_decoder(decoder: Path, mort: Path, wav: Path) -> None:
+def _run_decoder_batch(decoder: Path, mort_dir: Path, wav_dir: Path) -> None:
+    """Run the decoder once for the complete, local-only clip set.
+
+    A previous version started one native process for every clip.  Aside from
+    the unnecessary overhead, that resembles a common malware heuristic: a
+    GUI executable rapidly extracting files to a temporary directory and
+    launching hundreds of child processes.  The decoder now has an explicit,
+    bounded batch mode instead.
+    """
     startup = None
     flags = 0
     if os.name == "nt":
@@ -49,7 +56,7 @@ def _run_decoder(decoder: Path, mort: Path, wav: Path) -> None:
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     result = subprocess.run(
-        [str(decoder), str(mort), str(wav)],
+        [str(decoder), "--batch", str(mort_dir), str(wav_dir)],
         capture_output=True,
         text=True,
         creationflags=flags,
@@ -59,9 +66,8 @@ def _run_decoder(decoder: Path, mort: Path, wav: Path) -> None:
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()
         raise AnnouncerBuildError(
-            f"Decoder failed for {mort.name} (exit {result.returncode}): {detail}"
+            f"Decoder failed (exit {result.returncode}): {detail}"
         )
-    inspect_wav(wav.read_bytes(), wav.name)
 
 
 def build_announcer_pack(
@@ -71,7 +77,6 @@ def build_announcer_pack(
     *,
     decoder: Path | None = None,
     progress: Progress | None = None,
-    workers: int | None = None,
 ) -> dict[str, object]:
     """Verify, extract, decode, and inject all Stadium announcer clips."""
 
@@ -105,33 +110,15 @@ def build_announcer_pack(
         wav_dir.mkdir()
 
         report(0.04, "Extracting 823 compressed voice clips...")
-        jobs: list[tuple[int, Path, Path]] = []
         for clip in clips:
             mort = mort_dir / f"stadium_mort_{clip.index:03d}.mort"
-            wav = wav_dir / f"stadium_mort_{clip.index:03d}.wav"
             mort.write_bytes(reader.read(clip.offset, clip.length))
-            jobs.append((clip.index, mort, wav))
         report(0.10, "Converting announcer audio (0/823)...")
 
-        worker_count = workers or min(8, max(2, os.cpu_count() or 2))
-        completed = 0
-        with ThreadPoolExecutor(max_workers=worker_count) as pool:
-            futures = {
-                pool.submit(_run_decoder, decoder, mort, wav): index
-                for index, mort, wav in jobs
-            }
-            try:
-                for future in as_completed(futures):
-                    future.result()
-                    completed += 1
-                    report(
-                        0.10 + 0.67 * completed / CLIP_COUNT,
-                        f"Converting announcer audio ({completed}/823)...",
-                    )
-            except Exception:
-                for future in futures:
-                    future.cancel()
-                raise
+        # One bounded child process performs the full conversion. The inputs
+        # and outputs are fixed temporary directories created above.
+        _run_decoder_batch(decoder, mort_dir, wav_dir)
+        report(0.77, "Converting announcer audio (823/823)...")
 
         report(0.78, "Injecting voice files into StadiumBattleFX pack...")
 
@@ -159,7 +146,6 @@ def main() -> int:
     parser.add_argument("base_zip", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--decoder", type=Path)
-    parser.add_argument("--workers", type=int)
     args = parser.parse_args()
     try:
         result = build_announcer_pack(
@@ -167,7 +153,6 @@ def main() -> int:
             args.base_zip,
             args.output,
             decoder=args.decoder,
-            workers=args.workers,
             progress=lambda fraction, message: print(
                 f"[{fraction * 100:6.2f}%] {message}", flush=True
             ),

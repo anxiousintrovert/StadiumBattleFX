@@ -36,6 +36,17 @@ for _, key in ipairs({ "FLASH", "MIST", "HAZE" }) do
   assert(calls.full > 0, key .. " did not cover the full animation layer")
 end
 
+-- A secondary model attachment replays localized particles only; it must not
+-- stack a second full-screen program or record another margin overlay.
+player.spec = { key = "FLASH", duration = 72 }
+player.attachmentPass = { secondary = true }
+calls.full = 0
+assert(ScreenFx.drawMove(player), "secondary pass did not consume FLASH")
+assert(calls.full == 0, "secondary attachment replayed a full-screen effect")
+assert(not ScreenFx.fill(g, { 1, 1, 1 }, 0.25, player),
+  "secondary attachment recorded a full-screen wash")
+player.attachmentPass = nil
+
 local fake = {
   image = {}, quads = { {} }, frameWidth = 32, frameHeight = 32, frames = 1,
 }

@@ -134,14 +134,14 @@ function Player:start(moveId, attackerIsPlayer, opts)
   self.activeHit, self.hitTriggered = nil, false
   local spec = Registry.get(moveId)
   if not spec or not self.options() then
-    if self.logger then self.logger:info("animation delegated: move=%s reason=%s", tostring(moveId), spec and "disabled" or "unmapped") end
+    if self.logger and self.logger.info then self.logger:info("animation delegated: move=%s reason=%s", tostring(moveId), spec and "disabled" or "unmapped") end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
   -- Zero is an OFF rung, not a paused clock. A genuinely frozen custom
   -- animation would keep BattleState waiting forever, so it delegates the
   -- move to the ordinary Gen1 player and starts no attack camera.
   if self:playbackScale() <= 0 then
-    if self.logger then self.logger:info("animation delegated: move=%s reason=attack speed off", tostring(moveId)) end
+    if self.logger and self.logger.info then self.logger:info("animation delegated: move=%s reason=attack speed off", tostring(moveId)) end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
 
@@ -149,7 +149,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   self.dsState = DramaticShapeState.read(
     self.companion, self.attackerIsPlayer, self.cameraCompanion)
   if spec.bodyOnly and not self:stadiumModelShowing() then
-    if self.logger then self.logger:info("animation delegated: move=%s (%s) reason=model unavailable", tostring(moveId), tostring(spec.key)) end
+    if self.logger and self.logger.info then self.logger:info("animation delegated: move=%s (%s) reason=model unavailable", tostring(moveId), tostring(spec.key)) end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
   end
   local assets = requiredAssets(spec)
@@ -164,7 +164,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   call(self.inner, "start", moveId, attackerIsPlayer, opts)
   self.custom, self.spec, self.tick, self.innerTick = true, spec, 0, 0
   self.assetsReady, self.assetError = ok and true or false, err
-  if self.logger then self.logger:info("animation started: move=%s key=%s side=%s assets=%s", tostring(moveId), tostring(spec.key), self.attackerIsPlayer and "player" or "enemy", ok and "ready" or "procedural") end
+  if self.logger and self.logger.info then self.logger:info("animation started: move=%s key=%s side=%s assets=%s", tostring(moveId), tostring(spec.key), self.attackerIsPlayer and "player" or "enemy", ok and "ready" or "procedural") end
   local damage = self.damageByMove[spec.id]
   self.activeHit = damage and table.remove(damage, 1) or nil
   if self.cameraOptions() ~= false then
@@ -178,7 +178,7 @@ function Player:triggerHitReaction()
   if self.hitOptions() == false then return false end
   local requested = DramaticShapeHit.request(
     self.companion, self.activeHit.targetSide, self.activeHit.effectiveness)
-  if self.logger then self.logger:info("hit reaction: move=%s target=%s effectiveness=%s requested=%s", tostring(self.spec and self.spec.key), tostring(self.activeHit.targetSide), tostring(self.activeHit.effectiveness), tostring(requested)) end
+  if self.logger and self.logger.info then self.logger:info("hit reaction: move=%s target=%s effectiveness=%s requested=%s", tostring(self.spec and self.spec.key), tostring(self.activeHit.targetSide), tostring(self.activeHit.effectiveness), tostring(requested)) end
   return requested
 end
 
@@ -200,16 +200,57 @@ function Player:anchorSide(which)
   return side
 end
 
-function Player:attachmentTag(which)
+-- Return every attachment request for this role.  Stadium invokes its effect
+-- program once for the first byte and again for the second byte when present;
+-- 0xFF is a valid first-byte centre request, but a second 0xFF is the
+-- no-second-pass sentinel.
+function Player:attachmentTags(which)
   local tags = self.spec and self.spec.attachments
-  if tags and tags[which] == false then return nil end
-  if tags and tags[which] ~= nil then return tags[which] end
+  if tags and tags[which] == false then return {} end
+  if tags and tags[which] ~= nil then return { tags[which] } end
   local side = self:anchorSide(which)
   local stage = which == "attacker" and "primary" or "impact"
-  local native = DramaticShapeAttachment.tags(
-    self.companion, side, self.spec and self.spec.id, stage)
-  if native ~= nil then return native end
-  return 0x64
+  local primary, secondary
+  if DramaticShapeAttachment.tags then
+    primary, secondary = DramaticShapeAttachment.tags(
+      self.companion, side, self.spec and self.spec.id, stage)
+  end
+  if primary ~= nil then
+    local out = { primary }
+    if secondary ~= nil and secondary ~= 0xFF and secondary ~= primary then
+      out[#out + 1] = secondary
+    end
+    return out
+  end
+  return { 0x64 }
+end
+
+function Player:attachmentTag(which)
+  local pass = self.attachmentPass
+  if pass and pass[which] ~= nil then return pass[which] end
+  return self:attachmentTags(which)[1]
+end
+
+-- The original dispatcher reruns an effect program for each non-sentinel
+-- secondary attachment.  Keep the base pass plus one localized replay per
+-- combatant role: it gives a second source or impact point its own particles
+-- without incorrectly multiplying shared camera, audio, or hit state.
+function Player:attachmentPasses()
+  local attacker = self:attachmentTags("attacker")
+  local target = self:attachmentTags("target")
+  local base = { attacker = attacker[1], target = target[1], secondary = false }
+  local passes = { base }
+  if attacker[2] then
+    passes[#passes + 1] = {
+      attacker = attacker[2], target = target[1], secondary = true,
+    }
+  end
+  if target[2] then
+    passes[#passes + 1] = {
+      attacker = attacker[1], target = target[2], secondary = true,
+    }
+  end
+  return passes
 end
 
 function Player:anchor(which)
@@ -247,7 +288,7 @@ function Player:update()
   -- inner animation back immediately instead of stranding the battle on a
   -- clock that can no longer reach its duration.
   if scale <= 0 then
-    if self.logger then self.logger:info("animation cancelled: move=%s reason=attack speed changed to off", tostring(self.spec and self.spec.key)) end
+    if self.logger and self.logger.info then self.logger:info("animation cancelled: move=%s reason=attack speed changed to off", tostring(self.spec and self.spec.key)) end
     AttackCinematics.stop()
     ScreenFx.clear(self)
     self.custom, self.spec = false, nil
@@ -601,8 +642,13 @@ local function drawCustom(self)
   -- lifecycle and camera but render its deterministic procedural equivalent.
   local draw = self.assetsReady and DRAW[self.spec.kind] or DRAW.generic
   local ok, err = pcall(function()
-    if draw then draw(self) end
+    for _, pass in ipairs(self:attachmentPasses()) do
+      self.attachmentPass = pass
+      if draw then draw(self) end
+    end
+    self.attachmentPass = nil
   end)
+  self.attachmentPass = nil
   g.setColor(r or 1, gg or 1, b or 1, a or 1)
   if g.setLineWidth then g.setLineWidth(oldWidth) end
   g.setBlendMode(oldMode or "alpha", oldAlpha)

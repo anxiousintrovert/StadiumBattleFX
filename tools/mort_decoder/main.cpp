@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -26,13 +27,8 @@ static void write_u32(std::ofstream& out, std::uint32_t value) {
     out.write(bytes, sizeof(bytes));
 }
 
-int main(int argc, char** argv) {
-    if (argc != 3) {
-        std::cerr << "usage: mort_decoder INPUT.mort OUTPUT.wav\n";
-        return 2;
-    }
-
-    std::ifstream input(argv[1], std::ios::binary);
+static int decode_file(const std::string& input_name, const std::string& output_name) {
+    std::ifstream input(input_name, std::ios::binary);
     if (!input) {
         std::cerr << "could not open input MORT stream\n";
         return 3;
@@ -77,7 +73,7 @@ int main(int argc, char** argv) {
         return 7;
     }
 
-    std::ofstream output(argv[2], std::ios::binary);
+    std::ofstream output(output_name, std::ios::binary);
     if (!output) {
         std::cerr << "could not create output WAV\n";
         return 8;
@@ -103,4 +99,34 @@ int main(int argc, char** argv) {
         return 9;
     }
     return 0;
+}
+
+int main(int argc, char** argv) {
+    if (argc == 3) {
+        return decode_file(argv[1], argv[2]);
+    }
+    if (argc == 4 && std::string(argv[1]) == "--batch") {
+        const std::string input_dir = argv[2];
+        const std::string output_dir = argv[3];
+        int failed = 0;
+        for (int index = 0; index < 823; ++index) {
+            char input[512];
+            char output[512];
+            std::snprintf(input, sizeof(input), "%s/stadium_mort_%03d.mort",
+                          input_dir.c_str(), index);
+            std::snprintf(output, sizeof(output), "%s/stadium_mort_%03d.wav",
+                          output_dir.c_str(), index);
+            const int status = decode_file(input, output);
+            if (status != 0) {
+                std::cerr << "batch decode failed at clip " << index << "\n";
+                failed = status;
+                break;
+            }
+            std::cout << (index + 1) << "/823\n";
+        }
+        return failed;
+    }
+    std::cerr << "usage: mort_decoder INPUT.mort OUTPUT.wav\n"
+              << "   or: mort_decoder --batch INPUT_DIRECTORY OUTPUT_DIRECTORY\n";
+    return 2;
 }

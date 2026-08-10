@@ -14,7 +14,7 @@ center = function(side)
 end,
 attachmentTags = function(side, moveId, stage)
   assert(side == "enemy" and moveId == 84 and stage == "primary")
-  return 0x0D, 0xFF
+  return 0x0D, 0x0E
 end }
 local companion = function()
   return { exports = { lib = { require = function(name)
@@ -30,7 +30,7 @@ assert(Attachment.position(companion, "player") == nil)
 local cx, cy = Attachment.position(companion, "enemy", 0xFF)
 assert(cx == 90 and cy == 36)
 local ta, tb = Attachment.tags(companion, "enemy", 84, "primary")
-assert(ta == 0x0D and tb == 0xFF)
+assert(ta == 0x0D and tb == 0x0E)
 local status = Attachment.status()
 assert(status.supported and status.requests == 4 and status.resolved == 2)
 assert(status.lastError == nil)

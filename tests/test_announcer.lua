@@ -41,7 +41,10 @@ local function loadAnnouncer(opts)
       end,
     },
   }
-  local values = { announcer = opts.enabled ~= false }
+  local values = {
+    announcer = opts.enabled ~= false,
+    announcer_scope = opts.scope or "gym",
+  }
   local mod = {
     path = "mounted/STADIUM_BATTLE_FX",
     read = function(_, path)
@@ -76,6 +79,20 @@ local function battle(oppClass, partyIndex)
     player = { isPlayer = true, mon = { species = "BULBASAUR" } },
     enemy = { isPlayer = false, mon = { species = "RATTATA" } },
   }
+end
+
+-- The selector broadens the same announcer bank without changing the legacy
+-- default: Gym/Elite Four/Champion remains the only scope with boss intros.
+do
+  local trainer = battle("OPP_YOUNGSTER")
+  trainer.kind = "trainer"
+  local wild = battle(nil)
+  wild.kind = "wild"
+
+  assert(loadAnnouncer({ scope = "gym" }):beginBattle(trainer) == false)
+  assert(loadAnnouncer({ scope = "trainer" }):beginBattle(trainer) == true)
+  assert(loadAnnouncer({ scope = "trainer" }):beginBattle(wild) == false)
+  assert(loadAnnouncer({ scope = "all" }):beginBattle(wild) == true)
 end
 
 -- A personalized package is only an import source. Once imported, a later
@@ -122,6 +139,29 @@ do
   assert(announcer.damageDealt({ battle = b, typeMult = 20 }))
   assert(announcer.statusInflicted({ battle = b, status = "PAR" }))
   assert(announcer.fainted({ battle = b, battler = b.enemy }))
+end
+
+-- Flow commentary becomes eligible only after several moves and waits for an
+-- idle gap. It is ambient priority, so the next real event stops it.
+do
+  local announcer, played = loadAnnouncer()
+  local b = battle("OPP_BROCK")
+  assert(announcer.beginBattle(b))
+  for _ = 1, 4 do announcer.moveUsed({ battle = b, move = { index = 84 } }) end
+  assert(announcer.status().flowPending == true)
+
+  -- An incoming move must be able to interrupt an ambient call immediately.
+  -- The exact commentary clip is intentionally not asserted; its rotation is
+  -- an implementation detail, while its priority behavior is the contract.
+  while announcer.status().current or announcer.status().queued > 0 do
+    local current = played[#played]
+    if current then current.playing = false end
+    announcer.update(1)
+  end
+  announcer.update(1)
+  assert(announcer.status().current ~= nil, "flow commentary did not start after an idle gap")
+  assert(announcer.moveUsed({ battle = b, move = { index = 85 } }))
+  assert(announcer.status().current == 668, "move call did not interrupt flow commentary")
 end
 
 -- No builder output is a supported empty state: no source is constructed and

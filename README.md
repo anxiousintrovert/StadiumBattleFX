@@ -194,8 +194,9 @@ enabled by default but does nothing until a valid local pack is present.
 
 ### Build a local announcer pack on Windows
 
-Download `StadiumBattleFX-Announcer-Builder.exe` from the GitHub release and
-run it, then select:
+Download `StadiumBattleFX-Announcer-Builder-windows.zip` from the GitHub
+release, verify its published SHA-256, extract it, and run
+`StadiumBattleFX-Announcer-Builder.exe` from the extracted folder. Then select:
 
 1. your Pokemon Stadium (USA) v1.0 `.z64`, `.v64`, or `.n64` ROM;
 2. the downloaded, voice-free StadiumBattleFX ZIP; and
@@ -218,12 +219,17 @@ audio is deleted after the build. The personalized ZIP and private cache are
 ROM-derived artifacts; do not redistribute either. Run the builder again only
 when you want to replace the cached announcer pack.
 
-Developers can build the single-file Windows application with Python,
+Developers can build the inspectable Windows application folder with Python,
 PyInstaller, and `ziglang` installed:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_announcer_builder.ps1
 ```
+
+For public releases, use a trusted Authenticode certificate and publish the
+generated SHA-256 file. See
+[`tools/ANNOUNCER_BUILDER_SECURITY.md`](tools/ANNOUNCER_BUILDER_SECURITY.md)
+for the distribution checklist and an explanation of scanner warnings.
 
 ## Dramaless Shape integration
 
@@ -260,10 +266,11 @@ files, settings, or `dramatic_shape/stadium/` model cache.
 | **STADIUM FX** | On | Enables Stadium move presentations and effect-cache loading. |
 | **ATTACK CAMERA** | On | Enables staged move cameras when the required Stadium model integration is available. |
 | **ATTACK SPEED** | 100% | Slows Stadium VFX, impact timing, sound events, and the attack camera together in 10% steps. At 0%, the normal Gen1 presentation is used with no Stadium attack camera. |
-| **STADIUM ANNOUNCER** | On | Enables locally installed announcer audio; has no effect without a valid voice pack. |
+| **STADIUM ANNOUNCER** | On | Master switch for locally installed announcer audio; has no effect without a valid voice pack. |
+| **ANNOUNCER BATTLES** | Gym / Elite 4 / Champion | Chooses where announcer audio plays: Gym/Elite 4/Champion, all trainer battles, or all battles including wild Pokemon. |
 | **STADIUM ROM** | Import/Replace | Opens the system ROM picker; Android uses its document picker. |
 | **REFRESH FX CACHE** | Rebuild | Forces a fresh effect-cache extraction from the stored ROM. |
-| **EXPORT ANIMATION LOG** | Export | Opens a save dialog and exports the recent StadiumBattleFX diagnostics for a bug report. Android requires a Gen1Recomp build that provides `love.system.exportFile`. |
+| **EXPORT ANIMATION LOG** | Export | Opens a save dialog and exports the recent StadiumBattleFX diagnostics for a bug report. The row changes to `SAVED`, `CANCELLED`, or `FAILED` afterward. Android requires a Gen1Recomp build that provides `love.system.exportFile`. |
 
 ## ROM data and private cache
 

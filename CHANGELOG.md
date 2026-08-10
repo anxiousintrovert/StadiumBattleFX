@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.0 - 2026-08-10
+
+- Added complete Stadium attachment handling: attack effects now make a
+  separate localized pass for either non-sentinel secondary attachment tag.
+- Added impact-timed Stadium Pokemon hit reactions through the public
+  Dramaless Shape hit API. Neutral and super-effective hits use Stadium's
+  held hit motion; resisted hits remain idle.
+- Added **ANNOUNCER BATTLES** to select Gym/Elite 4/Champion, all trainer
+  battles, or all battles independently from the announcer master switch.
+- Added occasional low-priority battle-flow commentary that waits for quiet
+  gaps and yields immediately to move, damage, switch, faint, and other
+  priority calls.
+- Improved Windows announcer-builder distribution with an inspectable
+  application-folder archive and a published SHA-256 checksum.
+- Fixed Windows diagnostic-log export status reporting and made optional
+  animation logging safe with partial logger implementations.
+
+## 1.0.9 - 2026-08-09
+
+- Added **ANNOUNCER BATTLES** to the StadiumBattleFX mod options. Select
+  **GYM / ELITE 4 / CHAMPION** (the default), **ALL TRAINER BATTLES**, or
+  **ALL BATTLES** to control the announcer's battle range independently of
+  the existing **STADIUM ANNOUNCER** master switch.
+- Added low-priority battle-flow commentary after every few moves. It waits
+  for an idle gap and is immediately interrupted by any move, damage, switch,
+  faint, or other higher-priority battle call.
+
 ## 1.0.8 - 2026-08-09
 
 - Fixed Windows diagnostic-log exports failing silently after a Save dialog.
