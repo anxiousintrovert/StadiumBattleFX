@@ -139,7 +139,9 @@ def build_announcer_pack(
             base_zip,
             wav_dir,
             output,
-            rom=rom,
+            # The runtime expects canonical big-endian bytes regardless of
+            # whether the selected dump was z64, v64, n64, or copier-headered.
+            rom=reader.data,
             require_complete=True,
             progress=zip_progress,
         )

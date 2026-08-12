@@ -50,8 +50,18 @@ class StadiumRomUnitTests(unittest.TestCase):
         self.assertEqual("f270920db049bf2f6b54812299c5c451", PROBE.EXPECTED_SOURCE_MD5["n64"])
 
     def test_bad_magic_is_rejected(self) -> None:
-        with self.assertRaisesRegex(PROBE.StadiumRomError, "recognized N64"):
+        with self.assertRaisesRegex(PROBE.StadiumRomError, "not a recognized N64"):
             PROBE.normalize(b"nope")
+
+    def test_archive_error_explains_that_rom_must_be_extracted(self) -> None:
+        with self.assertRaisesRegex(PROBE.StadiumRomError, "ZIP archive.*extract"):
+            PROBE.unwrap_copier_header(b"PK\x03\x04not-a-rom")
+
+    def test_known_copier_header_is_unwrapped(self) -> None:
+        rom = self.z64 + bytes(PROBE.EXPECTED_SIZE - len(self.z64))
+        payload, header_size = PROBE.unwrap_copier_header(bytes(0x200) + rom)
+        self.assertEqual(0x200, header_size)
+        self.assertEqual(rom, payload)
 
     def test_bounds_are_checked(self) -> None:
         reader = PROBE.Reader(self.z64)
