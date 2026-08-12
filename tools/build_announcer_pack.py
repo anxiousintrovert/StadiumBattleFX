@@ -139,6 +139,7 @@ def build_announcer_pack(
             base_zip,
             wav_dir,
             output,
+            rom=rom,
             require_complete=True,
             progress=zip_progress,
         )

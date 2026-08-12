@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Small Windows GUI for building a local StadiumBattleFX announcer pack."""
+"""Small desktop GUI for building a local StadiumBattleFX announcer pack."""
 
 from __future__ import annotations
 
 import os
+import platform
 import queue
 import subprocess
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -43,7 +45,8 @@ class BuilderApp:
         ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         ttk.Label(
             outer,
-            text="Everything is converted locally. Your ROM and voice files are never uploaded.",
+            text=("Everything stays local. The ROM is copied into the personalized ZIP; "
+                  "never redistribute it."),
             foreground="#555555",
         ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 16))
 
@@ -211,7 +214,12 @@ class BuilderApp:
         if os.name == "nt":
             os.startfile(folder)
         else:
-            subprocess.Popen(["xdg-open", str(folder)])
+            try:
+                subprocess.Popen(["xdg-open", str(folder)])
+            except OSError as exc:
+                messagebox.showerror(
+                    APP_TITLE, f"Could not open the output folder:\n\n{exc}"
+                )
 
     def close(self) -> None:
         if self.running:
@@ -221,6 +229,12 @@ class BuilderApp:
 
 
 def main() -> None:
+    if "--self-test" in sys.argv:
+        from build_announcer_pack import default_decoder
+
+        decoder = default_decoder()
+        print(f"announcer builder self-test passed ({platform.system()}, {decoder})")
+        return
     root = tk.Tk()
     try:
         root.iconname(APP_TITLE)

@@ -1,0 +1,57 @@
+name: Experimental SteamOS announcer builder
+
+on:
+  push:
+    tags:
+      - "announcer-builder-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes g++ python3-tk python3-venv
+          python3 -m venv build/announcer-builder-venv
+          build/announcer-builder-venv/bin/python -m pip install --upgrade pip
+          build/announcer-builder-venv/bin/python -m pip install pyinstaller==6.16.0
+
+      - name: Run patcher tests
+        run: |
+          set -euo pipefail
+          build/announcer-builder-venv/bin/python -m unittest \
+            tests.test_patch_announcer_zip
+
+      - name: Build SteamOS package
+        env:
+          ANNOUNCER_BUILDER_PYTHON: ${{ github.workspace }}/build/announcer-builder-venv/bin/python
+        run: bash tools/build_announcer_builder_linux.sh
+
+      - name: Verify packaged executable
+        run: |
+          set -euo pipefail
+          dist/announcer-builder-linux/StadiumBattleFX-Announcer-Builder/StadiumBattleFX-Announcer-Builder \
+            --self-test
+
+      - name: Publish experimental release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "StadiumBattleFX Announcer Builder (SteamOS experimental)" \
+            --notes-file tools/ANNOUNCER_BUILDER_LINUX_RELEASE_NOTES.md \
+            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz \
+            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz.sha256

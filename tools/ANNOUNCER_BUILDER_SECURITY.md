@@ -6,6 +6,10 @@ and creates one new ZIP selected by the player. It does not download code,
 connect to the network, change the supplied ROM or base mod ZIP, request
 administrator access, or run a shell command.
 
+The personalized output deliberately contains a copy of the selected ROM so
+the sandboxed mod can read it from its own package. The UI labels that output
+local-only; it must never be redistributed.
+
 ## Release requirements
 
 Publish `StadiumBattleFX-Announcer-Builder-windows.zip`, produced by
@@ -13,6 +17,14 @@ Publish `StadiumBattleFX-Announcer-Builder-windows.zip`, produced by
 The release ZIP contains an ordinary application directory: the GUI EXE, its
 runtime DLLs, and the small MORT decoder are visible for inspection before the
 user runs anything.
+
+The experimental SteamOS build is produced by
+`build_announcer_builder_linux.sh` on Ubuntu 22.04 and published as
+`StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz`. It is also an
+inspectable PyInstaller directory, not a self-extracting one-file binary. The
+archive is intended for Steam Deck Desktop Mode and other x86-64 glibc Linux
+systems. Extract it before running; do not launch it from inside an archive
+viewer.
 
 Before public distribution, sign both `StadiumBattleFX-Announcer-Builder.exe`
 and `mort_decoder.exe` with a trusted Authenticode code-signing certificate:
