@@ -412,7 +412,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.0.0.zip
+  --output dist\STADIUM_BATTLE_FX-2.0.1.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

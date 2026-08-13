@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.1
+
+- Fixed Stadium move animations being displaced toward the lower-right on
+  Android and disappearing outside the screen in portrait orientation. The
+  battle host now uses the active renderer's live UI scale and origin when it
+  converts framebuffer projections into the 160x144 animation layer.
+- Normalized attachment projections from supersampled Dramaless arena passes
+  to the final displayed surface before drawing anchored move effects. This
+  keeps particles aligned with their Pokemon at every antialiasing level and
+  after Android orientation changes.
+
 ## 2.0.0 release fixes
 
 - Fixed move shake composition repainting the transparent battle zones as

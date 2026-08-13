@@ -231,6 +231,31 @@ local function battleLayerProjector(projector, renderer, width, height)
   end
 end
 
+-- Advanced arena providers may render above the final framebuffer resolution
+-- for antialiasing, then resolve that pass to the window-sized surface they
+-- return. Their view-projection coordinates therefore belong to the render
+-- pass, not necessarily to the shown surface. Normalize those coordinates
+-- before attachments are consumed by either the 160x144 move layer or the
+-- direct world-surface particle pass.
+local function shownSurfaceProjector(projector, renderWidth, renderHeight,
+    surfaceWidth, surfaceHeight)
+  if type(projector) ~= "function" then return nil end
+  renderWidth, renderHeight = tonumber(renderWidth), tonumber(renderHeight)
+  surfaceWidth, surfaceHeight = tonumber(surfaceWidth), tonumber(surfaceHeight)
+  if not (renderWidth and renderHeight and surfaceWidth and surfaceHeight
+      and renderWidth > 0 and renderHeight > 0
+      and surfaceWidth > 0 and surfaceHeight > 0) then
+    return projector
+  end
+  local sx, sy = surfaceWidth / renderWidth, surfaceHeight / renderHeight
+  if math.abs(sx - 1) < 1e-9 and math.abs(sy - 1) < 1e-9 then return projector end
+  return function(...)
+    local x, y = projector(...)
+    if type(x) ~= "number" or type(y) ~= "number" then return nil end
+    return x * sx, y * sy
+  end
+end
+
 local function presentWorld(session, battle, surface)
   local renderer = battle and battle.game and battle.game.renderer
   if not (renderer and renderer.setWorldOverride and surface) then return false end
@@ -380,6 +405,7 @@ function Host.draw(battle)
     return false
   end
   session.presented = false
+  local renderer = battle and battle.game and battle.game.renderer
   local arenaProvider = session.providers.arena
   if arenaProvider and type(arenaProvider.render) == "function" then
     local pose, pitch = cameraPose(session)
@@ -405,12 +431,15 @@ function Host.draw(battle)
       session.context.services.renderSize = {
         width = renderWidth, height = renderHeight,
       }
+      local surfaceWidth, surfaceHeight = pixelSize()
+      local surfaceProjector = shownSurfaceProjector(
+        session.context.services.project, projectWidth, projectHeight,
+        surfaceWidth, surfaceHeight)
       local StadiumModels = V.require("StadiumModels")
       StadiumModels.setProjector(battleLayerProjector(
-        session.context.services.project, renderer,
-        projectWidth, projectHeight))
+        surfaceProjector, renderer, surfaceWidth, surfaceHeight))
       if type(StadiumModels.setScreenProjector) == "function" then
-        StadiumModels.setScreenProjector(session.context.services.project)
+        StadiumModels.setScreenProjector(surfaceProjector)
       end
       local models = session.providers.models
       if models and models.hostRender then
@@ -622,6 +651,7 @@ end
 
 -- Pure regression-test seam for the framebuffer-to-animation-layer mapping.
 Host.battleLayerProjector = battleLayerProjector
+Host.shownSurfaceProjector = shownSurfaceProjector
 
 -- Live mapping shared by the model projector and the deferred battle VFX
 -- pass. During BattleState:draw, surface is the full-resolution 3D world

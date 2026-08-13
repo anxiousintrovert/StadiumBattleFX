@@ -40,6 +40,19 @@ x, y = project()
 near(x, 26, "android fill x")
 near(y, 96, "android fill y")
 
+-- Dramaless can supersample its arena before resolving it to the Android
+-- framebuffer. Attachment projections from that render pass must be folded
+-- down by the same ratio before either direct or logical VFX consume them.
+local shown = Host.shownSurfaceProjector(function() return 1590, 1440 end,
+  4800, 2160, 2400, 1080)
+local shownX, shownY = shown()
+near(shownX, 795, "supersampled shown x")
+near(shownY, 720, "supersampled shown y")
+project = Host.battleLayerProjector(shown, android, 2400, 1080)
+x, y = project()
+near(x, 26, "supersampled android fill x")
+near(y, 96, "supersampled android fill y")
+
 -- Wide battle keeps the classic 160-pixel animation layer centered.
 local wide = { uiSize = function() return 304, 144 end,
   fitScale = function() return 4 end }

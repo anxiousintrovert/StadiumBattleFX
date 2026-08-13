@@ -77,7 +77,13 @@ local arena = { id = "TEST:world", player = { 0, 24 }, enemy = { 0, -24 },
 local arenaProvider = {
   arena = function() return arena end,
   begin = function() return true end,
-  render = function() return surface end,
+  render = function(_, _, _, drawActors)
+    drawActors({
+      project = function() return 1590, 1440 end,
+      width = 3840, height = 2160,
+    })
+    return surface
+  end,
 }
 local coverage = { player = true, enemy = true }
 local modelProvider = {
@@ -94,6 +100,7 @@ local Providers = {
   end,
   builtin = function() return nil end,
 }
+local logicalProjector, screenProjector
 local Host = assert(loader("lib/BattleHost.lua"))({
   log = { info = function() end, error = function() end },
   require = function(name)
@@ -111,7 +118,10 @@ local Host = assert(loader("lib/BattleHost.lua"))({
       return { camera = function(base) return base end }
     end
     if name == "StadiumModels" then
-      return { setProjector = function() end }
+      return {
+        setProjector = function(value) logicalProjector = value end,
+        setScreenProjector = function(value) screenProjector = value end,
+      }
     end
     error(name)
   end,
@@ -120,7 +130,11 @@ local Host = assert(loader("lib/BattleHost.lua"))({
 local override
 local battle = setmetatable({
   kind = "trainer", player = {}, enemy = {},
-  game = { renderer = { setWorldOverride = function(_, value) override = value end } },
+  game = { renderer = {
+    uiFill = true,
+    uiSize = function() return 160, 144 end,
+    setWorldOverride = function(_, value) override = value end,
+  } },
 }, { __index = BattleState })
 
 local engineDraw = BattleState.draw
@@ -140,6 +154,13 @@ assert(captureOk and nativePics == 1 and lastNativeSide == "enemy",
   "native picture capture did not bypass host suppression")
 battle:draw()
 assert(override == surface, "battle renderer did not receive the 3D world override")
+local screenX, screenY = assert(screenProjector)()
+assert(math.abs(screenX - 795) < 1e-6 and math.abs(screenY - 720) < 1e-6,
+  "supersampled attachment was not resolved to the shown world surface")
+local logicalX, logicalY = assert(logicalProjector)()
+assert(math.abs(logicalX - 58) < 1e-6 and math.abs(logicalY - 96) < 1e-6,
+  ("supersampled attachment was not mapped into the Android move layer: %.3f,%.3f")
+    :format(logicalX, logicalY))
 assert(nativePics == 1, "native picture layer flashed over covered 3D models")
 assert(fullFieldDraws == 1,
   "wide battle field was not suppressed or the later move flash was lost")
