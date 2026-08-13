@@ -118,7 +118,7 @@ def patch_zip(
     wav_dir: Path,
     output: Path,
     *,
-    rom: Path | None = None,
+    rom: Path | bytes | None = None,
     require_complete: bool = True,
     progress: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -186,7 +186,7 @@ def patch_zip(
                 entry.external_attr = 0o100644 << 16
                 target.writestr(entry, marker, compresslevel=9)
                 if rom is not None:
-                    rom_data = Path(rom).read_bytes()
+                    rom_data = rom if isinstance(rom, bytes) else Path(rom).read_bytes()
                     entry = zipfile.ZipInfo(
                         "baseroms/baserom.z64", (1980, 1, 1, 0, 0, 0)
                     )
@@ -213,8 +213,11 @@ def main() -> int:
     parser.add_argument("wav_dir", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--allow-partial", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--rom", type=Path,
-                        help="locally bundle the owned Stadium ROM for sandboxed runtime reads")
+    parser.add_argument(
+        "--rom",
+        type=Path,
+        help="locally bundle the owned Stadium ROM for sandboxed runtime reads",
+    )
     args = parser.parse_args()
     try:
         result = patch_zip(

@@ -34,6 +34,13 @@ MAGIC = {
     b"\x37\x80\x40\x12": "v64",
     b"\x40\x12\x37\x80": "n64",
 }
+COPIER_HEADER_SIZES = (0x200, 0x1000)
+ARCHIVE_MAGIC = {
+    b"PK\x03\x04": "ZIP",
+    b"7z\xbc\xaf": "7-Zip",
+    b"Rar!": "RAR",
+    b"\x1f\x8b": "gzip",
+}
 
 
 class StadiumRomError(ValueError):
@@ -43,10 +50,36 @@ class StadiumRomError(ValueError):
 def detect_byte_order(data: bytes) -> str:
     if len(data) < 4:
         raise StadiumRomError("ROM is too small to contain an N64 header")
+    magic = data[:4]
     try:
-        return MAGIC[data[:4]]
+        return MAGIC[magic]
     except KeyError as exc:
-        raise StadiumRomError("file does not have a recognized N64 ROM byte order") from exc
+        for signature, archive_name in ARCHIVE_MAGIC.items():
+            if data.startswith(signature):
+                raise StadiumRomError(
+                    f"selected file is a {archive_name} archive, not a ROM; "
+                    "extract it and choose the 32 MB .z64, .v64, or .n64 file"
+                ) from exc
+        raise StadiumRomError(
+            "not a recognized N64 ROM (first bytes "
+            f"{magic.hex() or 'empty'}); choose an uncompressed 32 MB Pokemon "
+            "Stadium (USA) v1.0 .z64, .v64, or .n64 file"
+        ) from exc
+
+
+def unwrap_copier_header(data: bytes) -> tuple[bytes, int]:
+    """Strip a known copier prefix only when it wraps a 32 MB N64 image."""
+
+    if data[:4] in MAGIC:
+        return data, 0
+    for header_size in COPIER_HEADER_SIZES:
+        if len(data) == EXPECTED_SIZE + header_size:
+            payload = data[header_size:]
+            if payload[:4] in MAGIC:
+                return payload, header_size
+    # Preserve the detailed archive/wrong-file error from the shared detector.
+    detect_byte_order(data)
+    raise AssertionError("detect_byte_order unexpectedly returned")
 
 
 def normalize(data: bytes) -> tuple[bytes, str]:
@@ -98,29 +131,26 @@ class Reader:
 
 def open_rom(path: Path) -> tuple[Reader, dict[str, object]]:
     source = path.read_bytes()
-    normalized, order = normalize(source)
+    payload, copier_header_size = unwrap_copier_header(source)
+    normalized, order = normalize(payload)
     if len(normalized) != EXPECTED_SIZE:
         raise StadiumRomError(
             f"unsupported Stadium ROM size: {len(normalized)} bytes; "
             f"expected {EXPECTED_SIZE}"
         )
-    source_digest = hashlib.md5(source).hexdigest()
+    source_digest = hashlib.md5(payload).hexdigest()
     expected_source_digest = EXPECTED_SOURCE_MD5[order]
     if source_digest != expected_source_digest:
-        raise StadiumRomError(
-            f"unsupported {order} Stadium ROM MD5: {source_digest}; "
-            f"expected {expected_source_digest}"
-        )
+        raise StadiumRomError("This is not a Stadium 1.0 rom!")
     digest = hashlib.md5(normalized).hexdigest()
     if digest != EXPECTED_MD5:
-        raise StadiumRomError(
-            "unsupported Pokemon Stadium ROM; expected Pokemon Stadium (USA) v1.0"
-        )
+        raise StadiumRomError("This is not a Stadium 1.0 rom!")
     reader = Reader(normalized)
     report = {
         "path": str(path.resolve()),
         "source_order": order,
         "source_md5": source_digest,
+        "copier_header_size": copier_header_size,
         "normalized_magic": reader.read(0, 4).hex(),
         "size": len(normalized),
         "md5": digest,

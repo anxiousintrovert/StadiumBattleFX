@@ -62,7 +62,7 @@ static int decode_file(const std::string& input_name, const std::string& output_
     CMORTDecoder decoder;
     std::vector<unsigned short> samples;
     if (!decoder.Decode(decoder_input.data(), static_cast<int>(mort.size()), 0x1000,
-                        static_cast<unsigned long>(mort.size()), samples)) {
+                        static_cast<std::uint32_t>(mort.size()), samples)) {
         std::cerr << "MORT decoder rejected the stream\n";
         return 6;
     }

@@ -22,7 +22,7 @@ unsigned short CMORTDecoder::CharArrayToShort(unsigned char* currentSpot)
 	return ((currentSpot[0] << 8) | currentSpot[1]);
 }
 
-unsigned long CMORTDecoder::CharArrayToLong(unsigned char* currentSpot)
+std::uint32_t CMORTDecoder::CharArrayToLong(unsigned char* currentSpot)
 {
 	return ((((((currentSpot[0] << 8) | currentSpot[1]) << 8) | currentSpot[2]) << 8) | currentSpot[3]);
 }
@@ -32,14 +32,14 @@ unsigned short CMORTDecoder::Flip16Bit(unsigned short ShortValue)
 	return ((ShortValue >> 8) | ((ShortValue << 8)));
 }
 
-unsigned long CMORTDecoder::Flip32Bit(unsigned long inLong)
+std::uint32_t CMORTDecoder::Flip32Bit(std::uint32_t inLong)
 {
 	return (((inLong & 0xFF000000) >> 24) | ((inLong & 0x00FF0000) >> 8) | ((inLong & 0x0000FF00) << 8) | ((inLong & 0x000000FF) << 24));
 }
 
-void CMORTDecoder::WriteLongToFile(FILE* outFile, unsigned long data)
+void CMORTDecoder::WriteLongToFile(FILE* outFile, std::uint32_t data)
 {
-	unsigned long tempLong = Flip32Bit(data);
+	std::uint32_t tempLong = Flip32Bit(data);
 	fwrite(&tempLong, 1, 4, outFile);
 }
 
@@ -49,7 +49,7 @@ void CMORTDecoder::WriteShortToFile(FILE* outFile, unsigned short data)
 	fwrite(&tempLong, 1, 2, outFile);
 }
 
-void CMORTDecoder::WriteLongToBuffer(unsigned char* Buffer, unsigned long address, unsigned long data)
+void CMORTDecoder::WriteLongToBuffer(unsigned char* Buffer, std::uint32_t address, std::uint32_t data)
 {
 	Buffer[address] = ((data >> 24) & 0xFF);
 	Buffer[address+1] = ((data >> 16) & 0xFF);
@@ -57,16 +57,16 @@ void CMORTDecoder::WriteLongToBuffer(unsigned char* Buffer, unsigned long addres
 	Buffer[address+3] = ((data) & 0xFF);
 }
 
-void CMORTDecoder::WriteShortToBuffer(unsigned char* Buffer, unsigned long address, unsigned short data)
+void CMORTDecoder::WriteShortToBuffer(unsigned char* Buffer, std::uint32_t address, unsigned short data)
 {
 	Buffer[address] = ((data >> 8) & 0xFF);
 	Buffer[address+1] = ((data) & 0xFF);
 }
 
-bool CMORTDecoder::Decode(unsigned char* ROM, int romSize, unsigned long address, unsigned long length, std::vector<unsigned short>& pcmSamples)
+bool CMORTDecoder::Decode(unsigned char* ROM, int romSize, std::uint32_t address, std::uint32_t length, std::vector<unsigned short>& pcmSamples)
 {
-	const unsigned long expectedSamples =
-		static_cast<unsigned long>(CharArrayToShort(&ROM[address + 4])) * 0xA0;
+	const std::uint32_t expectedSamples =
+		static_cast<std::uint32_t>(CharArrayToShort(&ROM[address + 4])) * 0xA0;
 	if (outDebug != NULL)
 		fprintf(outDebug, "-----STARTING PARSING SOUND-----\n");
 	// Setup before figuring out for now
@@ -159,32 +159,32 @@ bool CMORTDecoder::Decode(unsigned char* ROM, int romSize, unsigned long address
 	//Function called from 8003CD54 Main Loop
 
 	//80044EA4
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	A1 = 0x800FCEF0;
 	S5 = 0x8A0;
@@ -199,7 +199,7 @@ bool CMORTDecoder::Decode(unsigned char* ROM, int romSize, unsigned long address
 	int endedLoopAmount = -1;
 	int loops = 0;
 
-	std::vector<unsigned long> counterPJ64;
+	std::vector<std::uint32_t> counterPJ64;
 
 	// Original Decode
 	/*counterPJ64.push_back(0x000000B8);
@@ -633,7 +633,7 @@ label80045084:
 						//800451AC
 						A0 = S1 << 1;
 
-						unsigned __int64 tempRegister = T6 * T8;
+						std::uint64_t tempRegister = T6 * T8;
 
 						//800451B4
 						T4 = T7 + A0;
@@ -648,7 +648,7 @@ label80045084:
 
 						A3 = A3 << 1;
 
-						V0 = (unsigned long)(tempRegister & 0xFFFFFFFF);
+						V0 = (std::uint32_t)(tempRegister & 0xFFFFFFFF);
 
 						//800451DC
 						V0 = V0 >> 7;
@@ -1104,30 +1104,30 @@ label80045424:
 // TWINE 8009D5D4
 void CMORTDecoder::Function80045780(unsigned char* ROM, bool& started, std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	T6 = variable800D4F10Status1; //25D0(A0)
 	S2 = variable800D4F12Status3;
@@ -1158,10 +1158,10 @@ void CMORTDecoder::Function80045780(unsigned char* ROM, bool& started, std::vect
 			//800457CC
 			if (V1 == 0)
 			{
-				T9 = (signed long)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[4]);
+				T9 = (std::int32_t)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[4]);
 				if (outDebug != NULL)
 					fprintf(outDebug, "800457D4: HEADER 1 INPUT VALUE %08X\n", T9);
-				T0 = (signed long)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[8]);
+				T0 = (std::int32_t)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[8]);
 				if (outDebug != NULL)
 					fprintf(outDebug, "800457D8: HEADER 2 INPUT VALUE %08X\n", T0);
 
@@ -1259,7 +1259,7 @@ void CMORTDecoder::Function80045780(unsigned char* ROM, bool& started, std::vect
 					variable800D4F10Status1 = (unsigned char)S3;
 
 					// Index into ROM buffer
-					unsigned long A0 = T8 + V1;
+					std::uint32_t A0 = T8 + V1;
 
 					T9 = 0x800455DC; //variable800D2AD0PullDataPointer; //0190(S0);
 					// TWINE calls 80088F6C
@@ -1451,32 +1451,32 @@ label800459AC:
 	}
 }
 
-void CMORTDecoder::Function800459E0(unsigned long A1Param, unsigned long& V0)
+void CMORTDecoder::Function800459E0(std::uint32_t A1Param, std::uint32_t& V0)
 {
-	unsigned long AT = 0;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//800459E0
 	T6 = variable800D4F11Status2;
@@ -1520,34 +1520,34 @@ void CMORTDecoder::Function800459E0(unsigned long A1Param, unsigned long& V0)
 	}
 }
 
-void CMORTDecoder::Function80059120(unsigned long A0Param, unsigned long A1Param)
+void CMORTDecoder::Function80059120(std::uint32_t A0Param, std::uint32_t A1Param)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = A0Param;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = A0Param;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	if ((int)A1 <= 0)
 	{
@@ -1591,33 +1591,33 @@ void CMORTDecoder::Function80059120(unsigned long A0Param, unsigned long A1Param
 
 void CMORTDecoder::Function800456D0()
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
 
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 
 	//ClearBuffer_Function80057FD0(0x800D2940, 0x140); // resets everything here
@@ -1694,37 +1694,37 @@ void CMORTDecoder::Function800456D0()
 	}
 }
 
-void CMORTDecoder::ClearBuffer_Function80057FD0(unsigned long A0Param, unsigned long A1Param)
+void CMORTDecoder::ClearBuffer_Function80057FD0(std::uint32_t A0Param, std::uint32_t A1Param)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = A0Param;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = A0Param;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	// I think just clears out buffers to 00
-	for (unsigned long x = 0; x < A1; x++)
+	for (std::uint32_t x = 0; x < A1; x++)
 	{
 		if ((A0 >= 0x800D2AD8) && (A0 < 0x800D3ED8)) // 0x1400 sized buffer
 		{
@@ -1744,34 +1744,34 @@ void CMORTDecoder::ClearBuffer_Function80057FD0(unsigned long A0Param, unsigned 
 	}
 }
 
-void CMORTDecoder::Function8005E3A0(unsigned long A1Param, unsigned long A2Param)
+void CMORTDecoder::Function8005E3A0(std::uint32_t A1Param, std::uint32_t A2Param)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = A2Param;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = A2Param;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	T6 = 0x80079620;
 	T7 = 0x80079620;
@@ -1784,37 +1784,37 @@ void CMORTDecoder::Function8005E3A0(unsigned long A1Param, unsigned long A2Param
 	variable800D4EF4 = A1;
 }
 
-void CMORTDecoder::Function800455DC(unsigned char* ROM, unsigned long A0Param, unsigned long A1Param, unsigned long A2Param)
+void CMORTDecoder::Function800455DC(unsigned char* ROM, std::uint32_t A0Param, std::uint32_t A1Param, std::uint32_t A2Param)
 {
 	memcpy(&buffer800D3ED8MORTRawInputDataBuffer[A1Param], &ROM[A0Param], A2Param);
 	return;
 
-	unsigned long AT = 0;
-	unsigned long A0 = A0Param;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = A2Param;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = A0Param;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = A2Param;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//800455DC
 	S0 = A2; // 0x400 size to pull
@@ -1873,34 +1873,34 @@ void CMORTDecoder::Function800455DC(unsigned char* ROM, unsigned long A0Param, u
 	//80045694
 }
 
-void CMORTDecoder::Function8005E2F0(unsigned long A0Param, unsigned long A1Param)
+void CMORTDecoder::Function8005E2F0(std::uint32_t A0Param, std::uint32_t A1Param)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = A0Param;
-	unsigned long A1 = A1Param;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = A0Param;
+	std::uint32_t A1 = A1Param;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	if ((int)A1 <= 0)
 	{
@@ -1976,33 +1976,33 @@ void CMORTDecoder::Function8005E0F0()
 
 }
 
-void CMORTDecoder::Function80056AD0(unsigned long& V0)
+void CMORTDecoder::Function80056AD0(std::uint32_t& V0)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//A0 to 28(SP);
 	//A1 to 2C(SP);
@@ -2020,19 +2020,19 @@ void CMORTDecoder::Function80056AD0(unsigned long& V0)
 	V0 = 0;
 }
 
-void CMORTDecoder::Function80062A90(unsigned long& V0)
+void CMORTDecoder::Function80062A90(std::uint32_t& V0)
 {
 	// Not sure, some kind of DMA thing
 }
 
-unsigned long CMORTDecoder::ReadBitsFrom80045FF0Buffer(int numberBits, unsigned char* buffer800D3ED8MORTRawInputDataBuffer, unsigned long& currentInputData, unsigned long& bitsleft, unsigned long& currentOverallBitPosition)
+std::uint32_t CMORTDecoder::ReadBitsFrom80045FF0Buffer(int numberBits, unsigned char* buffer800D3ED8MORTRawInputDataBuffer, std::uint32_t& currentInputData, std::uint32_t& bitsleft, std::uint32_t& currentOverallBitPosition)
 {
 	if ((int)bitsleft >= (numberBits + 1))
 	{
-		unsigned long bitmask = (unsigned long)1 << numberBits;
+		std::uint32_t bitmask = (std::uint32_t)1 << numberBits;
 		bitmask = bitmask - 1;
 
-		unsigned long returnValue = (currentInputData & bitmask);
+		std::uint32_t returnValue = (currentInputData & bitmask);
 		currentInputData = currentInputData >> numberBits;
 		bitsleft = bitsleft - numberBits;
 
@@ -2045,19 +2045,19 @@ unsigned long CMORTDecoder::ReadBitsFrom80045FF0Buffer(int numberBits, unsigned 
 	}
 	else
 	{
-		unsigned long T6 = (unsigned long)1 << bitsleft;
-		unsigned long T9 = T6 - 1;
+		std::uint32_t T6 = (std::uint32_t)1 << bitsleft;
+		std::uint32_t T9 = T6 - 1;
 		currentOverallBitPosition = currentOverallBitPosition + 0x20;
-		unsigned long T8 = currentOverallBitPosition >> 5;
+		std::uint32_t T8 = currentOverallBitPosition >> 5;
 		T6 = T8 & 0x3FF;
-		unsigned long T7 = T9 & currentInputData;
+		std::uint32_t T7 = T9 & currentInputData;
 		T9 = T6 << 2;
 		T8 = T9;
-		unsigned long returnValue = (unsigned short)T7;
-		unsigned long T4 = numberBits;
+		std::uint32_t returnValue = (unsigned short)T7;
+		std::uint32_t T4 = numberBits;
 
 		//8004625C
-		currentInputData = (signed long)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[T8]);
+		currentInputData = (std::int32_t)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[T8]);
 		if (outDebug != NULL)
 			fprintf(outDebug, "8004625C: INPUT VALUE %08X\n", currentInputData);
 
@@ -2089,29 +2089,29 @@ unsigned long CMORTDecoder::ReadBitsFrom80045FF0Buffer(int numberBits, unsigned 
 }
 
 //TWINE 8009DF60
-void CMORTDecoder::Function80045FF0(unsigned long currentIntermediateValueOffset, std::vector<unsigned short>& pcmSamples)
+void CMORTDecoder::Function80045FF0(std::uint32_t currentIntermediateValueOffset, std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//800AA3E0
 	unsigned short shortsSP60[4][0xD];
@@ -2143,7 +2143,7 @@ void CMORTDecoder::Function80045FF0(unsigned long currentIntermediateValueOffset
 	//S0 to 28(SP) 800D2940
 	// A1 to (0xFC(SP), 0x1400 size buffer total, from 800D2AD8
 
-	unsigned long currentOverallBitPosition = variable800D4EFCInputChunkCurrentReadBitPosition;
+	std::uint32_t currentOverallBitPosition = variable800D4EFCInputChunkCurrentReadBitPosition;
 
 	//S0 = A0; //800D2940 Predictor Buffer pointer
 	T6 = (int)currentOverallBitPosition >> 5;
@@ -2152,21 +2152,21 @@ void CMORTDecoder::Function80045FF0(unsigned long currentIntermediateValueOffset
 	T9 = T8;
 
 	//8004601C
-	unsigned long currentInputWord = (signed long)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[T9]);
+	std::uint32_t currentInputWord = (std::int32_t)CharArrayToLong(&buffer800D3ED8MORTRawInputDataBuffer[T9]);
 	if (outDebug != NULL)
 		fprintf(outDebug, "8004601C: INPUT VALUE %08X\n", currentInputWord);
 
-	unsigned long bitsUsed = currentOverallBitPosition & 0x1F;
+	std::uint32_t bitsUsed = currentOverallBitPosition & 0x1F;
 
 	A3 = 0x20 - bitsUsed;
-	unsigned long bitsleft = A3;
+	std::uint32_t bitsleft = A3;
 
 	/*FILE* aa = fopen("C:\\temp\\aa.bin", "wb");
 	fwrite(buffer800D2940Predictor, 2, 0xA0, aa);
 	fflush(aa);
 	fclose(aa);*/
 	//80046030
-	unsigned long currentInputData = currentInputWord >> bitsUsed;
+	std::uint32_t currentInputData = currentInputWord >> bitsUsed;
 
 	//80046018
 	if (numberSkipResetPredictorCheck == 0)
@@ -2246,7 +2246,7 @@ void CMORTDecoder::Function80045FF0(unsigned long currentIntermediateValueOffset
 	{
 		//80046214
 
-		unsigned long readValue = ReadBitsFrom80045FF0Buffer(6, buffer800D3ED8MORTRawInputDataBuffer, currentInputData, bitsleft, currentOverallBitPosition);
+		std::uint32_t readValue = ReadBitsFrom80045FF0Buffer(6, buffer800D3ED8MORTRawInputDataBuffer, currentInputData, bitsleft, currentOverallBitPosition);
 		shortsSPE8[0x0] = (unsigned short)readValue; //T7 to E8(SP)
 
 		//80046298
@@ -2352,32 +2352,32 @@ void CMORTDecoder::Function80045FF0(unsigned long currentIntermediateValueOffset
 //TWINE 8009DBE8
 void CMORTDecoder::Function80045C78(int currentIntermediateValueOffset, unsigned short shortsSP60[4][0xD], unsigned short shortsSPC8[0x4], unsigned short shortsSPD0[0x4], unsigned short stackBuffer2Offsets[0x4], unsigned short shortsSPE0[0x4], unsigned short shortsSPE8[8], std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//SP = SP - 0x98;
 	//RA to 3C(SP)
@@ -2438,28 +2438,28 @@ void CMORTDecoder::Function80045C78(int currentIntermediateValueOffset, unsigned
 // TWINE 8009EE60
 void CMORTDecoder::Function80048590(unsigned short shortsSPC8Value, unsigned short stackBuffer2Offset, unsigned short stackBuffer2[0x28], unsigned short shortsSP60[0xD])
 {
-	unsigned long AT = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	// NEMU FOR SOME REASON LOADS THIS WRONG
 	signed char table8004867CValue1[0x8];
@@ -2483,7 +2483,7 @@ void CMORTDecoder::Function80048590(unsigned short shortsSPC8Value, unsigned sho
 
 	if (shortsSPC8Value < 8)
 	{
-		T0 = (signed long)table8004867CValue1[shortsSPC8Value];
+		T0 = (std::int32_t)table8004867CValue1[shortsSPC8Value];
 		T1 = table8004867CValue2[shortsSPC8Value];
 	}
 	else
@@ -2533,32 +2533,32 @@ void CMORTDecoder::Function80048590(unsigned short shortsSPC8Value, unsigned sho
 // TWINE 8009EF54
 void CMORTDecoder::Function80048684(unsigned short shortsSPE0Value, unsigned short shortsSPD0Value, unsigned short stackBuffer2[0x28])
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
-	unsigned long RA = 0;
+	std::uint32_t RA = 0;
 
 	// NEMU FOR SOME REASON LOADS THIS WRONG
 	unsigned short table80048738[0x6];
@@ -2600,10 +2600,10 @@ void CMORTDecoder::Function80048684(unsigned short shortsSPE0Value, unsigned sho
 	// Read 0x50 of predictors, from F0 - (2 * passed in spot), adjusted by shortsSPD0Value value, add to stackBuffer2 value, and write to F0
 	for (int x = 0; x < 0x28; x++)
 	{
-		T1 = (signed short)buffer800D2940Predictor[(0x78 - (signed long)lastPredictorUpdateBase + x)]; //F0(T5);
+		T1 = (signed short)buffer800D2940Predictor[(0x78 - (std::int32_t)lastPredictorUpdateBase + x)]; //F0(T5);
 
 		if (outDebug != NULL)
-			fprintf(outDebug, "800486FC: PREDICTOR VALUE READ %04X from %04X\n", (unsigned short)(T1 & 0xFFFF), (0x78 - (signed long)lastPredictorUpdateBase + x));
+			fprintf(outDebug, "800486FC: PREDICTOR VALUE READ %04X from %04X\n", (unsigned short)(T1 & 0xFFFF), (0x78 - (std::int32_t)lastPredictorUpdateBase + x));
 
 
 		T1 = ((int)((T1 * (unsigned short)table80048738[shortsSPD0Value]) + 0x4000) >> 0xF);
@@ -2620,33 +2620,33 @@ void CMORTDecoder::Function80048684(unsigned short shortsSPE0Value, unsigned sho
 }
 
 //TWINE 8009D9F0
-void CMORTDecoder::Function80045A80(unsigned long currentIntermediateValueOffset, unsigned short shortsSPE8[8], std::vector<unsigned short>& pcmSamples)
+void CMORTDecoder::Function80045A80(std::uint32_t currentIntermediateValueOffset, unsigned short shortsSPE8[8], std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//SP = SP - 0x20;
 	//RA to 1C(SP)
@@ -2663,34 +2663,34 @@ void CMORTDecoder::Function80045A80(unsigned long currentIntermediateValueOffset
 	//80045AB8
 
 	//80045AC4
-	T4 = (int)(((((signed short)shortsSPE8[0] - 0x20) * (unsigned long)0x400) * (unsigned long)0x3333) + (unsigned long)0x4000) >> 0xF << 1;
+	T4 = (int)(((((signed short)shortsSPE8[0] - 0x20) * (std::uint32_t)0x400) * (std::uint32_t)0x3333) + (std::uint32_t)0x4000) >> 0xF << 1;
 	smootherPredictor[0] = (unsigned short)T4; //T4 to 0(V0);
 
-	T1 = (int)(((((signed short)shortsSPE8[0x1] - 0x20) * (unsigned long)0x400) * (unsigned long)0x3333) + (unsigned long)0x4000) >> 0xF << 1;
+	T1 = (int)(((((signed short)shortsSPE8[0x1] - 0x20) * (std::uint32_t)0x400) * (std::uint32_t)0x3333) + (std::uint32_t)0x4000) >> 0xF << 1;
 	smootherPredictor[1] = (unsigned short)T1; //T1 to 2(V0);
 
 	//80045AF8
-	T8 = (int)(((((signed short)shortsSPE8[0x2] - 0x10) * (unsigned long)0x400) * (unsigned long)0x3333) + -0x332F000) >> 0xF << 0x1;
+	T8 = (int)(((((signed short)shortsSPE8[0x2] - 0x10) * (std::uint32_t)0x400) * (std::uint32_t)0x3333) + -0x332F000) >> 0xF << 0x1;
 	smootherPredictor[2] = (unsigned short)T8; //T8 to 4(V0);
 
 	//80045B1C
-	T5 = (int)(((((signed short)shortsSPE8[0x3] - 0x10) * 0x400) * (unsigned long)0x3333) + 0x04003C00) >> 0xF << 1;
+	T5 = (int)(((((signed short)shortsSPE8[0x3] - 0x10) * 0x400) * (std::uint32_t)0x3333) + 0x04003C00) >> 0xF << 1;
 	smootherPredictor[3] = (unsigned short)T5; //T5 to 6(V0);
 
 	//80045B48
-	T2 = (int)(((((signed short)shortsSPE8[0x4] - 8) * (unsigned long)0x400) * (unsigned long)0x4B17) + 0xFFC91B1C) >> 0xF << 1;
+	T2 = (int)(((((signed short)shortsSPE8[0x4] - 8) * (std::uint32_t)0x400) * (std::uint32_t)0x4B17) + 0xFFC91B1C) >> 0xF << 1;
 	smootherPredictor[4] = (unsigned short)T2; //T2 to 8(V0);
 
 	//80045B78
-	T9 = (int)(((((signed short)shortsSPE8[0x5] - 8) * (unsigned long)0x400) * (unsigned long)0x4444) + 0x03BBF800) >> 0xF << 1;
+	T9 = (int)(((((signed short)shortsSPE8[0x5] - 8) * (std::uint32_t)0x400) * (std::uint32_t)0x4444) + 0x03BBF800) >> 0xF << 1;
 	smootherPredictor[5] = (unsigned short)T9; //T9 to A(V0);
 
 	//80045BB8
-	T6 = (int)(((((signed short)shortsSPE8[0x6] - 4) * (unsigned long)0x400) * (unsigned long)0x7ADE) + 0x147936C) >> 0xF << 1;
+	T6 = (int)(((((signed short)shortsSPE8[0x6] - 4) * (std::uint32_t)0x400) * (std::uint32_t)0x7ADE) + 0x147936C) >> 0xF << 1;
 	smootherPredictor[6] = (unsigned short)T6; //T6 to C(V0);
 
 	//80045C00
-	T3 = (int)((((((signed short)shortsSPE8[0x7] - 4) * (unsigned long)0x400) * (unsigned long)0x740C) + 0x40D6B40)) >> 0xF << 1;
+	T3 = (int)((((((signed short)shortsSPE8[0x7] - 4) * (std::uint32_t)0x400) * (std::uint32_t)0x740C) + 0x40D6B40)) >> 0xF << 1;
 	smootherPredictor[7] = (unsigned short)T3; //T3 to E(V0);
 
 	//80045C48
@@ -2708,31 +2708,31 @@ void CMORTDecoder::Function80045A80(unsigned long currentIntermediateValueOffset
 	// SP = SP + 0x20;
 }
 
-void CMORTDecoder::Function80048904(unsigned long currentIntermediateValueOffset, std::vector<unsigned short>& pcmSamples)
+void CMORTDecoder::Function80048904(std::uint32_t currentIntermediateValueOffset, std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//RA to 0(SP)
 	//A0 to 4(SP)
@@ -2748,14 +2748,14 @@ void CMORTDecoder::Function80048904(unsigned long currentIntermediateValueOffset
 	//S6 to 2C(SP)
 	//S7 to 30(SP)
 
-	S0 = (signed long)sampleBuffer[0]; //0(AT)
-	S1 = (signed long)sampleBuffer[1]; //4(AT)
-	S2 = (signed long)sampleBuffer[2]; //8(AT)
-	S3 = (signed long)sampleBuffer[3]; //C(AT)
-	S4 = (signed long)sampleBuffer[4]; //10(AT)
-	S5 = (signed long)sampleBuffer[5]; //14(AT)
-	S6 = (signed long)sampleBuffer[6]; //18(AT)
-	S7 = (signed long)sampleBuffer[7]; //1C(AT)
+	S0 = (std::int32_t)sampleBuffer[0]; //0(AT)
+	S1 = (std::int32_t)sampleBuffer[1]; //4(AT)
+	S2 = (std::int32_t)sampleBuffer[2]; //8(AT)
+	S3 = (std::int32_t)sampleBuffer[3]; //C(AT)
+	S4 = (std::int32_t)sampleBuffer[4]; //10(AT)
+	S5 = (std::int32_t)sampleBuffer[5]; //14(AT)
+	S6 = (std::int32_t)sampleBuffer[6]; //18(AT)
+	S7 = (std::int32_t)sampleBuffer[7]; //1C(AT)
 	A3 = (signed short)lastSampleValue; //0x164(A0)
 
 	// Function pointer formation to 80048AFC
@@ -2812,7 +2812,7 @@ void CMORTDecoder::Function80048904(unsigned long currentIntermediateValueOffset
 	lastSampleValue = (signed short)A3; //164(A0)
 }
 
-void CMORTDecoder::CallT380048XXXFunction(unsigned long& T2, unsigned long T3, unsigned long T4)
+void CMORTDecoder::CallT380048XXXFunction(std::uint32_t& T2, std::uint32_t T3, std::uint32_t T4)
 {
 	if (T3 == 0x80048AFC)
 		Function80048AFC(T2, T4); // JALR RA,T3
@@ -2824,32 +2824,32 @@ void CMORTDecoder::CallT380048XXXFunction(unsigned long& T2, unsigned long T3, u
 		Function80048B3C(T2); // JALR RA,T3
 }
 
-void CMORTDecoder::Function80048AFC(unsigned long& T2, unsigned long T4)
+void CMORTDecoder::Function80048AFC(std::uint32_t& T2, std::uint32_t T4)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T3 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	// T2 = (T2 / 4) + (T4 * (3 / 4))
 	T2 = (((int)T2 >> 2) + ((int)T4 >> 1)) + ((int)T4 >> 2);
@@ -2858,7 +2858,7 @@ void CMORTDecoder::Function80048AFC(unsigned long& T2, unsigned long T4)
 	Function80048B3C(T2);
 }
 
-void CMORTDecoder::Function80048B14(unsigned long& T2, unsigned long T4)
+void CMORTDecoder::Function80048B14(std::uint32_t& T2, std::uint32_t T4)
 {
 	//80048B14
 	// T2 / 2 + T4 / 2
@@ -2868,7 +2868,7 @@ void CMORTDecoder::Function80048B14(unsigned long& T2, unsigned long T4)
 	Function80048B3C(T2);
 }
 
-void CMORTDecoder::Function80048B24(unsigned long& T2, unsigned long T4)
+void CMORTDecoder::Function80048B24(std::uint32_t& T2, std::uint32_t T4)
 {
 	// T2 = (T2 * (3 / 4)) + (T4 / 4)
 	T2 = (((int)T2 >> 1) + ((int)T4 >> 2)) + ((int)T2 >> 2);
@@ -2877,32 +2877,32 @@ void CMORTDecoder::Function80048B24(unsigned long& T2, unsigned long T4)
 	Function80048B3C(T2);
 }
 
-void CMORTDecoder::Function80048B3C(unsigned long& T2)
+void CMORTDecoder::Function80048B3C(std::uint32_t& T2)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T3 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	//80048B3C
 	bool isNegative = false;
@@ -2942,18 +2942,18 @@ void CMORTDecoder::Function80048B3C(unsigned long& T2)
 	T2 = T2 & 0xFFFF;
 }
 
-void CMORTDecoder::Function80048740(unsigned long intermediateValueOffset, unsigned long predictorBufferOffset, int countValues, signed short adjusters[8], unsigned long& A3, unsigned long& S0, unsigned long& S1, unsigned long& S2, unsigned long& S3, unsigned long& S4, unsigned long& S5, unsigned long& S6, unsigned long& S7, std::vector<unsigned short>& pcmSamples)
+void CMORTDecoder::Function80048740(std::uint32_t intermediateValueOffset, std::uint32_t predictorBufferOffset, int countValues, signed short adjusters[8], std::uint32_t& A3, std::uint32_t& S0, std::uint32_t& S1, std::uint32_t& S2, std::uint32_t& S3, std::uint32_t& S4, std::uint32_t& S5, std::uint32_t& S6, std::uint32_t& S7, std::vector<unsigned short>& pcmSamples)
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S8 = 0;
-	unsigned long T2 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
 
 	//80048740
 	for (int x = 0; x < countValues; x++)
@@ -3045,30 +3045,30 @@ void CMORTDecoder::Function80048740(unsigned long intermediateValueOffset, unsig
 	}
 }
 
-void CMORTDecoder::Function80048A58(unsigned long algorithm, signed short adjusters[8])
+void CMORTDecoder::Function80048A58(std::uint32_t algorithm, signed short adjusters[8])
 {
-	unsigned long AT = 0;
-	unsigned long A0 = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = algorithm;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A0 = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = algorithm;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
 
 	signed short* smootherPredictor1;
 	signed short* smootherPredictor2;
@@ -3099,31 +3099,31 @@ void CMORTDecoder::Function80048A58(unsigned long algorithm, signed short adjust
 
 void CMORTDecoder::Function80045A48()
 {
-	unsigned long AT = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	T6 = variable800D4F11Status2;
 	AT = 2;
@@ -3137,31 +3137,31 @@ void CMORTDecoder::Function80045A48()
 
 void CMORTDecoder::Function80045A68()
 {
-	unsigned long AT = 0;
-	unsigned long A1 = 0;
-	unsigned long A2 = 0;
-	unsigned long A3 = 0;
-	unsigned long V0 = 0;
-	unsigned long V1 = 0;
-	unsigned long S0 = 0;
-	unsigned long S1 = 0;
-	unsigned long S2 = 0;
-	unsigned long S3 = 0;
-	unsigned long S4 = 0;
-	unsigned long S5 = 0;
-	unsigned long S6 = 0;
-	unsigned long S7 = 0;
-	unsigned long S8 = 0;
-	unsigned long T0 = 0;
-	unsigned long T1 = 0;
-	unsigned long T2 = 0;
-	unsigned long T3 = 0;
-	unsigned long T4 = 0;
-	unsigned long T5 = 0;
-	unsigned long T6 = 0;
-	unsigned long T7 = 0;
-	unsigned long T8 = 0;
-	unsigned long T9 = 0;
+	std::uint32_t AT = 0;
+	std::uint32_t A1 = 0;
+	std::uint32_t A2 = 0;
+	std::uint32_t A3 = 0;
+	std::uint32_t V0 = 0;
+	std::uint32_t V1 = 0;
+	std::uint32_t S0 = 0;
+	std::uint32_t S1 = 0;
+	std::uint32_t S2 = 0;
+	std::uint32_t S3 = 0;
+	std::uint32_t S4 = 0;
+	std::uint32_t S5 = 0;
+	std::uint32_t S6 = 0;
+	std::uint32_t S7 = 0;
+	std::uint32_t S8 = 0;
+	std::uint32_t T0 = 0;
+	std::uint32_t T1 = 0;
+	std::uint32_t T2 = 0;
+	std::uint32_t T3 = 0;
+	std::uint32_t T4 = 0;
+	std::uint32_t T5 = 0;
+	std::uint32_t T6 = 0;
+	std::uint32_t T7 = 0;
+	std::uint32_t T8 = 0;
+	std::uint32_t T9 = 0;
 
 	T6 = 4;
 
