@@ -1,7 +1,7 @@
 return {
   summary = "Recreates Stadium move effects in Gen1Recomp from your own Stadium cartridge.",
   author = "Stadium Attack Animations contributors",
-  tags = { "graphics", "battle", "stadium", "experimental" },
+  tags = { "graphics", "battle", "stadium" },
   differences = {
     changed = {
       "All 165 Gen 1 moves use Stadium-style presentations",

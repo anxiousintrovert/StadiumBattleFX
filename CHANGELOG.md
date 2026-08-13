@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.3
+
+- Promoted StadiumBattleFX out of experimental status in its manifest and
+  mod-card tags. This release contains the same Stadium 1 feature set as
+  2.0.2 and does not include the in-development Stadium 2 importer.
+
 ## 2.0.2
 
 - Fixed a crash when Gen1Recomp's BATTLE LAYOUT option was set to WIDE. The
