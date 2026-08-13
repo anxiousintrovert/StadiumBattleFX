@@ -17,6 +17,15 @@ if not nativeOk then NativeInterpreter = nil end
 local Player = {}
 Player.__index = Player
 
+-- Gen1Recomp's wide battle compositor historically inspected AnimPlayer's
+-- private steps/stepIndex fields before calling its public draw method. SBFX
+-- is an adapter rather than an AnimPlayer subclass, so those fields do not
+-- naturally exist. Keep a harmless OAM-shaped frame available while custom
+-- rendering is active; when SBFX delegates, expose the wrapped player's live
+-- frame instead. This compatibility surface can be removed once supported
+-- Gen1Recomp releases no longer inspect private animation state.
+local WIDE_COMPAT_STEP = { sprites = { { x = 84 } } }
+
 local ANCHOR = { player = { 26, 96 }, enemy = { 124, 56 } }
 local TICK_EPSILON = 1e-9
 
@@ -50,7 +59,7 @@ end
 
 function Player.new(inner, options, logger, companion, cameraCompanion, cameraOptions,
                     hitOptions, failureReporter, playbackOptions)
-  return setmetatable({ inner = inner, options = options, logger = logger,
+  local player = setmetatable({ inner = inner, options = options, logger = logger,
     companion = companion, cameraCompanion = cameraCompanion,
     cameraOptions = cameraOptions or function() return true end,
     hitOptions = hitOptions or function() return true end,
@@ -58,7 +67,15 @@ function Player.new(inner, options, logger, companion, cameraCompanion, cameraOp
     playbackOptions = playbackOptions or function() return 1 end,
     custom = false, tick = 0, innerTick = 0, warned = {},
     drawWarned = false, context = nil, damageByMove = {},
-    activeHit = nil, hitTriggered = false, nativeBirths = {} }, Player)
+    activeHit = nil, hitTriggered = false, nativeBirths = {},
+    stepIndex = 1 }, Player)
+  player.steps = setmetatable({}, { __index = function()
+    if player.custom then return WIDE_COMPAT_STEP end
+    local steps = inner and inner.steps
+    local step = type(steps) == "table" and steps[inner.stepIndex]
+    return step or WIDE_COMPAT_STEP
+  end })
+  return player
 end
 
 function Player:playbackScale()
@@ -91,6 +108,7 @@ end
 
 function Player:setMoveContext(payload)
   self.context = payload
+  if payload and payload.battle then self.battle = payload.battle end
   -- A called move (Metronome/Mirror Move) is queued alongside its caller.
   -- Keep the outer buckets in that case; a new ordinary move starts a fresh
   -- action and retires anything stale from the previous one.
@@ -767,6 +785,17 @@ local function drawCustom(self)
     -- clip active. Anchored effects own logical animation-layer space, so
     -- start them from a clean graphics state and restore the host afterward.
     if g.origin then g.origin() end
+    -- WideBattle invokes animation adapters inside a side-derived transform.
+    -- The custom renderer owns classic 160x144 coordinates, so origin() above
+    -- deliberately cancels that private transform. Centre those coordinates
+    -- in the 304px wide composition. A direct world-surface redirect performs
+    -- its own origin() below and therefore remains in framebuffer space.
+    local wide = false
+    if self.battle and type(self.battle.isWideBattleLayout) == "function" then
+      local wideOK, value = pcall(self.battle.isWideBattleLayout, self.battle)
+      wide = wideOK and value and true or false
+    end
+    if wide and g.translate then g.translate((304 - 160) / 2, 0) end
     if g.setShader then g.setShader() end
     if g.setScissor then g.setScissor() end
     g.setBlendMode("alpha", "alphamultiply")

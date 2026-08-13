@@ -35,7 +35,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.0.1")
+assert(mod.exports.version == "2.0.2")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -123,4 +123,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.0.1 runtime event wiring")
+print("ok 2.0.2 runtime event wiring")

@@ -136,7 +136,7 @@ function love.load()
   }
   local modChunk = assert(love.filesystem.load("main.lua"))
   modChunk(mod)
-  assert(mod.exports.version == "2.0.1", "wrong mod export version")
+  assert(mod.exports.version == "2.0.2", "wrong mod export version")
   assert(type(handlers["battle.started"]) == "function",
          "battle integration event was not registered")
   assert(type(handlers["hook:render.hud"]) == "function",

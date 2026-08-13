@@ -53,7 +53,10 @@ local lineWidth = 3
 local color = { 0.8, 0.7, 0.6, 0.5 }
 local partialDraws = 0
 local printed = {}
+local translatedX, translatedY
 love = { graphics = {
+  origin = function() end,
+  translate = function(x, y) translatedX, translatedY = x, y end,
   getBlendMode = function() return blendMode, alphaMode end,
   setBlendMode = function(mode, alpha) blendMode, alphaMode = mode, alpha end,
   getLineWidth = function() return lineWidth end,
@@ -95,8 +98,14 @@ local player = Player.new(inner, function() return true end, logger,
     reported = { subject, reason }
   end)
 player:start(1, true)
+player:setMoveContext({ battle = {
+  isWideBattleLayout = function() return true end,
+} })
 
 assert(player.custom and inner.starts == 1, "custom move did not start")
+assert(type(player.steps) == "table" and player.steps[player.stepIndex]
+    and #player.steps[player.stepIndex].sprites > 0,
+  "wide battle compatibility frame was not exposed")
 assert(#requestedAssets == 1 and requestedAssets[1] == "core",
   "optional and screen-overlay assets must not gate a move")
 assert(cameraStarts == 1, "custom camera did not start")
@@ -106,6 +115,8 @@ assert(cameraStarts == 1, "custom camera did not start")
 cameraStops, screenClears = 0, 0
 player:draw()
 assert(partialDraws == 1, "test renderer did not draw before failing")
+assert(translatedX == 72 and translatedY == 0,
+  "wide custom animation coordinates were not centred")
 assert(inner.draws == 0,
   "vanilla renderer was layered over a partially drawn Stadium frame")
 assert(not player.custom and player.spec == nil,

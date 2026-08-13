@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.2
+
+- Fixed a crash when Gen1Recomp's BATTLE LAYOUT option was set to WIDE. The
+  wide compositor inspected the wrapped animation player's private `steps`
+  table; SBFX now supplies a safe compatibility frame and centres custom
+  160x144 move coordinates in the 304px battle composition.
+
 ## 2.0.1
 
 - Fixed Stadium move animations being displaced toward the lower-right on
