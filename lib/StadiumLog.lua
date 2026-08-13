@@ -2,6 +2,7 @@
 -- Entries are deliberately event based: no per-frame writes or Pokemon data.
 
 local V = ...
+local Storage = V.require("ModStorage")
 local Log = {}
 Log.__index = Log
 
@@ -25,25 +26,35 @@ end
 
 function Log.new(host)
   local self = setmetatable({ host = host, lines = {} }, Log)
-  local fs = love and love.filesystem
-  if fs and fs.read and fs.getInfo and fs.getInfo(PATH, "file") then
-    local ok, text = pcall(fs.read, PATH)
-    if ok and type(text) == "string" then
-      for line in text:gmatch("[^\r\n]+") do self.lines[#self.lines + 1] = line end
-    end
-  end
   self:info("session started; StadiumBattleFX %s", tostring(V.mod.exports.version or "unknown"))
+  self:event("runtime", "environment", {
+    api = V.mod and V.mod.api or "unknown",
+  })
   return self
 end
 
+function Log:loadStored()
+  if self.loaded or not Storage.game() then return self.loaded end
+  local record = Storage.read("diagnostics/log")
+  if type(record) == "table" and type(record.lines) == "table" then
+    local current = self.lines
+    self.lines = {}
+    for _, line in ipairs(record.lines) do
+      if type(line) == "string" then self.lines[#self.lines + 1] = line end
+    end
+    for _, line in ipairs(current) do self.lines[#self.lines + 1] = line end
+  end
+  self.loaded = true
+  return true
+end
+
 function Log:flush()
-  local fs = love and love.filesystem
-  if not (fs and fs.createDirectory and fs.write) then return false end
-  if fs.createDirectory("stadium_battle_fx") == false then return false end
-  return pcall(fs.write, PATH, table.concat(self.lines, "\n") .. "\n")
+  if not self:loadStored() then return false end
+  return Storage.write("diagnostics/log", { format = 1, lines = self.lines })
 end
 
 function Log:record(level, message, ...)
+  self:loadStored()
   local line = ("%s [%s] %s"):format(now(), level, format(message, ...))
   self.lines[#self.lines + 1] = line
   while #self.lines > MAX_LINES do table.remove(self.lines, 1) end
@@ -57,16 +68,34 @@ function Log:info(message, ...) return self:record("INFO", message, ...) end
 function Log:warn(message, ...) return self:record("WARN", message, ...) end
 function Log:error(message, ...) return self:record("ERROR", message, ...) end
 
+-- Stable structured line for cross-mod diagnostics. Keys are sorted so logs
+-- from two machines can be diffed and parsed by a developer or an LLM.
+function Log:event(scope, name, fields)
+  local parts = {}
+  for key, value in pairs(type(fields) == "table" and fields or {}) do
+    parts[#parts + 1] = clean(key) .. "=" .. clean(value)
+  end
+  table.sort(parts)
+  local suffix = #parts > 0 and (" " .. table.concat(parts, " ")) or ""
+  return self:info("[%s] %s%s", clean(scope), clean(name), suffix)
+end
+
+function Log:scope(scope)
+  local parent = self
+  return {
+    info = function(_, message, ...) return parent:info("[%s] " .. message, scope, ...) end,
+    warn = function(_, message, ...) return parent:warn("[%s] " .. message, scope, ...) end,
+    error = function(_, message, ...) return parent:error("[%s] " .. message, scope, ...) end,
+    event = function(_, name, fields) return parent:event(scope, name, fields) end,
+  }
+end
+
 function Log:contents()
   return table.concat(self.lines, "\n") .. "\n"
 end
 
 function Log:stage(path)
-  local fs = love and love.filesystem
-  if not (fs and fs.write) then return false, "filesystem unavailable" end
-  local ok, wrote = pcall(fs.write, path, self:contents())
-  if not (ok and wrote ~= false) then return false, "could not stage log export" end
-  return true
+  return self:flush()
 end
 
 return Log

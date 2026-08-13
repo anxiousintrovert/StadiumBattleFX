@@ -22,18 +22,16 @@ love = {
   },
 }
 
-local Assets = assert(loader("lib/StadiumAssets.lua"))()
+local Assets = assert(loader("lib/StadiumAssets.lua"))({
+  require = function(name)
+    assert(name == "ModStorage")
+    return { bundledRom = function() return nil end }
+  end,
+})
 assert(type(Assets.refresh) == "function", "effect cache has no forced refresh")
 local ok, err = Assets._ensureCacheDirectory()
 assert(ok, "fresh cache tree was not created: " .. tostring(err))
-assert(directories["stadium_battle_fx"])
-assert(directories["stadium_battle_fx/effects"])
-assert(directories["stadium_battle_fx/effects/v3"])
-assert(table.concat(calls, "|") == table.concat({
-  "stadium_battle_fx",
-  "stadium_battle_fx/effects",
-  "stadium_battle_fx/effects/v3",
-}, "|"), "cache path was not created one level at a time")
+assert(#calls == 0, "mod.storage cache unexpectedly wrote a filesystem path")
 
 love = hostLove
 print("ok fresh effect cache directory tree")

@@ -1,18 +1,19 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
   "category": "GRAPHICS",
   "game_version": "0.0.0-dev || >=0.1.37 <2.0.0",
   "priority": 110,
-  "dependencies": [
-    "DRAMALESS_SHAPE"
-  ],
+  "experimental": true,
+  "dependencies": [],
   "optional_dependencies": [],
-  "conflicts": [],
+  "conflicts": [
+    "DRAMALESS_SHAPE@<2.0.0"
+  ],
   "incompatible": [],
   "permissions": [
     "engine_internals",

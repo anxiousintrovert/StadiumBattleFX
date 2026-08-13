@@ -5,6 +5,7 @@
 return function(game)
   local U = dofile("tests/drivers/util.lua")
   local dir = os.getenv("SHOT_DIR") or "runtime-shots"
+  local moveId = os.getenv("POKEPORT_TEST_MOVE") or "THUNDERSHOCK"
 
   local function logStatus(label, battle)
     local player = battle and battle.animPlayer
@@ -14,7 +15,22 @@ return function(game)
       "adapter=" .. tostring(player and player.custom ~= nil),
       "custom=" .. tostring(player and player.custom),
       "tick=" .. tostring(player and player.tick),
-      "particles=" .. tostring(player and player.particles and #player.particles))
+      "particles=" .. tostring(player and player.particles and #player.particles),
+      "assetsReady=" .. tostring(player and player.assetsReady))
+  end
+
+  local function probeDraw(battle)
+    local player, g = battle and battle.animPlayer, love.graphics
+    local original = g.draw
+    local calls = 0
+    g.draw = function(...)
+      calls = calls + 1
+      return original(...)
+    end
+    local ok, err = pcall(player.draw, player)
+    g.draw = original
+    U.log("draw-probe", "ok=" .. tostring(ok), "calls=" .. tostring(calls),
+      "error=" .. tostring(err))
   end
 
   for _, entry in ipairs((game.modStatus and game.modStatus.available) or {}) do
@@ -26,9 +42,11 @@ return function(game)
   end
 
   game.save.options.animations = true
+  game.save.options.videoMode = os.getenv("POKEPORT_VIDEO_MODE")
+    or game.save.options.videoMode
   local Pokemon = require("src.pokemon.Pokemon")
   local pikachu = Pokemon.new(game.data, "PIKACHU", 12)
-  pikachu.moves = { { id = "THUNDERSHOCK", pp = 30 } }
+  pikachu.moves = { { id = moveId, pp = 30 } }
   game.save.party = { pikachu }
 
   U.teleport(game, "ROUTE_4", 18, 6, "down")
@@ -65,13 +83,14 @@ return function(game)
   U.log("selected-move", tostring(battle.player.curMoves[1].id))
   assert(U.shot(game, dir .. "/01_moves.png"))
 
-  U.tap(game, "a") -- THUNDERSHOCK
+  U.tap(game, "a") -- selected test move
   for _ = 1, 360 do
     if battle.animPlaying then break end
     if battle.phase == "messages" then U.tap(game, "a") else U.wait(1) end
   end
-  assert(battle.animPlaying, "Thunder Shock animation never started")
+  assert(battle.animPlaying, moveId .. " animation never started")
   logStatus("anim-start", battle)
+  probeDraw(battle)
 
   local captures = {
     { 1, "02_tick01.png" },

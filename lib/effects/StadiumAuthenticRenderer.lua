@@ -99,14 +99,26 @@ end
 
 local function water(self, Assets)
   local variant = self.spec.variant
-  if variant == "surf" then
+  if variant == "surf" or variant == "waterfall" then
     local g = love.graphics
     local cycle = asset(Assets, "water_cycle")
-    local rise = clamp(self.tick / 42, 0, 1)
-    ScreenFx.region(g, { 0.12, 0.50, 0.96 }, 0.16 + rise * 0.18,
-      0, 144 - rise * 82, 160, rise * 82, self)
-    tile(g, cycle, self.tick / 4, { 0.35, 0.76, 1 }, 0.38,
-      -self.tick * 0.8, self.tick * 0.25, 1.1, self)
+    if variant == "waterfall" then
+      local fade = ScreenFx.envelope(self.tick, self.spec.duration, 14, 28)
+      -- A descending cartridge-water field owns the animation layer. Both
+      -- operations are recorded by ScreenFx and replayed over the composed
+      -- borderless margins; only the impact burst remains target-anchored.
+      ScreenFx.fill(g, { 0.08, 0.42, 0.82 }, 0.13 * fade, self)
+      tile(g, cycle, self.tick / 3, { 0.28, 0.72, 1 }, 0.34 * fade,
+        self.tick * 0.18, self.tick * 1.35, 1.1, self)
+      ScreenFx.flash(g, self.tick, self.spec.impactAt - 3, 12,
+        { 0.68, 0.92, 1 }, 0.24, self)
+    else
+      local rise = clamp(self.tick / 42, 0, 1)
+      ScreenFx.region(g, { 0.12, 0.50, 0.96 }, 0.16 + rise * 0.18,
+        0, 144 - rise * 82, 160, rise * 82, self)
+      tile(g, cycle, self.tick / 4, { 0.35, 0.76, 1 }, 0.38,
+        -self.tick * 0.8, self.tick * 0.25, 1.1, self)
+    end
   else
     stream(self, Assets, { "beam_core", "beam_spark", "water_cycle" },
       { 0.20, 0.68, 1 }, false, variant == "pump" and 9 or 4)

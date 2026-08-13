@@ -92,6 +92,13 @@ return {
   [126] = { stadiumProgram = "fire", variant = "blast",
     impactAt = 60, duration = 116,
     assets = { "energy_orb", "energy_column", "large_burst", "screen_grain" } },
+  [127] = { stadiumProgram = "water", variant = "waterfall",
+    impactAt = 35, duration = 106,
+    assets = { "water_cycle", "beam_impact", "large_burst" },
+    -- Waterfall's descending field is screen presentation. Keep the program
+    -- active while a cosmetic texture is missing so its borderless wash is
+    -- never replaced by the generated target-local wave arcs.
+    optionalAssets = { "water_cycle", "beam_impact", "large_burst" } },
   [153] = { stadiumProgram = "explosion", variant = "explosion",
     impactAt = 50, duration = 120,
     assets = { "large_burst", "screen_grain", "energy_core", "screen_pulse" } },

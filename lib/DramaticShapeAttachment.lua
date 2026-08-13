@@ -1,6 +1,6 @@
--- Read-only bridge to Dramaless Shape's projected Stadium attachment API.
--- The companion owns the model, pose, matrices, and camera projection; this
--- module only asks for the final point and falls back cleanly when unavailable.
+-- Compatibility-named bridge to StadiumBattleFX's own model attachments.
+
+local V = ...
 
 local Attachment = {}
 
@@ -11,45 +11,18 @@ local state = {
   lastError = nil,
 }
 
-local function stadiumModule(companion)
-  local found = companion and companion()
-  local exports = found and found.exports
-  local lib = exports and exports.lib
-  if not (lib and type(lib.require) == "function") then
-    return nil, "Dramaless Shape library is unavailable"
-  end
-  local ok, Stadium = pcall(lib.require, "Stadium")
-  if not ok or type(Stadium) ~= "table" then
-    return nil, "Dramaless Shape Stadium module is unavailable"
-  end
-  if type(Stadium.attachment) ~= "function" then
-    return nil, "installed Dramaless Shape does not export Stadium.attachment"
-  end
-  return Stadium
-end
-
 function Attachment.position(companion, side, tag)
   state.requests = state.requests + 1
-  local Stadium, err = stadiumModule(companion)
-  if not Stadium then
+  local Host = V.require("BattleHost")
+  local method = tag == 0xFF and "center" or "attachment"
+  local ok, x, y = Host.call("models", method, side, tag or 0x64)
+  if not ok then
     state.supported = false
-    state.lastError = err
+    state.lastError = tostring(x)
     return nil
   end
 
   state.supported = true
-  local fn = tag == 0xFF and Stadium.center or Stadium.attachment
-  if type(fn) ~= "function" then
-    state.lastError = tag == 0xFF
-      and "installed Dramaless Shape does not export Stadium.center"
-      or nil
-    return nil
-  end
-  local ok, x, y = pcall(fn, side, tag or 0x64)
-  if not ok then
-    state.lastError = tostring(x)
-    return nil
-  end
   if type(x) ~= "number" or type(y) ~= "number" then
     -- A hidden model or unavailable pose is an ordinary per-frame fallback,
     -- not an integration error.
@@ -62,17 +35,50 @@ function Attachment.position(companion, side, tag)
   return x, y
 end
 
+-- Raw full-render-surface attachment projection. This is intentionally a
+-- separate provider method from position(): callers drawing on the final 3D
+-- surface must not accidentally mix it with logical battle-layer values.
+function Attachment.screenPosition(companion, side, tag)
+  state.requests = state.requests + 1
+  local Host = V.require("BattleHost")
+  local method = tag == 0xFF and "screenCenter" or "screenAttachment"
+  local ok, x, y = Host.call("models", method, side, tag or 0x64)
+  if not ok then
+    state.supported = false
+    state.lastError = tostring(x)
+    return nil
+  end
+  state.supported = true
+  if type(x) ~= "number" or type(y) ~= "number" then
+    state.lastError = nil
+    return nil
+  end
+  state.resolved = state.resolved + 1
+  state.lastError = nil
+  return x, y
+end
+
 -- Resolve the source battle table's species-specific attachment bytes. Older
 -- companion builds simply lack this API and retain the established 0x64
 -- fallback in the caller.
 function Attachment.tags(companion, side, moveId, stage)
-  local Stadium = stadiumModule(companion)
-  if not (Stadium and type(Stadium.attachmentTags) == "function") then
-    return nil
-  end
-  local ok, a, b = pcall(Stadium.attachmentTags, side, moveId, stage)
+  local ok, a, b = V.require("BattleHost").call(
+    "models", "attachmentTags", side, moveId, stage)
   if not ok then return nil end
   return tonumber(a), tonumber(b)
+end
+
+function Attachment.moveSync(companion, side, moveId)
+  local ok, row = V.require("BattleHost").call(
+    "models", "moveSync", side, moveId)
+  if not ok or type(row) ~= "table" then return nil end
+  return row
+end
+
+function Attachment.synchronizeMove(companion, side, moveId, effectTick)
+  local ok, value = V.require("BattleHost").call(
+    "models", "synchronizeMove", side, moveId, effectTick)
+  return ok and value == true
 end
 
 function Attachment.status()

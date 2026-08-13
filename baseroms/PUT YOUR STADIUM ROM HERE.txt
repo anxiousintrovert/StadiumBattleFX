@@ -1,0 +1,7 @@
+Keep this folder in every StadiumBattleFX installation.
+
+For a local development install, place your legally obtained Pokemon Stadium
+(USA) v1.0 ROM here as baserom.z64, baserom.v64, or baserom.n64.
+
+Personalized private builds may already contain baserom.z64. Public builds do
+not include ROM data.

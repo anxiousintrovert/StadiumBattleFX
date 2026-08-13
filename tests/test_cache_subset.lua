@@ -35,7 +35,24 @@ love = {
   },
 }
 
-local Assets = assert(loader("lib/StadiumAssets.lua"))()
+local Assets = assert(loader("lib/StadiumAssets.lua"))({
+  require = function(name)
+    assert(name == "ModStorage")
+    return {
+      bundledRom = function() return nil end,
+      read = function(key)
+        if key == "effects/cache" then
+          return { format = "SFXC3", rev = 3, records = {
+            beam_core = { size = 8192, sum = 8192 * 65536 + 1 },
+          } }
+        end
+      end,
+      bytes = function(key)
+        if key == "effects/assets/beam_core" then return bytes end
+      end,
+    }
+  end,
+})
 local ok, err = Assets.has({ "beam_core" })
 assert(ok, "valid required cache subset was rejected: " .. tostring(err))
 assert(Assets.get("beam_core"), "required subset was not uploaded")

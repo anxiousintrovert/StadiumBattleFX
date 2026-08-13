@@ -11,7 +11,14 @@ return {
   stadiumTickRate = 60,
   -- Median of Stadium's 50-degree base battle camera distances after
   -- converting the 240-line N64 viewport to Gen1Recomp's 144-line canvas.
-  portableWorldToPixel = 0.10,
+  -- Slight readability lift for Gen1Recomp's smaller battle canvas. This is
+  -- intentionally a presentation adjustment rather than a source-scale claim.
+  portableWorldToPixel = 0.12,
+  -- Stadium begins several bolt envelopes at 0.1 world scale. At the portable
+  -- projection that is sub-pixel and disappears for the first frames. Keep a
+  -- small readable floor while preserving every authored growth target.
+  portableMinPixelScale = 0.30,
+  portableGlowScale = 1.22,
 
   dispatch = {
     moveTableIndex = 84,

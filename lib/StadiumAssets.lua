@@ -3,6 +3,7 @@
 
 local V = ...
 local Assets = {}
+local Storage = V.require("ModStorage")
 
 local ROM_SIZE = 32 * 1024 * 1024
 local ARCHIVE = 0x8CC000
@@ -134,52 +135,6 @@ local function allLoaded()
   return true
 end
 
-local function isFile(path)
-  local f = love and love.filesystem
-  if not (f and f.getInfo) then return false end
-  local ok, info = pcall(f.getInfo, path, "file")
-  return ok and info and true or false
-end
-
--- LÖVE only guarantees creation of the directory named by one call; builds
--- used by Gen1Recomp do not consistently create missing parent directories.
--- Build the private cache path one segment at a time so a genuinely fresh
--- save directory behaves the same as one left behind by an older release.
-local function ensureDirectory(path)
-  local f = love and love.filesystem
-  if not (f and f.createDirectory) then
-    return false, "filesystem cache directory creation is unavailable"
-  end
-
-  local current = ""
-  for part in tostring(path):gmatch("[^/]+") do
-    current = current == "" and part or (current .. "/" .. part)
-    local exists = false
-    if f.getInfo then
-      local okInfo, info = pcall(f.getInfo, current, "directory")
-      exists = okInfo and info and (not info.type or info.type == "directory")
-    end
-    if not exists then
-      local okMake, made, makeErr = pcall(f.createDirectory, current)
-      if not (okMake and made) then
-        -- A concurrent creator, or an implementation with an unusual return
-        -- value, is harmless if the directory is visible after the call.
-        local nowExists = false
-        if f.getInfo then
-          local okInfo, info = pcall(f.getInfo, current, "directory")
-          nowExists = okInfo and info
-            and (not info.type or info.type == "directory")
-        end
-        if not nowExists then
-          return false, tostring(makeErr or made
-            or ("could not create cache directory " .. current))
-        end
-      end
-    end
-  end
-  return true
-end
-
 local function checksum(bytes)
   local a, b = 1, 0
   for i = 1, #bytes do
@@ -190,21 +145,7 @@ local function checksum(bytes)
 end
 
 function Assets.findRom()
-  local f = love and love.filesystem
-  if not f then return nil end
-  for _, ext in ipairs({ "z64", "n64", "v64" }) do
-    local path = "baseroms/baserom." .. ext
-    if isFile(path) then return path end
-  end
-  local ok, items = pcall(f.getDirectoryItems, "baseroms")
-  if not (ok and items) then return nil end
-  table.sort(items)
-  for _, name in ipairs(items) do
-    if name:lower():match("%.[nvz]64$") then
-      local path = "baseroms/" .. name
-      if isFile(path) then return path end
-    end
-  end
+  return (Storage.bundledRom())
 end
 
 local Reader = {}
@@ -229,20 +170,9 @@ end
 
 local function validatedReader(bytes)
   -- The header CRC identifies the known build, but is not a complete
-  -- integrity check: a modified ROM can retain its original header.  Require
-  -- the canonical normalized MD5 before extracting anything into the cache.
-  -- Dramaless Shape is required, so both companions judge the
-  -- player-supplied cartridge through one public StadiumRom reader.
-  local companion = V and V.mod and type(V.mod.find) == "function"
-    and V.mod.find("DRAMALESS_SHAPE")
-  local sharedLib = companion and companion.exports and companion.exports.lib
-  local sharedRom
-  if sharedLib and type(sharedLib.require) == "function" then
-    local ok, value = pcall(sharedLib.require, "StadiumRom")
-    if ok then sharedRom = value end
-  end
-  if not sharedRom then return nil, ROM_VALIDATION_ERROR end
-  local opened = sharedRom.open(bytes)
+  -- integrity check: a modified ROM can retain its original header. Require
+  -- the canonical normalized MD5 through StadiumBattleFX's own model reader.
+  local opened = V.require("StadiumModelRom").open(bytes)
   -- isExpectedUS deliberately permits a missing hash service for
   -- Dramaless's headless tooling.  This cache cannot do that: an MD5 is
   -- mandatory before offsets are trusted.
@@ -408,29 +338,19 @@ local function cacheSpecs(names)
 end
 
 local function readCache(names)
-  local f = love and love.filesystem
-  if not f then return nil, "filesystem cache is unavailable" end
-  if not isFile(CACHE_MARKER) then return nil, "effect cache marker is missing" end
-  local ok, marker = pcall(f.read, CACHE_MARKER)
-  if not (ok and type(marker) == "string") then return nil, "could not read effect cache marker" end
-  local lines = {}
-  for line in marker:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
-  if lines[1] ~= CACHE_FORMAT .. " " .. CACHE_REV then
+  local marker = Storage.read("effects/cache")
+  if type(marker) ~= "table" then return nil, "effect cache marker is missing" end
+  if marker.format ~= CACHE_FORMAT or marker.rev ~= CACHE_REV then
     return nil, "effect cache is from an older format"
   end
-  local records = {}
-  for i = 2, #lines do
-    local name, size, sum = lines[i]:match("^(%S+)%s+(%d+)%s+(%d+)$")
-    if name then records[name] = { size = tonumber(size), sum = tonumber(sum) } end
-  end
+  local records = marker.records or {}
   local specs, selectErr = cacheSpecs(names)
   if not specs then return nil, selectErr end
   local raw = {}
   for _, spec in ipairs(specs) do
     local rec = records[spec.name]
-    if not (rec and isFile(spec.path)) then return nil, "effect cache is incomplete" end
-    local okRead, bytes = pcall(f.read, spec.path)
-    if not (okRead and type(bytes) == "string" and #bytes == spec.bytes
+    local bytes = Storage.bytes("effects/assets/" .. spec.name)
+    if not (rec and type(bytes) == "string" and #bytes == spec.bytes
         and rec.size == spec.bytes and rec.sum == checksum(bytes)) then
       return nil, "effect cache failed its integrity check"
     end
@@ -440,35 +360,31 @@ local function readCache(names)
 end
 
 local function writeCache(raw)
-  local f = love and love.filesystem
-  if not (f and f.write) then return false, "filesystem cache is unavailable" end
-  local made, makeErr = ensureDirectory(CACHE_DIR)
-  if not made then return false, makeErr end
-  local lines = { CACHE_FORMAT .. " " .. CACHE_REV }
+  local records = {}
   for _, spec in ipairs(SPECS) do
     local bytes = raw[spec.name]
-    local ok, wrote, err = pcall(f.write, spec.path, bytes)
-    if not (ok and wrote) then return false, tostring(err or wrote or "asset write failed") end
-    lines[#lines + 1] = ("%s %d %d"):format(spec.name, #bytes, checksum(bytes))
+    local wrote, code, message = Storage.writeBytes(
+      "effects/assets/" .. spec.name, bytes)
+    if not wrote then return false, tostring(message or code or "asset write failed") end
+    records[spec.name] = { size = #bytes, sum = checksum(bytes) }
   end
-  local ok, wrote, err = pcall(f.write, CACHE_MARKER, table.concat(lines, "\n") .. "\n")
-  if not (ok and wrote) then return false, tostring(err or wrote or "marker write failed") end
-  return true
+  return Storage.write("effects/cache", {
+    format = CACHE_FORMAT, rev = CACHE_REV, records = records,
+  })
 end
 
 local function cacheMarker(raw)
-  local lines = { CACHE_FORMAT .. " " .. CACHE_REV }
+  local records = {}
   for _, spec in ipairs(SPECS) do
     local bytes = raw[spec.name]
-    lines[#lines + 1] = ("%s %d %d"):format(
-      spec.name, #bytes, checksum(bytes))
+    records[spec.name] = { size = #bytes, sum = checksum(bytes) }
   end
-  return table.concat(lines, "\n") .. "\n"
+  return { format = CACHE_FORMAT, rev = CACHE_REV, records = records }
 end
 
 local function extractAll(path)
-  local okRead, bytes = pcall(love.filesystem.read, path)
-  if not (okRead and type(bytes) == "string") then return nil, "could not read " .. path end
+  local bytes = Storage.bundled(path)
+  if type(bytes) ~= "string" then return nil, "could not read " .. path end
   local reader, err = Assets.validateRom(bytes)
   if not reader then return nil, err end
   local raw = {}
@@ -614,6 +530,7 @@ function Assets.ready()
   if progress.state == "building" then return false end
   if allLoaded() then return true end
   if cacheReady ~= nil then return cacheReady end
+  if not Storage.active() then return false end
   local raw, err = readCache()
   cacheReady = raw and true or false
   if raw then
@@ -643,14 +560,12 @@ function Assets.begin(force)
   end
   local path = Assets.findRom()
   if not path then return false, "no .z64/.n64/.v64 file in baseroms/" end
-  local okRead, bytes = pcall(love.filesystem.read, path)
-  if not (okRead and type(bytes) == "string") then
+  local bytes = Storage.bundled(path)
+  if type(bytes) ~= "string" then
     return false, "could not read " .. path
   end
   local reader, err = Reader.new(bytes)
   if not reader then return false, err end
-  local made, makeErr = ensureDirectory(CACHE_DIR)
-  if not made then return false, makeErr end
   job = {
     reader = reader, bytes = bytes, raw = {}, member = 1, write = 1,
     make = 1, phase = "extract", marker = nil, path = path,
@@ -713,7 +628,8 @@ function Assets.step()
     if job.phase == "write" then
       local spec = SPECS[job.write]
       progress.current = "CACHING " .. spec.name:upper()
-      local wrote, writeErr = love.filesystem.write(spec.path, job.raw[spec.name])
+      local wrote, writeCode, writeErr = Storage.writeBytes(
+        "effects/assets/" .. spec.name, job.raw[spec.name])
       if not wrote then error(writeErr or ("could not write " .. spec.path)) end
       job.write = job.write + 1
       progress.done = progress.done + 1
@@ -737,7 +653,7 @@ function Assets.step()
     end
 
     progress.current = "FINALIZING CACHE"
-    local wrote, writeErr = love.filesystem.write(CACHE_MARKER, job.marker)
+    local wrote, writeCode, writeErr = Storage.write("effects/cache", job.marker)
     if not wrote then error(writeErr or "could not write effect cache marker") end
     progress.done = progress.total
     progress.state, progress.current = "done", "READY"
@@ -827,7 +743,7 @@ end
 -- Kept narrow and explicitly internal so the fresh-save behavior can be
 -- regression-tested without manufacturing a complete 32 MiB Stadium ROM.
 function Assets._ensureCacheDirectory()
-  return ensureDirectory(CACHE_DIR)
+  return true
 end
 
 return Assets

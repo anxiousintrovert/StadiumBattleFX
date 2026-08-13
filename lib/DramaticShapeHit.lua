@@ -1,6 +1,6 @@
--- Bridge to Dramaless Shape's public Stadium hit-reaction API.
--- This module never reaches into the companion's private session and never
--- writes to its installation or cache.
+-- Compatibility-named bridge to StadiumBattleFX's own hit-reaction API.
+
+local V = ...
 
 local Hit = {}
 
@@ -11,23 +11,6 @@ local state = {
   lastError = nil,
 }
 
-local function stadiumModule(companion)
-  local found = companion and companion()
-  local exports = found and found.exports
-  local lib = exports and exports.lib
-  if not (lib and type(lib.require) == "function") then
-    return nil, "Dramaless Shape library is unavailable"
-  end
-  local ok, Stadium = pcall(lib.require, "Stadium")
-  if not ok or type(Stadium) ~= "table" then
-    return nil, "Dramaless Shape Stadium module is unavailable"
-  end
-  if type(Stadium.hit) ~= "function" then
-    return nil, "installed Dramaless Shape does not export Stadium.hit"
-  end
-  return Stadium
-end
-
 function Hit.effectiveness(typeMult)
   typeMult = tonumber(typeMult) or 10
   if typeMult < 10 then return "resisted" end
@@ -37,21 +20,17 @@ end
 
 function Hit.request(companion, side, effectiveness)
   state.requests = state.requests + 1
-  local Stadium, err = stadiumModule(companion)
-  if not Stadium then
-    state.supported = false
-    state.lastError = err
-    return false, err
-  end
-
-  state.supported = true
-  local ok, accepted = pcall(Stadium.hit, side, effectiveness)
+  local ok, accepted = V.require("BattleHost").call(
+    "models", "hit", side, effectiveness)
   if not ok then
+    state.supported = false
     state.lastError = tostring(accepted)
     return false, state.lastError
   end
+
+  state.supported = true
   if accepted == false then
-    state.lastError = "Dramaless Shape declined the hit reaction"
+    state.lastError = "Stadium model provider declined the hit reaction"
     return false, state.lastError
   end
 

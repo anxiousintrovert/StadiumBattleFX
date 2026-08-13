@@ -6,10 +6,10 @@ remaining moves. It uses only data traced from Pokemon Stadium (USA) v1.0.
 
 ## Calibrated roster
 
-The first pass covers 24 visually prominent moves:
+The cartridge-textured pass covers 25 visually prominent moves:
 
 - Fire: Ember, Flamethrower, Fire Blast
-- Water and ice: Water Gun, Hydro Pump, Surf, Ice Beam, Blizzard
+- Water and ice: Water Gun, Hydro Pump, Surf, Waterfall, Ice Beam, Blizzard
 - Beams: Psybeam, Hyper Beam, Solar Beam
 - Grass and drain: Absorb, Mega Drain, Razor Leaf
 - Electric: Thunderbolt, Thunder
@@ -49,12 +49,12 @@ pixel-accurate.
 The merged runtime registry exposes a `calibration` label so implementation
 coverage cannot be mistaken for fidelity evidence:
 
-- `stadium1-source-calibrated`: 24 cartridge-textured profiles whose assets,
+- `stadium1-source-calibrated`: 25 cartridge-textured profiles whose assets,
   dispatch families, and relative schedules are supported by Stadium source
   and ROM ranges;
 - `stadium-dispatch-traced`: 19 earlier dedicated move/family programs backed
   by decoded dispatch and resource metadata;
-- `stadium-timing-calibrated-v1`: the other 122 entries. Their exact primary,
+- `stadium-timing-calibrated-v1`: the other 121 entries. Their exact primary,
   alternate, impact, and resource sequences choose source-matched cartridge
   textures and canonical 24/32/64-pixel footprint classes. A generated timing
   pass also preserves shared controller cursor changes, explicit completion

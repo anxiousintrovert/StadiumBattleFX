@@ -11,6 +11,8 @@ local GenericMoveRenderer = V.require("effects/GenericMoveRenderer")
 local StadiumAuthenticRenderer = V.require("effects/StadiumAuthenticRenderer")
 local ScreenFx = V.require("effects/StadiumScreenFx")
 local AttackCinematics = V.require("AttackCinematics")
+local nativeOk, NativeInterpreter = pcall(V.require, "effects/StadiumNativeInterpreter")
+if not nativeOk then NativeInterpreter = nil end
 
 local Player = {}
 Player.__index = Player
@@ -56,7 +58,7 @@ function Player.new(inner, options, logger, companion, cameraCompanion, cameraOp
     playbackOptions = playbackOptions or function() return 1 end,
     custom = false, tick = 0, innerTick = 0, warned = {},
     drawWarned = false, context = nil, damageByMove = {},
-    activeHit = nil, hitTriggered = false }, Player)
+    activeHit = nil, hitTriggered = false, nativeBirths = {} }, Player)
 end
 
 function Player:playbackScale()
@@ -131,6 +133,9 @@ function Player:start(moveId, attackerIsPlayer, opts)
   AttackCinematics.stop()
   ScreenFx.clear(self)
   self.custom, self.spec = false, nil
+  self.nativeBirths = {}
+  self.lastScreenAnchors = nil
+  self.screenAnchorLogged = nil
   self.activeHit, self.hitTriggered = nil, false
   local spec = Registry.get(moveId)
   if not spec or not self.options() then
@@ -148,6 +153,7 @@ function Player:start(moveId, attackerIsPlayer, opts)
   self.attackerIsPlayer = attackerIsPlayer and true or false
   self.dsState = DramaticShapeState.read(
     self.companion, self.attackerIsPlayer, self.cameraCompanion)
+  local attackerSide = self:anchorSide("attacker")
   if spec.bodyOnly and not self:stadiumModelShowing() then
     if self.logger and self.logger.info then self.logger:info("animation delegated: move=%s (%s) reason=model unavailable", tostring(moveId), tostring(spec.key)) end
     return call(self.inner, "start", moveId, attackerIsPlayer, opts)
@@ -167,6 +173,10 @@ function Player:start(moveId, attackerIsPlayer, opts)
   if self.logger and self.logger.info then self.logger:info("animation started: move=%s key=%s side=%s assets=%s", tostring(moveId), tostring(spec.key), self.attackerIsPlayer and "player" or "enemy", ok and "ready" or "procedural") end
   local damage = self.damageByMove[spec.id]
   self.activeHit = damage and table.remove(damage, 1) or nil
+  if type(DramaticShapeAttachment.synchronizeMove) == "function" then
+    DramaticShapeAttachment.synchronizeMove(
+      self.companion, attackerSide, spec.id, 0)
+  end
   if self.cameraOptions() ~= false then
     AttackCinematics.start(spec, self.attackerIsPlayer, self.companion)
   end
@@ -256,6 +266,47 @@ end
 function Player:anchor(which)
   local side = self:anchorSide(which)
   local p = ANCHOR[side]
+  local tag = self.spec and self:attachmentTag(which)
+
+  -- When drawing on the full 3D world surface, consume the bone's raw
+  -- framebuffer projection from the exact camera that drew the model this
+  -- frame. Divide only by the graphics scale used for authored particle
+  -- sizes; do not introduce a centred 160x144 origin or bounds check.
+  local direct = self.anchoredRedirect
+  if direct and direct.screen and type(DramaticShapeAttachment.screenPosition) == "function" then
+    local scale = tonumber(direct.scale) or 1
+    if scale <= 0 then scale = 1 end
+    local source = "bone"
+    local x, y = DramaticShapeAttachment.screenPosition(
+      self.companion, side, tag or 0x64)
+    if type(x) ~= "number" or type(y) ~= "number" or x ~= x or y ~= y then
+      source = "center"
+      x, y = DramaticShapeAttachment.screenPosition(
+        self.companion, side, 0xFF)
+    end
+    if type(x) == "number" and type(y) == "number" and x == x and y == y then
+      self.lastScreenAnchors = self.lastScreenAnchors or {}
+      self.lastScreenAnchors[which] = { x / scale, y / scale }
+      self.screenAnchorLogged = self.screenAnchorLogged or {}
+      if not self.screenAnchorLogged[which] then
+        self.screenAnchorLogged[which] = true
+        if self.logger and self.logger.info then
+          self.logger:info("live screen attachment: move=%s role=%s side=%s tag=%s source=%s screen=%.1f,%.1f scale=%.3f",
+            tostring(self.spec and self.spec.key), tostring(which), tostring(side),
+            tostring(tag or 0x64), source, x, y, scale)
+        end
+      end
+      return x / scale, y / scale
+    end
+    -- Fast pose/camera transitions can make a bone unavailable for one draw.
+    -- Hold the last live projection for this role; never snap a 3D move back
+    -- to a hard-coded side or Game Boy slot.
+    local held = self.lastScreenAnchors and self.lastScreenAnchors[which]
+    if held then return held[1], held[2] end
+    -- No live point has existed yet. Keep the effect off the shown surface
+    -- for this frame instead of visibly binding it to the wrong Pokemon.
+    return -100000, -100000
+  end
 
   -- DS transforms the complete animation layer after this draw. Its camera
   -- wrapper supplies translation and uniform scale but no rotation, so a
@@ -266,10 +317,32 @@ function Player:anchor(which)
   local transform = state and state.layerTransform
   local projected = state and state.projectedAnchors
   local desired = projected and projected[side]
-  local tag = self.spec and self:attachmentTag(which)
+  local minX, maxX, minY, maxY = 0, 160, 0, 144
+  if type(ScreenFx.anchorBounds) == "function" then
+    minX, maxX, minY, maxY = ScreenFx.anchorBounds()
+  end
+  local function visible(x, y)
+    return type(x) == "number" and type(y) == "number"
+      and x == x and y == y
+      and x >= minX and x <= maxX and y >= minY and y <= maxY
+  end
   if tag then
     local x, y = DramaticShapeAttachment.position(self.companion, side, tag)
-    if x then desired = { x, y } end
+    -- Provider projections are allowed to fail while a model changes pose,
+    -- but they must never leak framebuffer/world coordinates into this
+    -- 160x144 draw pass.  A large desktop or Android value places every
+    -- particle outside the canvas, leaving only the screen flash visible.
+    if visible(x, y) then
+      desired = { x, y }
+    else
+      -- The 0xFF path follows the live model centre and is a better fallback
+      -- than a static Game Boy slot when the requested bone is off-camera.
+      local cx, cy = DramaticShapeAttachment.position(
+        self.companion, side, 0xFF)
+      if visible(cx, cy) then
+        desired = { cx, cy }
+      end
+    end
   end
   if transform and desired and transform.scale > 0 then
     local authoredCenter = transform.authoredCenter
@@ -300,6 +373,14 @@ function Player:update()
   -- clock. Fractional ticks are important here: holding an integer camera
   -- frame for ten updates at 10% would look like a new series of jumps.
   self.tick = self.tick + scale
+  if NativeInterpreter then
+    self.nativeBirths = NativeInterpreter.births(
+      self.spec, self.tick - scale, self.tick, self.context and self.context.alternate)
+  end
+  if type(DramaticShapeAttachment.synchronizeMove) == "function" then
+    DramaticShapeAttachment.synchronizeMove(
+      self.companion, self:anchorSide("attacker"), self.spec.id, self.tick)
+  end
   AttackCinematics.setTick(self.tick)
   if self.spec and self.tick + TICK_EPSILON
       >= (self.spec.impactAt or math.huge) then
@@ -315,6 +396,13 @@ function Player:update()
     if not self.inner or call(self.inner, "isDone") then break end
     call(self.inner, "update")
   end
+end
+
+function Player:nativeEmissions(lifetime)
+  if not (NativeInterpreter and self.custom and self.spec) then return {} end
+  return NativeInterpreter.active(
+    self.spec, self.tick, lifetime or 24,
+    self.context and self.context.alternate)
 end
 
 function Player:isDone()
@@ -397,11 +485,23 @@ local function drawThunderShock(self)
           -- Portable projection anchor. The changing component is Stadium's
           -- source world scale; the fixed component comes from its base
           -- battle-camera distance/FOV table and remains capture-tunable.
-          local projectedScale = nativeScale * ThunderShock.portableWorldToPixel
+          local projectedScale = math.max(
+            ThunderShock.portableMinPixelScale or 0,
+            nativeScale * ThunderShock.portableWorldToPixel)
           local x, y = self:anchor(name == "primary" and "attacker" or "target")
-          g.setColor(1, 0.92, 0.22, 1 - age / 20)
+          local fade = 1 - age / 20
+          local sx = (width / asset.frameWidth) * projectedScale
+          local glow = ThunderShock.portableGlowScale or 1
+          -- A soft pale underlay restores the cartridge bolt's luminous edge
+          -- after I4 alpha is composited onto Dramaless's transparent canvas.
+          g.setColor(1, 0.86, 0.20, fade * 0.38)
           drawAsset(g, asset, age + 1, x + px, y - 22 + py,
-            angle, (width / asset.frameWidth) * projectedScale, projectedScale)
+            angle, sx * glow, projectedScale * glow)
+          -- The near-white core remains legible on both the dark boss venues
+          -- and Gen1Recomp's bright classic battle field.
+          g.setColor(1, 0.98, 0.58, fade)
+          drawAsset(g, asset, age + 1, x + px, y - 22 + py,
+            angle, sx, projectedScale)
         end
       end
     end
@@ -624,6 +724,18 @@ local DRAW = {
   body_only = function() end,
 }
 
+-- These dedicated renderers add only the cartridge-backed contact burst; the
+-- approach/windup is expected to come from a live Stadium model pose.  When
+-- no model provider is showing the attacker, selecting them would suppress
+-- the ordinary player while leaving most of the move completely blank.
+-- Keep the texture-backed burst when model motion exists and use the complete
+-- procedural Stadium program otherwise.
+local BODY_DRIVEN_DRAW = {
+  tackle = true,
+  single_kick = true,
+  double_kick = true,
+}
+
 local function drawCustom(self)
   local g = love and love.graphics
   if not (g and self.spec) then return end
@@ -633,15 +745,36 @@ local function drawCustom(self)
   self.dsState = DramaticShapeState.read(
     self.companion, self.attackerIsPlayer, self.cameraCompanion)
   ScreenFx.activate(self)
-  local oldMode, oldAlpha = g.getBlendMode()
-  local oldWidth = g.getLineWidth and g.getLineWidth() or 1
-  local r, gg, b, a = g.getColor()
-  g.setBlendMode("alpha", "alphamultiply")
+  local fenced = g.push and g.pop
+  local oldMode, oldAlpha, oldWidth, r, gg, b, a
+  if fenced then
+    g.push("all")
+  else
+    oldMode, oldAlpha = g.getBlendMode()
+    oldWidth = g.getLineWidth and g.getLineWidth() or 1
+    r, gg, b, a = g.getColor()
+  end
   -- Dedicated and cartridge-authentic programs assume their declared texture
   -- set exists. When the private cache cannot be read, keep the Stadium move
   -- lifecycle and camera but render its deterministic procedural equivalent.
+  local modelShowing = self.dsState and self.dsState.attackerShowing
   local draw = self.assetsReady and DRAW[self.spec.kind] or DRAW.generic
+  if BODY_DRIVEN_DRAW[self.spec.kind] and not modelShowing then
+    draw = DRAW.generic
+  end
   local ok, err = pcall(function()
+    -- The preceding color/3D battle passes may leave a transform, shader or
+    -- clip active. Anchored effects own logical animation-layer space, so
+    -- start them from a clean graphics state and restore the host afterward.
+    if g.origin then g.origin() end
+    if g.setShader then g.setShader() end
+    if g.setScissor then g.setScissor() end
+    g.setBlendMode("alpha", "alphamultiply")
+    local redirected
+    if type(ScreenFx.beginAnchored) == "function" then
+      redirected = ScreenFx.beginAnchored(g, self)
+    end
+    self.anchoredRedirect = redirected
     for _, pass in ipairs(self:attachmentPasses()) do
       self.attachmentPass = pass
       if draw then draw(self) end
@@ -649,9 +782,20 @@ local function drawCustom(self)
     self.attachmentPass = nil
   end)
   self.attachmentPass = nil
-  g.setColor(r or 1, gg or 1, b or 1, a or 1)
-  if g.setLineWidth then g.setLineWidth(oldWidth) end
-  g.setBlendMode(oldMode or "alpha", oldAlpha)
+  local redirectOK, redirectErr = pcall(function()
+    if type(ScreenFx.endAnchored) == "function" then
+      ScreenFx.endAnchored(g, self.anchoredRedirect)
+    end
+  end)
+  self.anchoredRedirect = nil
+  if fenced then
+    g.pop()
+  else
+    g.setColor(r or 1, gg or 1, b or 1, a or 1)
+    if g.setLineWidth then g.setLineWidth(oldWidth) end
+    g.setBlendMode(oldMode or "alpha", oldAlpha)
+  end
+  if not redirectOK then error(redirectErr, 0) end
   if not ok then error(err, 0) end
 end
 

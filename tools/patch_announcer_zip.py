@@ -118,6 +118,7 @@ def patch_zip(
     wav_dir: Path,
     output: Path,
     *,
+    rom: Path | None = None,
     require_complete: bool = True,
     progress: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -148,6 +149,8 @@ def patch_zip(
                 for item in source.infolist():
                     normalized = item.filename.replace("\\", "/")
                     if normalized == MARKER or normalized.startswith(VOICE_ROOT + "/"):
+                        continue
+                    if rom is not None and normalized.startswith("baseroms/baserom."):
                         continue
                     target.writestr(item, source.read(item.filename))
                 clip_rows = []
@@ -182,6 +185,14 @@ def patch_zip(
                 entry.compress_type = zipfile.ZIP_DEFLATED
                 entry.external_attr = 0o100644 << 16
                 target.writestr(entry, marker, compresslevel=9)
+                if rom is not None:
+                    rom_data = Path(rom).read_bytes()
+                    entry = zipfile.ZipInfo(
+                        "baseroms/baserom.z64", (1980, 1, 1, 0, 0, 0)
+                    )
+                    entry.compress_type = zipfile.ZIP_DEFLATED
+                    entry.external_attr = 0o100644 << 16
+                    target.writestr(entry, rom_data, compresslevel=9)
         temporary.replace(output)
     except Exception:
         if temporary.exists():
@@ -192,6 +203,7 @@ def patch_zip(
         "clips": len(wavs),
         "pcm_bytes": total_pcm,
         "zip_bytes": output.stat().st_size,
+        "rom_bundled": rom is not None,
     }
 
 
@@ -201,12 +213,15 @@ def main() -> int:
     parser.add_argument("wav_dir", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--allow-partial", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--rom", type=Path,
+                        help="locally bundle the owned Stadium ROM for sandboxed runtime reads")
     args = parser.parse_args()
     try:
         result = patch_zip(
             args.base_zip,
             args.wav_dir,
             args.output,
+            rom=args.rom,
             require_complete=not args.allow_partial,
         )
     except (OSError, VoicePackError, zipfile.BadZipFile) as exc:

@@ -128,6 +128,11 @@
       { "index": 186, "quote": "What's next?" },
       { "index": 188, "quote": "What'll it do?" }
     ],
+    "decision_idle": [
+      { "index": 749, "quote": "They're staring each other down!" },
+      { "index": 750, "quote": "The Trainer hasn't issued an order." },
+      { "index": 751, "quote": "What's the matter, trainer?" }
+    ],
     "move_used": [
       { "index_formula": "583 + move_id", "confidence": "reviewed" }
     ],

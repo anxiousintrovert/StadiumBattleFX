@@ -1,68 +1,55 @@
-# Dynamic Battle Cinematics compatibility
+# Battle Cinematics compatibility
 
-> **Current DRAMALESS_SHAPE limitation:** Dynamic Battle Cinematics v0.7.1
-> declares `DRAMATIC_SHAPE` as a hard dependency and queries that old mod ID at
-> startup. It cannot load beside the strongly recommended `DRAMALESS_SHAPE`
-> fork until its
-> own manifest and companion lookup are updated. Stadium Attack Animations
-> does not modify that mod's files; the composition below remains ready for a
-> compatible future release.
+Compatibility is verified against the official
+`Battle_Cinematics-v0.7.96.zip` release asset (SHA-256
+`392acff9905fc60ae12cc25b98dd80e5285c3ea209fa6ee44097c9e89a925659`).
+The upstream package is inspected read-only and is not copied into or modified
+by StadiumBattleFX.
 
-Compatibility was checked against the official `Battle_Cinematics-v0.7.1.zip`
-release asset (SHA-256
-`4164f10d6948068ba7a4bfef78219427a90237944be19dbde34aa488e3227f32`).
-The upstream release was inspected read-only and no files in its repository
-or package were modified.
+## Official 0.7.96 adapter
 
-## Hook boundary
+Battle Cinematics 0.7.96 predates StadiumBattleFX API 1. It discovers one of
+three Shape-family backends, obtains `BattleCam` through that mod's
+`exports.lib` loader, and wraps `BattleCam.rig`. It exports only `version` and
+`activity`; it does not register a camera provider or publish the newer
+phase-ownership protocol.
 
-Battle Cinematics:
+SBFX supports that package from its own side. At `mods.loaded`, SBFX discovers
+the same supported backend and verifies the marker BC places on the wrapped
+`BattleCam`. SBFX registers the final camera as `BATTLE_CINEMATICS:camera` and
+can consume its pose for Stadium-owned or voxel-map arenas. The adapter advances
+the shared camera only when the active arena provider has not already done so.
 
-- replaces Dramatic Shapes' `BattleCam.rig` function;
-- wraps the `input.step` hook;
-- listens for battle start, switch, and end events;
-- wraps input and turn/menu commitment methods to reset its camera;
-- exports only its version and an activity/reset function.
+Because BC 0.7.96 itself requires a supported Shape-family camera backend, that
+backend remains part of a 0.7.96 installation. It need not own SBFX's arena,
+models, effects, or any other presentation slot.
 
-It does not replace `BattleState.animPlayer`, `AnimPlayer:start`,
-`BattleState.drawAnimLayer`, or any effect-cache path. Stadium Attack
-Animations owns the battle's `animPlayer` adapter and lazily composes its
-move-time director around the final `BattleCam.rig` only after all mods have
-loaded. Battle Cinematics resets its idle shot on a committed action; the
-attack director then stages that action and returns to the wrapped base rig.
+## Phase-scoped ownership
 
-## Moving-camera behavior
+Newer Battle Cinematics releases can remain independent of Stadium's provider
+API. A read-only `cameraOwnership()` protocol-1 export declares
+configuration-level claims for `passive`, `intro`, `attack`, and `faint`.
 
-Dramatic Shapes calls the wrapped `BattleCam.rig`, renders the current camera,
-and produces a live shot containing the projected player/enemy marks. Its own
-`drawAnimLayer` wrapper then translates and uniformly scales the entire move
-animation layer. A cinematic orbit also changes the projected angle between
-the battlers, which that uniform transform cannot reproduce by itself.
-Stadium Attack Animations therefore reads the live marks every frame and
-inverse-maps each effect anchor through DS's outer transform. When DS applies
-that transform, the particle lands exactly on the current projected Pokémon
-without receiving translation or scale twice.
+Before starting its optional attack director, SBFX queries
+`ownership.claims.attack`. It repeats the check while applying each shot so a
+late claim releases the active SBFX camera and returns the upstream camera
+unchanged. A true claim affects only SBFX camera direction; models, move VFX,
+hit reactions, audio, and the rest of the presentation continue normally.
+False, absent, failed, or unknown protocols retain normal SBFX behavior.
 
-`DramaticShapeState` also records the installed `BATTLE_CINEMATICS` export
-version for diagnostics. It never calls the camera's activity/reset export,
-changes its settings, or reads/writes its files.
+Official 0.7.96 has no ownership export, so its two optional attack-camera
+settings still require manual coordination. The SBFX implementation is ready
+for the protocol without requiring either project to change the other's files
+or settings.
+
+A later API-native Battle Cinematics release may instead register a normal
+camera provider through
+`STADIUM_BATTLE_FX.exports.battles:registerComponent(...)` and implement
+`claim(context, phase)` plus `shot(context, phase, progress, base, arena)`.
 
 ## Compatibility zoom
 
-`BC ZOOM OUT` is an opt-in optical framing adjustment with OFF, 10%, 25%, 35%,
-and 50% choices. It scales the visible frame height with
-`2 * atan(tan(fov / 2) * (1 + amount))`; it does not multiply the FOV angle or
-move the camera eye backward. This preserves Battle Cinematics' established
-collision-safe trajectory and focus while keeping more of the arena visible
-during its shot changes. Canonical Dramatic Shapes camera queries are passed
-through unchanged, and the adjustment is ignored when Battle Cinematics is not
-installed.
-
-## Load relationship
-
-The manifest declares `BATTLE_CINEMATICS@>=0.7.1 <1.0.0` as optional. Either
-mod can run without the other. When both are enabled, the relationship is
-visible to the loader and Stadium Attack Animations resolves both companions lazily
-at battle start, after mod loading is complete.
-The camera wrapper itself is installed on the first eligible Stadium move, so
-it composes with the final runtime rig regardless of manifest load order.
+`BC ZOOM OUT` is an opt-in optical adjustment with OFF, 10%, 25%, 35%, and 50%
+choices. It scales visible frame height with
+`2 * atan(tan(fov / 2) * (1 + amount))`, preserving Battle Cinematics' eye and
+focus while showing more of the arena.

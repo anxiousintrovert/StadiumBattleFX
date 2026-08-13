@@ -7,6 +7,8 @@
 
 local V = ...
 local StadiumTexture = {}
+local Storage = type(V) == "table" and V.require("ModStorage")
+  or require("viewer.StorageAdapter")
 
 local ROM_SIZE = 32 * 1024 * 1024
 local ARCHIVE = 0x8CC000
@@ -29,13 +31,6 @@ local lastError
 local lastSource
 local cacheError
 
-local function isFile(path)
-  local f = love and love.filesystem
-  if not (f and f.getInfo) then return false end
-  local ok, info = pcall(f.getInfo, path, "file")
-  return ok and info and true or false
-end
-
 -- Adler-32 is only an integrity check here. The source ROM is validated
 -- separately before extraction; this catches truncated or half-written cache
 -- data without paying to load the 32 MiB cartridge again on every boot.
@@ -49,62 +44,29 @@ local function checksum(bytes)
 end
 
 local function readCache()
-  local f = love and love.filesystem
-  if not f or not isFile(CACHE_MARKER) or not isFile(CACHE_FILE) then return nil end
-  local okMarker, marker = pcall(f.read, CACHE_MARKER)
-  local okData, bytes = pcall(f.read, CACHE_FILE)
-  if not (okMarker and type(marker) == "string"
-      and okData and type(bytes) == "string") then
-    return nil, "could not read cached Thunder Shock texture"
-  end
-  local format, rev, size, sum = marker:match("^(%S+)%s+(%d+)%s+(%d+)%s+(%d+)")
-  if format ~= CACHE_FORMAT or tonumber(rev) ~= CACHE_REV then
+  local record = Storage.read("effects/thundershock")
+  if type(record) ~= "table" or type(record.bytes) ~= "string" then return nil end
+  local bytes = record.bytes
+  if record.format ~= CACHE_FORMAT or record.rev ~= CACHE_REV then
     return nil, "cached Thunder Shock texture is from an older format"
   end
-  if tonumber(size) ~= TEXTURE_BYTES or #bytes ~= TEXTURE_BYTES
-      or tonumber(sum) ~= checksum(bytes) then
+  if record.size ~= TEXTURE_BYTES or #bytes ~= TEXTURE_BYTES
+      or record.sum ~= checksum(bytes) then
     return nil, "cached Thunder Shock texture failed its integrity check"
   end
   return bytes
 end
 
--- The marker is written last, so an interrupted first build never makes a
--- partial texture count as usable. love.filesystem writes only to the game's
--- save directory; this cannot touch Dramaless Shape or either mod folder.
+-- The engine commits the data-only record inside this mod's scoped storage.
 local function writeCache(bytes)
-  local f = love and love.filesystem
-  if not (f and f.write) then return false, "filesystem cache is unavailable" end
-  if f.createDirectory then pcall(f.createDirectory, CACHE_DIR) end
-  local okData, wroteData, dataErr = pcall(f.write, CACHE_FILE, bytes)
-  if not (okData and wroteData) then
-    return false, tostring(dataErr or wroteData or "texture write failed")
-  end
-  local marker = ("%s %d %d %d\n"):format(
-    CACHE_FORMAT, CACHE_REV, #bytes, checksum(bytes))
-  local okMarker, wroteMarker, markerErr = pcall(f.write, CACHE_MARKER, marker)
-  if not (okMarker and wroteMarker) then
-    return false, tostring(markerErr or wroteMarker or "marker write failed")
-  end
-  return true
+  return Storage.write("effects/thundershock", {
+    format = CACHE_FORMAT, rev = CACHE_REV, size = #bytes,
+    sum = checksum(bytes), bytes = bytes,
+  })
 end
 
 function StadiumTexture.findRom()
-  local f = love and love.filesystem
-  if not f then return nil end
-  for _, ext in ipairs({ "z64", "n64", "v64" }) do
-    local path = "baseroms/baserom." .. ext
-    if isFile(path) then return path end
-  end
-  local ok, items = pcall(f.getDirectoryItems, "baseroms")
-  if not (ok and items) then return nil end
-  table.sort(items)
-  for _, name in ipairs(items) do
-    if name:lower():match("%.[nvz]64$") then
-      local path = "baseroms/" .. name
-      if isFile(path) then return path end
-    end
-  end
-  return nil
+  return (Storage.bundledRom())
 end
 
 local Reader = {}
@@ -270,8 +232,8 @@ local function rgbaAtlas(texture)
 end
 
 local function extractFromRom(path)
-  local okRead, bytes = pcall(love.filesystem.read, path)
-  if not (okRead and type(bytes) == "string") then return nil, "could not read " .. path end
+  local bytes = Storage.bundled(path)
+  if type(bytes) ~= "string" then return nil, "could not read " .. path end
   local reader, err = Reader.new(bytes)
   if not reader then return nil, err end
   local ok, texture = pcall(function()

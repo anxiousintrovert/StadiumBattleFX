@@ -1,10 +1,16 @@
 # Architecture
 
+> **2.0 note:** This document describes the original 1.x portable-effects
+> architecture and is retained as implementation history. StadiumBattleFX 2.0
+> owns models, arenas, projection, and provider dispatch. Use
+> [`BATTLE_PRESENTATION_API.md`](BATTLE_PRESENTATION_API.md) as the normative
+> integration contract; do not implement new code against 1.x Dramaless seams.
+
 The runtime keeps the user's cartridge, the private derived cache, and the
 battle renderer as separate layers:
 
 ```text
-flat baseroms/*.z64|*.n64|*.v64
+local mod package: baseroms/baserom.z64|n64|v64
                  |
                  v
   byte-order-aware validated Stadium reader
@@ -26,7 +32,7 @@ flat baseroms/*.z64|*.n64|*.v64
 32 MiB USA v1.0 cartridge by its N64 header CRCs, decompresses only members
 needed by the declared asset table and retains only its 36 bounded texture
 ranges (about 157 KiB). The first-run API (`pending`, `begin`, `step`) performs
-one member, file write, texture upload, or marker write per update. `preload` handles the
+one member, scoped-storage write, texture upload, or marker write per update. `preload` handles the
 small validated-cache path and remains a synchronous fallback if a battle is
 created before the overworld can offer the screen.
 
@@ -38,8 +44,10 @@ that mod's own model extraction is complete. It does not access either mod's
 files.
 
 `lib/effects/MoveSpecs.lua` merges all 165 moves with their traced Stadium
-primary/alternate/impact opcodes and resource members. Twenty-four prominent
-moves then receive Stadium 1 source-calibrated timing and renderer profiles.
+primary/alternate/impact opcodes and resource members. The generated
+`StadiumNativePrograms.lua` additionally carries all 193 native programs and
+671 normalized scheduler emissions; `StadiumNativeInterpreter.lua` executes
+their exact cursor, interval, repeat, alternate, and impact-channel timing.
 
 `lib/effects/StadiumFxPlayer.lua` wraps Gen1Recomp's battle `AnimPlayer`.
 Unsupported moves and any move with a missing asset delegate unchanged. A
@@ -48,15 +56,15 @@ suppressing its Game Boy sprites and screen effects.
 `lib/effects/StadiumAuthenticRenderer.lua` composes exact cached textures into
 beam, elemental, full-screen, status, recovery, barrier, quake, and explosion
 programs for the curated fidelity roster. Other shapes use the procedural
-first-pass renderer. Growl and Splash claim the visual
+renderer, but their births/repeats/batches now come from the normalized native
+scheduler rather than fixed portable loops. Growl and Splash claim the visual
 layer only while Dramaless Shape reports that a Stadium model is showing.
 
-`lib/AttackCinematics.lua` is the independent move-time camera layer. It
-lazily composes with Dramaless Shape's `BattleCam.rig`, leaves canonical camera
-queries unchanged, and selects a reusable windup/travel/impact/recovery
-timeline from each move spec. Map stages use optical focus/FOV changes with a
-fixed eye; the empty-disc stage also allows a small orbit. The player updates
-the director from the same authoritative move tick used by the VFX renderer.
+`lib/AttackCinematics.lua` is the independent move-time camera layer. With the
+built-in model provider it reads the active species/move row's exact camera
+selectors and controller delay; reusable windup/travel/impact/recovery
+timelines are now fallback-only. The player updates camera, VFX, hit reaction,
+and the half-rate native body sampler from one authoritative move tick.
 
 Companion data and caches are read-only. The optional attack director composes
 with Dramaless Shape's in-memory camera function, but Stadium Attack Animations

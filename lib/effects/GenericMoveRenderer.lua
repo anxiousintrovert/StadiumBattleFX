@@ -107,6 +107,70 @@ local function drawAsset(g, asset, frame, x, y, rotation, scale, alpha)
     scale or 1, scale or 1, asset.frameWidth / 2, asset.frameHeight / 2)
 end
 
+local function nativeSourceTextures(self, Assets)
+  if type(self.nativeEmissions) ~= "function" then return false end
+  local emissions = self:nativeEmissions(32)
+  if type(emissions) ~= "table" or #emissions == 0 then return false end
+  local g = love.graphics
+  local delivery = self.spec.delivery or "projectile"
+  local family = self.spec.type or "NORMAL"
+  local ax, ay = self:anchor("attacker")
+  local bx, by = self:anchor("target")
+  local primary = self.spec.primaryAsset and Assets.get(self.spec.primaryAsset)
+  local impactAsset = Assets.get("impact_ia") or Assets.get("impact_i")
+
+  for emissionIndex, emission in ipairs(emissions) do
+    local event = emission.event or {}
+    local age = math.max(0, tonumber(emission.age) or 0)
+    local lifetime = 24 + math.min(8, math.abs(tonumber(event.aux) or 0) % 9)
+    local fade = clamp(1 - age / lifetime, 0, 1)
+    local batch = tonumber(event.batchSize) or 1
+    -- 0xFF is the native single-object/sentinel form, not 255 billboards.
+    if batch <= 0 or batch == 0xFF then batch = 1 end
+    batch = math.floor(batch)
+    local targetLocked = emission.channel == "impact"
+      or delivery == "status" or delivery == "contact"
+    local value = targetLocked and impactAsset or primary
+    local base = value and (value.frameWidth >= 64 and 0.17 or 0.28)
+      or 1
+    base = base * (tonumber(self.spec.particleScale) or 1)
+
+    for particle = 1, batch do
+      local seed = (self.spec.id or 1) * 131 + emissionIndex * 29
+        + particle * 17 + (emission.repeatIndex or 0) * 7
+      local phase = hash01(seed, event.renderPreset or 0,
+        event.particlePreset or 0) * math.pi * 2
+      local spread = (hash01(seed, 43, 71) - 0.5) * (4 + batch * 0.9)
+      local x, y
+      if targetLocked then
+        local radius = age * (0.12 + hash01(seed, 11, 19) * 0.28)
+        x = bx + math.cos(phase) * radius + spread
+        y = by - 12 + math.sin(phase) * radius
+      elseif delivery == "beam" or delivery == "projectile" then
+        local travel = math.max(1, (self.spec.impactAt or 38) - emission.born)
+        local p = clamp(age / travel, 0, 1)
+        x, y = between(ax, ay - 12, bx, by - 12, p,
+          math.sin(phase + p * math.pi * 2) * spread)
+        y = y - math.sin(p * math.pi) * 5
+      else
+        x = ax + math.cos(phase) * (4 + age * 0.18) + spread
+        y = ay - 12 + math.sin(phase) * (4 + age * 0.14)
+      end
+
+      local scale = base * (0.72 + hash01(seed, 83, 97) * 0.56)
+        * (1 + age * 0.012)
+      if value then
+        drawAsset(g, value, math.floor(age / 3) + particle,
+          x, y, phase + age * 0.06, scale, fade * 0.82)
+      else
+        glyph(g, family, x, y, 1.8 + scale * 2,
+          phase + age * 0.06, fade * 0.82)
+      end
+    end
+  end
+  return true
+end
+
 local function impact(self, Assets, age, hitIndex)
   if age < 0 or age >= 24 then return end
   local g = love.graphics
@@ -135,6 +199,7 @@ end
 -- dedicated source port. Attachment-specific origins are intentionally not
 -- consulted here.
 local function sourceTexture(self, Assets)
+  if nativeSourceTextures(self, Assets) then return end
   local value = self.spec.primaryAsset and Assets.get(self.spec.primaryAsset)
   if not value then return end
   local g = love.graphics

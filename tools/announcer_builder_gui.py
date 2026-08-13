@@ -43,7 +43,8 @@ class BuilderApp:
         ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         ttk.Label(
             outer,
-            text="Everything is converted locally. Your ROM and voice files are never uploaded.",
+            text=("Everything stays local. The ROM is copied into the personalized ZIP; "
+                  "never redistribute it."),
             foreground="#555555",
         ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 16))
 

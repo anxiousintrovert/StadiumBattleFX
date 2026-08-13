@@ -8,10 +8,11 @@ local stadiumMoves = V.require("effects/StadiumMoveRoster")
 local timingProfiles = V.require("effects/StadiumTimingProfiles")
 local fidelityProfiles = V.require("effects/StadiumFidelityProfiles")
 local rosterCalibration = V.require("effects/StadiumRosterCalibration")
+local nativePrograms = V.require("effects/StadiumNativePrograms")
 
 local specs = {
   -- First post-0.2 roster family: Stadium impact opcode 0x2C with no
-  -- independent primary VFX. Dramaless Shape supplies the body motion.
+  -- independent primary VFX. The selected model provider supplies body motion.
   { id = 1, key = "POUND", name = "Pound", kind = "tackle",
     primaryOpcode = nil, impactOpcode = 0x2C, resources = { 0x18 },
     assets = { "impact_ia", "impact_i" }, impactAt = 30, duration = 62 },
@@ -84,6 +85,19 @@ end
 for _, generated in ipairs(allMoves) do
   local trace = stadiumMoves[generated.id]
   if trace then
+    generated.nativeProgram = nativePrograms.moves[generated.id]
+    generated.nativePrograms = { primary = {}, alternate = {}, impact = {} }
+    for _, channel in ipairs({ "primary", "alternate", "impact" }) do
+      for _, key in ipairs(generated.nativeProgram[channel] or {}) do
+        local program = nativePrograms.programs[key]
+        generated.nativePrograms[channel][#generated.nativePrograms[channel] + 1]
+          = program
+        for _, event in ipairs(program.events or {}) do
+          event.renderPresetDef = nativePrograms.renderPresets[event.renderPreset]
+          event.particlePresetDef = nativePrograms.particlePresets[event.particlePreset]
+        end
+      end
+    end
     generated.primaryOpcodes = trace.primary
     generated.alternateOpcodes = trace.alternate
     generated.impactOpcodes = trace.impact

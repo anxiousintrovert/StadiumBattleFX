@@ -1,5 +1,9 @@
 # StadiumBattleFX Research
 
+> Dramaless paths in this document are provenance for the 1.x implementation.
+> StadiumBattleFX 2.0 transferred and adapted the model stack locally; the
+> public integration contract is `BATTLE_PRESENTATION_API.md`.
+
 All conclusions in this file must name their source. Unknown symbols retain
 their upstream names until their behavior is established.
 

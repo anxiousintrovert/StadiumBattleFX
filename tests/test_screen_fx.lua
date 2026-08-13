@@ -1,7 +1,8 @@
 local loader = love and love.filesystem and love.filesystem.load or loadfile
 local ScreenFx = assert(loader("lib/effects/StadiumScreenFx.lua"))()
 
-local calls = { full = 0, draws = 0, scissors = 0, inverseScale = nil }
+local calls = { full = 0, draws = 0, scissors = 0, inverseScale = nil,
+  pushes = 0, pops = 0 }
 local hostLove = love
 love = { graphics = {} }
 local g = love.graphics
@@ -14,8 +15,10 @@ g.getScissor = function() return nil end
 g.setScissor = function(...)
   if select("#", ...) == 4 then calls.scissors = calls.scissors + 1 end
 end
-g.push = function() end
-g.pop = function() end
+g.push = function(mode)
+  if mode == "all" then calls.pushes = calls.pushes + 1 end
+end
+g.pop = function() calls.pops = calls.pops + 1 end
 g.translate = function() end
 g.scale = function(x) calls.inverseScale = x end
 g.circle = function() end
@@ -89,14 +92,46 @@ for _, key in ipairs({ "FLASH", "MIST", "HAZE" }) do
 end
 -- Isolate the margin-compositor assertion to a single recorded operation.
 ScreenFx.activate(player)
-ScreenFx.fill(g, { 1, 1, 1 }, 0.25, player)
 ScreenFx.setBorderless(true)
+calls.full = 0
+ScreenFx.fill(g, { 1, 1, 1 }, 0.25, player)
+assert(calls.full == 0,
+  "borderless overlay was also drawn into the 160x144 battle canvas")
 calls.scissors = 0
+local pushesBefore, popsBefore = calls.pushes, calls.pops
 assert(ScreenFx.present({ save = { options = { videoMode = "borderless" } } }, {
   width = 1920, height = 1080, gameX = 400, gameY = 36,
   gameWidth = 1120, gameHeight = 1008, scale = 7,
 }), "borderless overlay was not presented")
-assert(calls.scissors == 4, "borderless overlay did not cover all four margins")
+assert(calls.scissors == 1, "borderless overlay was not drawn as one window pass")
+assert(calls.pushes == pushesBefore + 1 and calls.pops == popsBefore + 1,
+  "borderless overlay did not fence its graphics state")
+assert(not ScreenFx.present({ save = { options = { videoMode = "borderless" } } }, {
+  width = 1920, height = 1080, gameX = 400, gameY = 36,
+  gameWidth = 1120, gameHeight = 1008, scale = 7,
+}), "a stale borderless overlay was replayed on a later frame")
+
+-- A bad texture or hot-reloaded image may fail after the compositor has set
+-- its scissor. The all-state fence must still unwind, and the broken frame
+-- must not be retried forever over subsequent screens.
+ScreenFx.activate(player)
+ScreenFx.tile(g, fake, 0, { alpha = 0.25, owner = player })
+local workingDraw = g.draw
+g.draw = function() error("invalid image") end
+popsBefore = calls.pops
+local replayOK = pcall(ScreenFx.present,
+  { save = { options = { videoMode = "borderless" } } }, {
+    width = 1920, height = 1080, gameX = 400, gameY = 36,
+    gameWidth = 1120, gameHeight = 1008, scale = 7,
+  })
+g.draw = workingDraw
+assert(not replayOK and calls.pops == popsBefore + 1,
+  "failed borderless replay leaked its graphics state")
+assert(not ScreenFx.present({ save = { options = { videoMode = "borderless" } } }, {
+  width = 1920, height = 1080, gameX = 400, gameY = 36,
+  gameWidth = 1120, gameHeight = 1008, scale = 7,
+}), "a failed borderless overlay was retried on a later frame")
+
 assert(not ScreenFx.present({ save = { options = { videoMode = "windowed" } } }, {
   width = 800, height = 720, gameX = 0, gameY = 0,
   gameWidth = 800, gameHeight = 720, scale = 5,

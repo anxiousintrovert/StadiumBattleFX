@@ -2,20 +2,13 @@
 
 local mod = ...
 
-if love and os and os.getenv and os.getenv("STADIUM_ANNOUNCER_TEST") == "1" then
-  return require("tests.test_announcer")
-end
-
 -- The repository doubles as a small LÖVE research harness. Gen1Recomp
 -- supplies a mod object here; a direct `love .` launch does not.
 if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
-  if os and os.getenv and os.getenv("STADIUM_FX_SELFTEST") == "1" then
-    return require("viewer.SelfTest")
-  end
   return require("viewer.App")
 end
 
-mod.exports.version = "1.1.2"
+mod.exports.version = "2.0.0"
 
 local namespace = { mod = mod, path = mod.path }
 local modules = {}
@@ -42,10 +35,15 @@ function namespace.require(name)
 end
 
 local StadiumRom = namespace.require("StadiumRom")
+local ModStorage = namespace.require("ModStorage")
+namespace.storage = ModStorage
 local StadiumLog = namespace.require("StadiumLog")
 namespace.log = StadiumLog.new(mod.log)
+local BattleProviders = namespace.require("BattleProviders")
 local ThunderShockSpec = namespace.require("effects/ThunderShockSpec")
 local StadiumAssets = namespace.require("StadiumAssets")
+local StadiumArenaAssets = namespace.require("StadiumArenaAssets")
+local StadiumTrainerPortraits = namespace.require("StadiumTrainerPortraits")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
 local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
@@ -56,12 +54,16 @@ local DramaticShapeFaint = namespace.require("DramaticShapeFaint")
 local Announcer = namespace.require("Announcer")
 local FailureNotice = namespace.require("FailureNotice")
 local StadiumLogExport = namespace.require("StadiumLogExport")
+local StadiumArena = namespace.require("StadiumArena")
+local StadiumModels = namespace.require("StadiumModels")
+local StadiumModelProvider = namespace.require("StadiumModelProvider")
+local BattleHost = namespace.require("BattleHost")
+local BuiltinProviders = namespace.require("BuiltinProviders")
+local BattleCinematicsCompat = namespace.require("BattleCinematicsCompat")
 
-local function dramalessCompanion()
-  return mod.find("DRAMALESS_SHAPE")
-end
+local function noLegacyCompanion() return nil end
 
-mod.options:define({
+local optionSchema = {
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
   { key = "attack_speed", label = "ATTACK SPEED", type = "choice", default = "100",
@@ -85,34 +87,81 @@ mod.options:define({
       { "OFF", "off" }, { "10%", "10" }, { "25%", "25" },
       { "35%", "35" }, { "50%", "50" },
     } },
+}
+for _, row in ipairs(BattleProviders.optionRows()) do
+  optionSchema[#optionSchema + 1] = row
+end
+mod.options:define(optionSchema)
+
+BattleProviders.setBuiltin("arena", StadiumArena, {
+  description = "Automatic voxel map, Stadium boss rooms, or portable location themes",
+  available = function(context) return StadiumArena:available(context) end,
 })
+BattleProviders.setBuiltin("models", StadiumModelProvider, {
+  description = "Pokemon Stadium battle models, poses, attachments, and reactions",
+  available = function() return StadiumModelProvider:available() end,
+})
+for slot, provider in pairs(BuiltinProviders) do
+  BattleProviders.setBuiltin(slot, provider, {
+    description = "StadiumBattleFX built-in " .. slot .. " provider",
+  })
+end
+local modelsInstalled, modelInstallErr = pcall(StadiumModels.install)
+if not modelsInstalled then
+  namespace.log:warn("Stadium model engine hooks unavailable: %s", tostring(modelInstallErr))
+end
+local hostInstalled, hostInstallErr = pcall(BattleHost.install)
+if not hostInstalled then
+  namespace.log:warn("battle presentation host hooks unavailable: %s", tostring(hostInstallErr))
+end
 
 mod.exports.rom = StadiumRom
 mod.exports.thunderShock = ThunderShockSpec
 mod.exports.moves = MoveSpecs
 mod.exports.attackCinematics = AttackCinematics.status
 mod.exports.textureStatus = StadiumAssets.status
+mod.exports.arenaStatus = StadiumArenaAssets.status
+mod.exports.trainerPortraitStatus = StadiumTrainerPortraits.status
 mod.exports.announcerStatus = Announcer.status
+mod.exports.diagnosticLog = function() return namespace.log:contents() end
 mod.exports.faintStatus = DramaticShapeFaint.status
-mod.exports.dramaticShape = function()
-  return dramalessCompanion()
+mod.exports.arenaProvider = StadiumArena
+mod.exports.modelProvider = StadiumModelProvider
+mod.exports.battles = {
+  version = BattleProviders.VERSION,
+  FALLBACK = BattleProviders.FALLBACK,
+  registerComponent = function(_, owner, slot, id, definition)
+    return BattleProviders.registerComponent(owner, slot, id, definition)
+  end,
+  componentList = function(_, slot) return BattleProviders.componentList(slot) end,
+  selectedId = function(_, slot) return BattleProviders.selectedId(slot) end,
+  resolve = function(_, slot, context) return BattleProviders.resolve(slot, context) end,
+  isSelected = function(_, slot, id) return BattleProviders.isSelected(slot, id) end,
+  slots = function() return BattleProviders.slots() end,
+}
+
+local function stadiumOwns(slot)
+  return BattleProviders.resolve(slot) == BuiltinProviders[slot]
 end
-mod.exports.dramalessShape = dramalessCompanion
 mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
+mod.exports.battleCinematicsCompatibility = BattleCinematicsCompat.status
 
 -- Offer the one-time cache build only after the real overworld owns the
 -- stack. The fixed-step seam supplies the live Game object on desktop and
 -- Android, including configurations that do not enable a render pipeline.
 mod.hooks:wrap("input.step", function(next, game, dt)
+  ModStorage.setGame(game)
   local result = next(game, dt)
-  Announcer.update(dt)
+  BattleHost.update(dt)
+  if stadiumOwns("announcer") then Announcer.update(dt, game) end
   FailureNotice.update(dt)
-  -- Android's Storage Access Framework returns from the picker asynchronously.
-  -- Poll before first-run detection so an imported ROM can start its cache
-  -- build on the very frame the app regains focus.
-  pcall(StadiumRomPicker.poll, game)
+  -- Android returns from its Storage Access Framework picker asynchronously.
+  -- Consume the staged Stadium ROM before first-run cache detection so the
+  -- newly imported cartridge can start building immediately.
+  local pollOk, pollErr = pcall(StadiumRomPicker.poll, game)
+  if not pollOk then namespace.log:warn("Stadium ROM picker failed: %s", tostring(pollErr)) end
   if mod.options:get("enabled") ~= false then
     local ok, err = pcall(EffectCacheScreen.maybePush, game)
     if not ok then namespace.log:warn("attack cache screen unavailable: %s", tostring(err)) end
@@ -124,20 +173,32 @@ end)
 -- game canvas is composed. Anchored particles remain on the battle surface.
 mod.hooks:wrap("render.hud", function(next, game, viewport)
   local result = next(game, viewport)
-  StadiumScreenFx.present(game, viewport)
+  if stadiumOwns("effects") then StadiumScreenFx.present(game, viewport) end
   FailureNotice.draw(viewport)
   return result
 end)
 
 -- BattleState creates one AnimPlayer per battle. Replacing that instance with
--- a narrow adapter preserves the engine's queue/draw contract and also lets
--- Dramaless Shape keeps transforming the ordinary animation layer. The
--- adapter now owns a presentation for the complete 165-move Gen 1 roster.
+-- a narrow adapter preserves the engine's queue/draw contract. The adapter
+-- owns a presentation for the complete 165-move Gen 1 roster.
 mod.events:on("battle.started", function(payload)
+  ModStorage.setGame(payload and (payload.game
+    or (payload.battle and payload.battle.game)))
   local battle = payload and payload.battle
+  -- Some UI mods finalize BattleState:draw after mods.loaded. Reattach at the
+  -- battle boundary, before the first frame, if our wrapper was displaced.
+  local hookOk, hookErr = pcall(BattleHost.install, true)
+  if not hookOk then
+    namespace.log:warn("battle presentation host reattachment failed: %s",
+      tostring(hookErr))
+  elseif hookErr then
+    namespace.log:info("battle presentation host reattached at battle start")
+  end
+  BattleHost.begin(battle)
   namespace.log:info("battle started; animation adapter=%s", battle and battle.animPlayer and "available" or "missing")
-  Announcer.beginBattle(battle)
+  if stadiumOwns("announcer") then Announcer.beginBattle(battle) end
   if not (battle and battle.animPlayer) then return end
+  if not (stadiumOwns("animations") and stadiumOwns("effects")) then return end
   if getmetatable(battle.animPlayer) == StadiumFxPlayer then return end
   local options = battle.game and battle.game.save and battle.game.save.options
   StadiumScreenFx.setBorderless(options and options.videoMode == "borderless")
@@ -155,7 +216,7 @@ mod.events:on("battle.started", function(payload)
   end
 
   AttackCinematics.configure(
-    dramalessCompanion,
+    noLegacyCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
     function()
       if mod.options:get("enabled") == false then return "off" end
@@ -166,9 +227,12 @@ mod.events:on("battle.started", function(payload)
     battle.animPlayer,
     function() return mod.options:get("enabled") ~= false end,
     namespace.log,
-    dramalessCompanion,
+    noLegacyCompanion,
     function() return mod.find("BATTLE_CINEMATICS") end,
-    function() return mod.options:get("attack_camera") ~= false end,
+    function()
+      return stadiumOwns("camera")
+        and mod.options:get("attack_camera") ~= false
+    end,
     nil,
     function(subject, reason) FailureNotice.show(subject, reason) end,
     function()
@@ -191,32 +255,49 @@ end)
 -- still receives the actual move at AnimPlayer:start, which remains the
 -- authoritative trigger for queue ownership.
 mod.events:on("battle.move_used", function(payload)
+  BattleHost.event("battle.move_used", payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.setMoveContext then player:setMoveContext(payload) end
   local move = payload and payload.move
   namespace.log:info("move used: id=%s called=%s", tostring(move and (move.index or move.id)), tostring(payload and payload.isCalled == true))
-  Announcer.moveUsed(payload)
+  if stadiumOwns("announcer") then Announcer.moveUsed(payload) end
 end)
 
 -- Damage is calculated while Gen1Recomp is building the queue. Retain its
--- target and effectiveness now, then ask Dramaless Shape for the skeletal
+-- target and effectiveness now, then ask the local Stadium model for the skeletal
 -- reaction only when this move's authored impact frame is reached.
 mod.events:on("battle.damage_dealt", function(payload)
+  BattleHost.event("battle.damage_dealt", payload)
   local battle = payload and payload.battle
   local player = battle and battle.animPlayer
   if player and player.recordDamage then player:recordDamage(payload) end
   namespace.log:info("damage event: move=%s damage=%s multiplier=%s", tostring(payload and payload.move and (payload.move.index or payload.move.id)), tostring(payload and payload.damage), tostring(payload and payload.typeMult))
-  Announcer.damageDealt(payload)
+  if stadiumOwns("announcer") then Announcer.damageDealt(payload) end
 end)
 
-mod.events:on("battle.battler_switched", Announcer.battlerSwitched)
-mod.events:on("battle.status_inflicted", Announcer.statusInflicted)
--- Dramaless Shape owns the model clip and waits for the engine's HP drain.
+mod.events:on("battle.turn_started", function(payload)
+  BattleHost.event("battle.turn_started", payload)
+end)
+
+mod.events:on("battle.turn_ended", function(payload)
+  BattleHost.event("battle.turn_ended", payload)
+end)
+
+mod.events:on("battle.battler_switched", function(payload)
+  BattleHost.event("battle.battler_switched", payload)
+  if stadiumOwns("announcer") then Announcer.battlerSwitched(payload) end
+end)
+mod.events:on("battle.status_inflicted", function(payload)
+  BattleHost.event("battle.status_inflicted", payload)
+  if stadiumOwns("announcer") then Announcer.statusInflicted(payload) end
+end)
+-- StadiumBattleFX owns the model clip and waits for the engine's HP drain.
 -- We only forward the authoritative faint event, so the player's Pokemon
 -- reaches its Stadium faint animation without racing the battle queue.
 mod.events:on("battle.fainted", function(payload)
-  Announcer.fainted(payload)
+  BattleHost.event("battle.fainted", payload)
+  if stadiumOwns("announcer") then Announcer.fainted(payload) end
 
   local battle = payload and payload.battle
   local battler = payload and payload.battler
@@ -231,7 +312,7 @@ mod.events:on("battle.fainted", function(payload)
   end
 
   local disposition = DramaticShapeFaint.disposition(battle, battler)
-  local ok, err = DramaticShapeFaint.request(dramalessCompanion, side, disposition)
+  local ok, err = DramaticShapeFaint.request(noLegacyCompanion, side, disposition)
   if ok then
     namespace.log:info("Stadium faint queued: side=%s disposition=%s", side, disposition)
   else
@@ -239,10 +320,43 @@ mod.events:on("battle.fainted", function(payload)
   end
 end)
 
+mod.events:on("mods.loaded", function()
+  -- UI mods may replace BattleState:draw after StadiumBattleFX first loads.
+  -- Re-chain against the final method once the complete mod set is known so
+  -- the battle world compositor remains the outer owner of the frame.
+  local installed, installErr = pcall(BattleHost.install, true)
+  if not installed then
+    namespace.log:warn("battle presentation host finalization failed: %s",
+      tostring(installErr))
+  else
+    namespace.log:info("battle presentation host finalized after mod loading")
+  end
+  -- Battle Cinematics wraps its supported renderer's shared BattleCam table.
+  -- Once every mod has installed its hooks, advertise that untouched wrapped
+  -- camera in the same player-facing catalog as native API-1 providers.
+  local cinematicCamera = BattleCinematicsCompat.registerProvider(BattleProviders)
+  if cinematicCamera then
+    namespace.log:event("providers", "compatibility-registered", {
+      slot = "camera", id = cinematicCamera,
+    })
+  end
+  local removed = BattleProviders.pruneInactive()
+  namespace.log:event("providers", "registry-finalized", { removed = removed })
+  for _, slot in ipairs(BattleProviders.slots()) do
+    namespace.log:event("providers", "slot", {
+      id = slot.id,
+      selected = BattleProviders.selectedId(slot.id),
+      external = #BattleProviders.componentList(slot.id),
+    })
+  end
+end)
+
 mod.events:on("battle.ended", function(payload)
   namespace.log:info("battle ended")
-  Announcer.finishBattle(payload)
+  BattleHost.event("battle.ended", payload)
+  if stadiumOwns("announcer") then Announcer.finishBattle(payload) end
   AttackCinematics.stop()
   StadiumScreenFx.clear()
   StadiumScreenFx.setBorderless(false)
+  BattleHost.finish("battle.ended")
 end)

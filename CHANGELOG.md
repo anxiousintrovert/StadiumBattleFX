@@ -1,5 +1,164 @@
 # Changelog
 
+## 2.0.0 release fixes
+
+- Fixed move shake composition repainting the transparent battle zones as
+  large white blocks over Stadium and Dramaless arenas in Windows borderless
+  mode. Authored move effects, the HUD, and battle text remain visible.
+- Restored the Stadium ROM import action on desktop and Android. Android uses
+  Gen1Recomp's dedicated system document picker, and every verified ROM is
+  copied into the installed SBFX mod's `baseroms/baserom.z64` location.
+- Kept projected attack layers, borderless screen effects, synchronized model
+  attacks, and full-color Stadium trainer portraits in the same 2.0.0 build.
+
+## 2.0.0 native scheduling and synchronization follow-up
+
+- Added all 165 Stadium move dispatch rows, 193 native effect programs, and
+  671 normalized scheduler emissions to the runtime, including primary,
+  alternate, and defender/impact channels, plus all 86 render and 57 particle
+  preset records referenced by them.
+- Replaced fixed fallback particle birth loops with those scheduler emissions
+  for the 121 shared-renderer moves.
+- Added the complete 24,915-row Stadium species/move body matrix and locked
+  body pose, attachment selection, VFX, camera, and hit reaction to one clock.
+- Replaced shared camera-family guesses whenever native model data is present
+  with each species/move row's two camera selectors and controller delay.
+- Preserved the native 15-frame camera-delay default when the cartridge row's
+  transition byte is zero.
+
+- Replaced Gen1Recomp's opening trainer pictures with the corresponding
+  Pokemon Stadium battle portraits until each trainer sends out their first
+  Pokemon. The portraits are decoded locally from the player's Stadium ROM;
+  the original pictures are restored after the opening so victory scenes are
+  unchanged.
+
+## 2.0.0 Dramaless renderer compatibility follow-up
+
+- External model providers now retain ownership of their renderer. Stadium's
+  mesh shader is applied only to the built-in Stadium model provider, allowing
+  Dramaless cards to remain inside its active Voxel3D depth/light pass while
+  keeping Stadium arenas and Stadium models on their native renderer.
+
+## 2.0.0 cache persistence follow-up
+
+- Combine effect, arena, model, and 823-clip announcer caching into one
+  four-row progress dashboard backed exclusively by `mod.storage`.
+- Retain the `baseroms/` folder in every packaged mod; public builds contain
+  instructions while personalized private builds may contain the owned ROM.
+- Provide a validated Stadium ROM import/replace action. Desktop uses the host
+  file dialog and Android uses Gen1Recomp's dedicated system document picker;
+  the selected ROM is copied into the installed mod's `baseroms/` folder.
+
+## 2.0.0 - local test build
+
+- Added four reusable standalone arena themes for ordinary battles: grass and
+  forest, cave and rock, water and coast, and interior. Each has a layered
+  floor, horizon, themed silhouettes or architecture, and its own sky clear,
+  rendered without any Dramaless dependency.
+- Made the default ordinary-battle arena prefer Dramaless's registered voxel
+  map when available. If voxel terrain is absent or declines the encounter,
+  the host falls back to the matching portable theme; authored Stadium boss
+  rooms remain the default for Gym Leaders, Elite Four, and Champion battles.
+- Fixed forced and opening Pokemon send-outs being announced as if the other
+  trainer had chosen to change Pokemon. Voluntary player and opponent switches
+  still use their side-appropriate change calls.
+- Fixed native trainer and send-out growth pictures flashing over Stadium 3D
+  models. The host now filters the complete side-aware picture layer rather
+  than only ordinary `drawBattlerPic` calls, while keeping the scoped capture
+  bypass used by external 2D-card providers.
+- Preserved 3D world composition under both the classic 160x144 and wide
+  304x144 battle layouts without suppressing later full-screen move flashes.
+- Migrated the complete shipped runtime to Gen1Recomp's mod sandbox. Bundled
+  files use `mod:read`, ROM-derived caches and diagnostics use playthrough-scoped
+  `mod.storage`, and the personalized local builder embeds the owned ROM. The
+  only host-file operation is the explicit ROM import action, which validates
+  the selected cartridge and copies it to the installed mod before use.
+- Fixed Gen3 Battle UI replacing StadiumBattleFX's `BattleState:draw` wrapper
+  after startup, which restored the opaque white field while the model hook
+  continued hiding native sprites. The host now verifies and reattaches its
+  compositor at the battle boundary, and only hides 2D battlers after a 3D
+  world surface was successfully presented.
+- Fixed 3D battles being hidden behind Gen1Recomp's opaque white battle
+  canvas. StadiumBattleFX now follows Dramaless's proven renderer seam: a
+  framebuffer-sized world override beneath a transparent 160x144 battle UI.
+  Native and voxel arenas use the same composition path and retain the
+  classic framing at widescreen aspect ratios.
+- Fixed standalone battlers always falling back to 2D. The transferred model
+  runtime was reading the exported `src.core.Game` class as if it were the
+  live game singleton, so species never resolved to National Dex numbers.
+  Resolution now uses the active BattleState's merged data table.
+- Split Stadium battle ownership from Dramaless Shape. StadiumBattleFX now
+  owns model extraction/cache, skeletal runtime, battle renderer, camera,
+  attachments, hit/faint/recall timing, and boss arenas; Dramaless is no
+  longer a dependency and legacy versions below 2.0 are hard-blocked.
+- Added battle-presentation API 1 with independent arena, model, animation,
+  camera, effects, announcer, HUD, overlay, and transition selectors. External
+  providers are player-selected, namespaced, capability-checked, protected at
+  runtime, and safely fall back without load-order priority.
+- Added the developer/LLM API contract and Dramaless split PR ledger under
+  `docs/`, plus MIT licensing and transferred-code provenance notices.
+- Expanded structured diagnostics across provider registration/selection,
+  battle lifecycle, bundled-ROM discovery, and all cache phases. Snapshots are
+  persisted in scoped storage and exposed through `mod.exports.diagnosticLog`.
+- Added cooperative Battle Cinematics camera ownership protocol 1 support.
+  StadiumBattleFX queries the read-only `passive`, `intro`, `attack`, and
+  `faint` claims and yields only the claimed camera phase. It checks attack
+  ownership again while applying a shot and leaves models, move VFX, audio,
+  and the rest of the presentation active. Either mod may ship independently.
+- Added an SBFX-side adapter for the unchanged official Battle Cinematics
+  0.7.96 package. SBFX discovers the Shape-family `BattleCam` table BC already
+  wraps and consumes its final pose for Stadium and voxel arenas; no forked BC
+  build, reverse dependency, or redistributed BC files are required.
+- Promoted Waterfall from the target-local generated wave fallback to a
+  cartridge-backed descending water field. Its wash, scrolling texture, and
+  impact flash now replay across desktop borderless margins; missing cosmetic
+  cache entries no longer disable the full-screen program.
+- Synchronized announcer playback to visible battle actions instead of the
+  engine's earlier queue-construction events. Pokemon names now wait until
+  their send-out text is dismissed and that Pokemon has entered; move, hit,
+  status, switch, faint, and result calls follow their respective animations.
+  Reviewed first-move, switch, effectiveness, critical, and faint variants now
+  rotate through their correct event families.
+- Added the three Stadium trainer-idle calls. They rotate after ten seconds
+  without input at the battle or move menu, reset when the player acts, never
+  repeat on an untouched decision, and stay silent while another screen owns
+  input.
+- Added a Dramaless battle-stage provider for Brock through Giovanni, the Elite
+  Four, and Champion. The verified ROM's actual `stadium_models` members 7–16
+  are converted locally from native geometry layouts and F3DEX display lists
+  into checksummed 3D mesh/material caches. The earlier `battle_headers`
+  interpretation and procedural pillar reconstruction have been removed.
+- Native UVs, RGBA/IA/I textures, material tint, vertex lighting, proportions,
+  and the Gym Leader Castle black chamber clear are retained through Dramaless
+  camera rotation. Arena selection logs the exact source member; ordinary
+  encounters still inherit their configured baseline arena.
+- Rotated native boss rooms 90 degrees into Dramaless' battle axis and restored
+  every native stage group, including Brock's broad outer floor, deep
+  foundation, and tall enclosed stone perimeter wall. The previous clean-room
+  filter incorrectly discarded those pieces as an exterior shell.
+- Set native boss-arena world scale to its 0.100 minimum, moving Brock's
+  perimeter back beyond the wide-camera viewpoint while the battle floor fills the shot.
+  Portable orbit, elevation, and zoom bounds keep steering inside the venue
+  footprint.
+- Replaced Brock's five low castle-emblem meshes with a clean circular Poké
+  Ball court: neutral field, outer ring, divider, and centred button. The room,
+  outer floor, foundation, wall, and suspended fixtures remain ROM-native.
+- Reduced the replacement court mark to a 500-native-unit diameter and added a
+  dedicated raised boss-camera rig. The eye rises to 82 world pixels while
+  retaining the original 34.11-pixel frame, so the room no longer shrinks.
+- Separated Brock's physical floor from its Poké Ball artwork. A 2400x1600
+  native-textured rectangular platform now remains under the combatants while
+  the independently sized 500-unit mark is contained within its centre.
+- Filled the interior of the 500-unit Poké Ball with a neutral gray disc while
+  retaining the white outer ring, divider, and centred button above it.
+- Applied the completed 0.100 arena setup to Misty through Champion. Each ROM
+  member keeps its walls, fixtures, and broad-floor texture while its low
+  centre emblem is replaced by the contained 2400x1600 platform and filled
+  500-unit Poké Ball used by Brock.
+- Fixed Thunder Shock's opening bolts becoming sub-pixel in Gen1Recomp. A
+  minimum projected size, soft electric glow, and brighter core keep the I4
+  cartridge texture readable on both classic and Stadium arena backgrounds.
+
 ## 1.1.2 - 2026-08-10
 
 - The Stadium effect-cache scan now verifies the normalized ROM MD5 as well

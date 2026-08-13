@@ -6,6 +6,11 @@ for _, name in ipairs({
 }) do
   love.graphics[name] = love.graphics[name] or function() end
 end
+love.graphics.getBlendMode = love.graphics.getBlendMode
+  or function() return "alpha", "alphamultiply" end
+love.graphics.getLineWidth = love.graphics.getLineWidth or function() return 1 end
+love.graphics.getColor = love.graphics.getColor or function() return 1, 1, 1, 1 end
+love.graphics.setBlendMode = love.graphics.setBlendMode or function() end
 local all = assert(loader("lib/effects/AllMoveSpecs.lua"))()
 assert(#all == 165, "complete move spec must contain all 165 Gen 1 moves")
 
@@ -24,6 +29,9 @@ local registry = moveChunk({ require = function(name)
   if name == "effects/StadiumRosterCalibration" then
     return assert(loader("lib/effects/StadiumRosterCalibration.lua"))()
   end
+  if name == "effects/StadiumNativePrograms" then
+    return assert(loader("lib/effects/StadiumNativePrograms.lua"))()
+  end
   error(name)
 end })
 assert(#registry.list == 165, "merged move registry must contain 165 moves")
@@ -33,6 +41,8 @@ local bodyOnly = {}
 local calibration = {}
 for id = 1, 165 do
   local spec = assert(registry.get(id), "missing move " .. id)
+  assert(spec.nativeProgram and spec.nativePrograms,
+    "missing native scheduler binding for move " .. id)
   assert(not seen[spec.id], "duplicate move " .. spec.id)
   seen[spec.id] = true
   assert(spec.duration or spec.bodyOnly, "move has no lifecycle " .. id)
@@ -44,12 +54,16 @@ for id = 1, 165 do
 end
 assert(table.concat(bodyOnly, ",") == "39,45,46,107,150,156",
        "body-only roster did not match Stadium's empty VFX entries")
-assert(calibration["stadium1-source-calibrated"] == 24,
+assert(calibration["stadium1-source-calibrated"] == 25,
        "source-calibrated coverage changed unexpectedly")
 assert(calibration["stadium-dispatch-traced"] == 19,
        "dispatch-traced coverage changed unexpectedly")
-assert(calibration["stadium-timing-calibrated-v1"] == 122,
+assert(calibration["stadium-timing-calibrated-v1"] == 121,
        "Stadium timing profiles must cover every remaining move")
+
+local waterfall = registry.get(127)
+assert(waterfall.stadiumProgram == "water" and waterfall.variant == "waterfall",
+       "Waterfall did not select its borderless screen program")
 
 local slash = registry.get(163)
 assert(slash.stadiumDispatch.primary == "0D" and slash.primaryAsset == "scratch_claw",
@@ -88,6 +102,12 @@ end
 
 -- Registration alone is not sufficient: every move must pass the adapter's
 -- start-time gates and become the active custom presentation in battle.
+local genericDraws = 0
+local trackedGeneric = setmetatable({ draw = function(...)
+  genericDraws = genericDraws + 1
+  return generic.draw(...)
+end }, { __index = generic })
+local attackerShowing = true
 local playerChunk = assert(loader("lib/effects/StadiumFxPlayer.lua"))
 local Player = playerChunk({ require = function(name)
   if name == "effects/MoveSpecs" then return registry end
@@ -99,7 +119,7 @@ local Player = playerChunk({ require = function(name)
   end
   if name == "DramaticShapeState" then
     return { read = function()
-      return { attackerShowing = true, targetShowing = true }
+      return { attackerShowing = attackerShowing, targetShowing = true }
     end }
   end
   if name == "DramaticShapeAttachment" then
@@ -113,7 +133,7 @@ local Player = playerChunk({ require = function(name)
       request = function() return true end,
     }
   end
-  if name == "effects/GenericMoveRenderer" then return generic end
+  if name == "effects/GenericMoveRenderer" then return trackedGeneric end
   if name == "effects/StadiumAuthenticRenderer" then
     return assert(loader("lib/effects/StadiumAuthenticRenderer.lua"))({
       require = function(innerName)
@@ -142,4 +162,20 @@ for id = 1, 165 do
   assert(adapter.custom, "move did not activate custom adapter " .. id)
   assert(adapter.spec.id == id, "adapter selected wrong move " .. id)
 end
+
+-- Cartridge assets must not turn body-driven contact attacks into an
+-- impact-only blank when the battle is using ordinary Gen 1 combatants.
+attackerShowing = false
+local fallbackInner = {}
+function fallbackInner:start() end
+function fallbackInner:update() end
+function fallbackInner:isDone() return true end
+function fallbackInner:pollEffects() return {} end
+local fallbackAdapter = Player.new(fallbackInner, function() return true end)
+fallbackAdapter:start(1, true) -- Pound uses the dedicated tackle burst.
+local beforeFallbackDraw = genericDraws
+fallbackAdapter.tick = 8
+fallbackAdapter:draw()
+assert(genericDraws == beforeFallbackDraw + 1,
+  "body-driven attack did not use its visible no-model fallback")
 print("ok complete 165-move renderer roster")

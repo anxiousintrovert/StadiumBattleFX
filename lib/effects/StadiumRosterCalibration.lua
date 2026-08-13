@@ -3,7 +3,7 @@
 --
 -- This layer intentionally contains no model attachment logic. It only
 -- describes VFX geometry, texture selection, delivery, and source identity;
--- Dramaless Shape continues to own combatant staging.
+-- The selected model provider owns combatant staging.
 
 local Calibration = {}
 

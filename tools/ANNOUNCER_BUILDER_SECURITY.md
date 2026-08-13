@@ -6,6 +6,10 @@ and creates one new ZIP selected by the player. It does not download code,
 connect to the network, change the supplied ROM or base mod ZIP, request
 administrator access, or run a shell command.
 
+The personalized output deliberately contains a copy of the selected ROM so
+the sandboxed mod can read it from its own package. The UI labels that output
+local-only; it must never be redistributed.
+
 ## Release requirements
 
 Publish `StadiumBattleFX-Announcer-Builder-windows.zip`, produced by

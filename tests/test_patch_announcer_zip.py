@@ -69,6 +69,18 @@ class AnnouncerZipPatcherTests(unittest.TestCase):
         with self.assertRaisesRegex(PATCHER.VoicePackError, "1/823"):
             PATCHER.patch_zip(self.base, self.wavs, self.root / "out.zip")
 
+    def test_local_rom_can_be_bundled_for_sandboxed_runtime(self) -> None:
+        (self.wavs / "stadium_mort_000.wav").write_bytes(wav())
+        rom = self.root / "owned.v64"
+        rom.write_bytes(b"owned-rom")
+        output = self.root / "local.zip"
+        result = PATCHER.patch_zip(
+            self.base, self.wavs, output, require_complete=False, rom=rom
+        )
+        self.assertTrue(result["rom_bundled"])
+        with zipfile.ZipFile(output) as archive:
+            self.assertEqual(b"owned-rom", archive.read("baseroms/baserom.z64"))
+
     def test_official_zip_cannot_be_overwritten(self) -> None:
         (self.wavs / "stadium_mort_000.wav").write_bytes(wav())
         with self.assertRaisesRegex(PATCHER.VoicePackError, "must not overwrite"):

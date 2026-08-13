@@ -562,11 +562,12 @@ effects, UI, or audio.
 
 ### Battle Cinematics compatibility
 
-Battle Cinematics 0.7.96 predates API 1. The `0.7.96-sbfx.1` compatibility
-build discovers SBFX's narrow `legacyBattleCamera` export. At `mods.loaded`,
-SBFX detects that wrapper and registers `BATTLE_CINEMATICS:camera` in the camera
-selector. This is a compatibility adapter, not a general API for new camera
-providers; new integrations should register through `exports.battles`.
+Battle Cinematics 0.7.96 predates API 1. The official package wraps a shared
+`BattleCam` table exported by one of its supported Shape-family backends. At
+`mods.loaded`, SBFX discovers that already-wrapped table and registers
+`BATTLE_CINEMATICS:camera` in the camera selector. BC remains unmodified. This
+is a compatibility adapter, not a general API for new camera providers; new
+integrations should register through `exports.battles`.
 
 When `stadium:default` is selected for the camera slot, SBFX may also query
 Battle Cinematics' optional camera-ownership protocol 1:

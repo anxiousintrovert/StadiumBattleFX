@@ -1,5 +1,9 @@
 # Stadium effect scale references
 
+> **2.0 note:** Live projection and model attachments now come from the
+> selected StadiumBattleFX model provider. The Dramaless-specific ownership
+> section below is retained only to explain the 1.x transform problem.
+
 Pokemon Stadium does contain authoritative scale data. It is split across
 the particle callback, render preset, optional species normalization, and the
 battle camera rather than stored as a single per-move pixel size.

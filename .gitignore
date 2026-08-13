@@ -6,6 +6,9 @@
 *.gbc
 *.sav
 baseroms/
+!baseroms/
+baseroms/*
+!baseroms/PUT YOUR STADIUM ROM HERE.txt
 
 # ROM-derived output must remain local
 cache/
@@ -21,6 +24,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .coverage
+tmp/
+tools/mort_decoder/*-test.exe
+tools/mort_decoder/*-test.pdb
 
 # Packaged artifacts
 build/

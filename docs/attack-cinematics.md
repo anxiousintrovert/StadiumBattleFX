@@ -1,5 +1,9 @@
 # Stadium attack presentation and camera research
 
+> **2.0 note:** Camera direction is now hosted by StadiumBattleFX and selected
+> through API slot `camera`. References below to wrapping Dramaless BattleCam
+> describe the 1.x implementation and are not a supported integration seam.
+
 Pokemon Stadium does not store a move as one self-contained animation file.
 The battle presentation is assembled at runtime from several layers which can
 start and finish at different times:
@@ -37,10 +41,11 @@ camera staging is also shared.
   have different body timing for two species while retaining the same shared
   VFX program.
 
-Static source is enough to establish the architecture and reuse boundaries.
-It is not enough to name every anonymous camera state or recover exact cut
-timings. Native Stadium/recomp captures remain the calibration oracle for
-those details.
+The complete cartridge body matrix now identifies each species/move row.
+Bytes `0D` and `0E` select the initial and subsequent fragment-62 camera
+families, while byte `0F` supplies the controller transition delay (with the
+native zero-to-15 default). Selector groups 20 through 24 retain Stadium's
+exact legal shot sets; selector 25 preserves the current camera.
 
 ## Portable implementation
 
@@ -52,13 +57,12 @@ those details.
 - `cinematic`: a reusable camera timeline such as melee, combo, ranged,
   sustained, aerial, field, status, self, or explosion.
 
-`lib/AttackCinematics.lua` applies the camera timeline only while a Stadium
-move player is active and Dramaless Shape owns a staged Stadium battle. A
-timeline focuses the attacker during windup, follows the primary stage, cuts
-to the defender near `impactAt`, and returns to the base shot before the move
-finishes. Map stages keep Dramaless Shape's proven camera eye fixed and create
-close-ups through focus/FOV; empty-disc stages also permit a small safe orbit.
-Canonical camera queries are never modified.
+`lib/AttackCinematics.lua` applies those native row selectors while a Stadium
+move player is active. The old reusable family timelines remain only as the
+safe fallback for model providers that do not expose a Stadium row. Map stages
+keep their collision-safe eye fixed and translate the selected native rig
+optically; empty-disc stages also permit the selected orbit. Canonical camera
+queries are never modified.
 
 The visual renderer and camera director are intentionally separate. For
 example, Thunder Shock and Thunderbolt can share an electric impact language
@@ -67,15 +71,9 @@ Attack can share the combo camera without sharing their contact primitive.
 
 ## Remaining fidelity work
 
-The new programs are a staging foundation, not a claim that all 165 attacks
-are frame-perfect. Exact work still requires native captures to identify:
-
-1. the camera state chosen for each species/move/body-animation combination;
-2. the exact cut and blend ticks relative to body attachment events;
-3. native FOV, eye, and focus values after species-size normalization;
-4. which HUD and full-screen overlays remain visible during each move;
-5. exact VFX transforms, colors, blend modes, and completion markers.
-
-Those facts should be added as calibrated overrides while retaining the
-shared primary/impact/camera registries, rather than returning to one generic
-beam per elemental type.
+Per-species selectors, transition ticks, body starts, and attachment bytes are
+now runtime data rather than shared-family guesses. The remaining native-oracle
+work is limited to pixel projection: validating the translated eye/focus/FOV
+against N64 captures, resolving the original RNG choice within grouped shots,
+and porting every callback's final particle transform/blend into the different
+Gen1Recomp compositor.
