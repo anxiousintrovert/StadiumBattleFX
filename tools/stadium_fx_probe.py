@@ -141,15 +141,10 @@ def open_rom(path: Path) -> tuple[Reader, dict[str, object]]:
     source_digest = hashlib.md5(payload).hexdigest()
     expected_source_digest = EXPECTED_SOURCE_MD5[order]
     if source_digest != expected_source_digest:
-        raise StadiumRomError(
-            f"unsupported {order} Stadium ROM MD5: {source_digest}; "
-            f"expected {expected_source_digest}"
-        )
+        raise StadiumRomError("This is not a Stadium 1.0 rom!")
     digest = hashlib.md5(normalized).hexdigest()
     if digest != EXPECTED_MD5:
-        raise StadiumRomError(
-            "unsupported Pokemon Stadium ROM; expected Pokemon Stadium (USA) v1.0"
-        )
+        raise StadiumRomError("This is not a Stadium 1.0 rom!")
     reader = Reader(normalized)
     report = {
         "path": str(path.resolve()),

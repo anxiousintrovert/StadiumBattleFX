@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -62,6 +63,16 @@ class StadiumRomUnitTests(unittest.TestCase):
         payload, header_size = PROBE.unwrap_copier_header(bytes(0x200) + rom)
         self.assertEqual(0x200, header_size)
         self.assertEqual(rom, payload)
+
+    def test_wrong_stadium_md5_has_player_facing_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            rom = Path(temporary) / "wrong.z64"
+            rom.write_bytes(self.z64[:4] + bytes(PROBE.EXPECTED_SIZE - 4))
+            with self.assertRaisesRegex(
+                PROBE.StadiumRomError,
+                r"^This is not a Stadium 1\.0 rom!$",
+            ):
+                PROBE.open_rom(rom)
 
     def test_bounds_are_checked(self) -> None:
         reader = PROBE.Reader(self.z64)
