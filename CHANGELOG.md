@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.1
+
+- Added a read-only Battle Art Voxel Fork 1.8.x compatibility bridge. While
+  Battle Art owns a staged battle, SBFX yields its arena, models, trainer art,
+  model reactions, and attack camera while retaining Stadium move effects and
+  announcer timing. Anchored and screen-wide effects follow Battle Art's live
+  card projection without either mod changing the other's settings.
+- Prevented Battle Cinematics' shared Battle Art camera from advancing twice
+  per frame when both compatibility layers are installed.
+
 ## 2.1.0
 
 - Embedded the Gen 1 Stadium 2 appearance importer directly into

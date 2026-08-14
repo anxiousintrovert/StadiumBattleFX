@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.0"
+local VERSION = "2.1.1"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path }
@@ -102,6 +102,7 @@ local StadiumModelProvider = namespace.require("StadiumModelProvider")
 local BattleHost = namespace.require("BattleHost")
 local BuiltinProviders = namespace.require("BuiltinProviders")
 local BattleCinematicsCompat = namespace.require("BattleCinematicsCompat")
+local BattleArtCompat = namespace.require("BattleArtCompat")
 
 local function noLegacyCompanion() return nil end
 
@@ -243,6 +244,7 @@ mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
 mod.exports.battleCinematicsCompatibility = BattleCinematicsCompat.status
+mod.exports.battleArtCompatibility = BattleArtCompat.status
 
 -- Offer the one-time cache build only after the real overworld owns the
 -- stack. The fixed-step seam supplies the live Game object on desktop and
@@ -330,6 +332,7 @@ mod.events:on("battle.started", function(payload)
     function()
       return stadiumOwns("camera")
         and mod.options:get("attack_camera") ~= false
+        and not BattleArtCompat.active(battle)
     end,
     nil,
     function(subject, reason) FailureNotice.show(subject, reason) end,

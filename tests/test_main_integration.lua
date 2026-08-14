@@ -35,7 +35,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.1.0")
+assert(mod.exports.version == "2.1.1")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -74,6 +74,8 @@ assert(type(handlers["battle.status_inflicted"]) == "function")
 assert(type(handlers["battle.fainted"]) == "function")
 assert(type(mod.exports.announcerStatus) == "function")
 assert(type(mod.exports.faintStatus) == "function")
+assert(type(mod.exports.battleArtCompatibility) == "function",
+  "Battle Art compatibility diagnostics were not exported")
 assert(type(handlers["mods.loaded"]) == "function")
 assert(type(handlers["hook:ui.options.rows"]) == "function",
   "cache import/rebuild option rows were not registered")
@@ -135,4 +137,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.0 embedded Stadium 2 runtime wiring")
+print("ok 2.1.1 embedded Stadium 2 runtime wiring")

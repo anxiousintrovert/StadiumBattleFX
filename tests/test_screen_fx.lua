@@ -30,6 +30,14 @@ g.rectangle = function(mode, x, y, width, height)
   end
 end
 
+-- Battle Art owns the outer animation-layer transform. Its anchored particles
+-- must not be redirected onto a world surface projected by Stadium models.
+g.getCanvas = function() return {} end
+g.setCanvas = function() error("Battle Art path must not redirect canvases") end
+assert(ScreenFx.beginAnchored(g, {
+  dsState = { layerOwnsProjection = true },
+}) == nil, "Battle Art anchored effects escaped its animation layer")
+
 local player = { tick = 12 }
 function player:anchor() return 124, 56 end
 for _, key in ipairs({ "FLASH", "MIST", "HAZE" }) do

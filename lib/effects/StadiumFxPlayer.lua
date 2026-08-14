@@ -788,7 +788,11 @@ local function drawCustom(self)
     -- The preceding color/3D battle passes may leave a transform, shader or
     -- clip active. Anchored effects own logical animation-layer space, so
     -- start them from a clean graphics state and restore the host afterward.
-    if g.origin then g.origin() end
+    -- Battle Art deliberately transforms the complete animation layer around
+    -- its projected sprite cards. Preserve that transform for anchored effects;
+    -- screen-wide programs cancel it locally through StadiumScreenFx.
+    local externalLayer = self.dsState and self.dsState.layerOwnsProjection
+    if g.origin and not externalLayer then g.origin() end
     -- WideBattle invokes animation adapters inside a side-derived transform.
     -- The custom renderer owns classic 160x144 coordinates, so origin() above
     -- deliberately cancels that private transform. Centre those coordinates

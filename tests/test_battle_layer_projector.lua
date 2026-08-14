@@ -11,6 +11,9 @@ local Host = assert(loader("lib/BattleHost.lua"))({
       return {}
     elseif name == "BattleCinematicsCompat" then
       return {}
+    elseif name == "BattleArtCompat" then
+      return { active = function() return false end,
+        ownsBattle = function() return false end }
     elseif name == "StadiumTrainerPortraits" then
       return {}
     end

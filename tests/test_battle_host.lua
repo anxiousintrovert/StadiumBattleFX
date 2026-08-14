@@ -24,6 +24,8 @@ local failedUpdates = 0
 local failedFinished = false
 local compatClaim, compatUpdates = false, 0
 local portraitApplyCalls = 0
+local battleArtActive, battleArtOwns = false, false
+local battle
 local failingProvider = {
   update = function() failedUpdates = failedUpdates + 1; error("expected") end,
   finish = function() failedFinished = true end,
@@ -69,6 +71,12 @@ local Host = assert(loader("lib/BattleHost.lua"))({
         update = function() compatUpdates = compatUpdates + 1 end,
       }
     end
+    if name == "BattleArtCompat" then
+      return {
+        active = function(got) assert(got == battle); return battleArtActive end,
+        ownsBattle = function(got) assert(got == battle); return battleArtOwns end,
+      }
+    end
     if name == "StadiumTrainerPortraits" then
       return { apply = function() portraitApplyCalls = portraitApplyCalls + 1 end,
         update = function() end,
@@ -81,7 +89,7 @@ local Host = assert(loader("lib/BattleHost.lua"))({
   end,
 })
 
-local battle = {
+battle = {
   kind = "trainer", oppClass = "OPP_BROCK", partyIndex = 1,
   player = {}, enemy = {}, game = {},
   currentMapId = function() return "PEWTER_GYM" end,
@@ -124,4 +132,27 @@ assert(Host.begin(battle, false))
 assert(portraitApplyCalls == 2,
   "disabling trainer portraits still replaced the opening trainer sprite")
 Host.finish("portraits-disabled-test")
+
+battleArtOwns, battleArtActive = true, true
+local function countCall(wanted)
+  local count = 0
+  for _, value in ipairs(calls) do if value == wanted then count = count + 1 end end
+  return count
+end
+local arenaUpdatesBefore = countCall("arena.update")
+local modelUpdatesBefore = countCall("models.update")
+assert(Host.begin(battle))
+assert(portraitApplyCalls == 2,
+  "Stadium portraits replaced Battle Art's selected trainer image")
+Host.update(1 / 60)
+assert(countCall("arena.update") == arenaUpdatesBefore
+    and countCall("models.update") == modelUpdatesBefore,
+  "Battle Art ownership did not pause the hidden arena/model update paths")
+local modelOK, modelReason = Host.call("models", "showing", "player")
+assert(not modelOK and tostring(modelReason):find("Battle Art", 1, true),
+  "hidden Stadium models remained available under Battle Art")
+assert(not Host.draw(battle),
+  "SBFX rendered a competing world while Battle Art owned the battle")
+assert(Host.session.externalPresentation == "BATTLE_ART_VOXEL_FORK")
+Host.finish("battle-art-test")
 print("ok protected battle-provider lifecycle")

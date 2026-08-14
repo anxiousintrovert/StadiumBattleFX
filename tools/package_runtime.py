@@ -26,6 +26,7 @@ FILES = (
     "lib/BattleProviders.lua",
     "lib/BattleHost.lua",
     "lib/BattleCinematicsCompat.lua",
+    "lib/BattleArtCompat.lua",
     "lib/BuiltinProviders.lua",
     "lib/Mat4.lua",
     "lib/ModStorage.lua",
