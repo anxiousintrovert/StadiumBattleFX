@@ -26,6 +26,13 @@ archive is intended for Steam Deck Desktop Mode and other x86-64 glibc Linux
 systems. Extract it before running; do not launch it from inside an archive
 viewer.
 
+The experimental macOS builds are produced by
+`build_announcer_builder_macos.sh` on native Apple Silicon and Intel GitHub
+runners. Each ZIP contains an ordinary `.app` bundle plus usage notes. The
+apps are ad-hoc signed so macOS can verify bundle integrity, but they are not
+Developer ID signed or Apple-notarized. Publish separate `arm64` and `x86_64`
+archives so the decoder and Python runtime always match the Mac CPU.
+
 Before public distribution, sign both `StadiumBattleFX-Announcer-Builder.exe`
 and `mort_decoder.exe` with a trusted Authenticode code-signing certificate:
 

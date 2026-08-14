@@ -215,7 +215,8 @@ class BuilderApp:
             os.startfile(folder)
         else:
             try:
-                subprocess.Popen(["xdg-open", str(folder)])
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.Popen([opener, str(folder)])
             except OSError as exc:
                 messagebox.showerror(
                     APP_TITLE, f"Could not open the output folder:\n\n{exc}"

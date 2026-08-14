@@ -60,7 +60,10 @@ if (Test-Path $releaseZip) {
 }
 Compress-Archive -Path (Join-Path $dist "StadiumBattleFX-Announcer-Builder") -DestinationPath $releaseZip -CompressionLevel Optimal
 $hash = (Get-FileHash -LiteralPath $releaseZip -Algorithm SHA256).Hash.ToLowerInvariant()
-Set-Content -LiteralPath ($releaseZip + ".sha256") -Value "$hash  $(Split-Path -Leaf $releaseZip)" -NoNewline
+Set-Content -LiteralPath ($releaseZip + ".sha256") `
+    -Value "$hash  $(Split-Path -Leaf $releaseZip)" `
+    -Encoding ascii `
+    -NoNewline
 
 Write-Host "Built $releaseZip"
 Write-Host "SHA-256: $hash"

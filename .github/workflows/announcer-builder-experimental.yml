@@ -1,4 +1,4 @@
-name: Experimental SteamOS announcer builder
+name: Experimental cross-platform announcer builder
 
 on:
   push:
@@ -9,12 +9,12 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build-linux:
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Linux build dependencies
         run: |
@@ -23,13 +23,13 @@ jobs:
           sudo apt-get install --yes g++ python3-tk python3-venv
           python3 -m venv build/announcer-builder-venv
           build/announcer-builder-venv/bin/python -m pip install --upgrade pip
-          build/announcer-builder-venv/bin/python -m pip install pyinstaller==6.16.0
+          build/announcer-builder-venv/bin/python -m pip install pyinstaller==6.22.0
 
       - name: Run patcher tests
         run: |
           set -euo pipefail
           build/announcer-builder-venv/bin/python -m unittest \
-            tests.test_patch_announcer_zip
+            tests.test_patch_announcer_zip tests.test_stadium_fx_probe
 
       - name: Build SteamOS package
         env:
@@ -42,6 +42,122 @@ jobs:
           dist/announcer-builder-linux/StadiumBattleFX-Announcer-Builder/StadiumBattleFX-Announcer-Builder \
             --self-test
 
+      - name: Upload SteamOS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: announcer-builder-steamos
+          path: |
+            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz
+            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz.sha256
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Windows build dependencies
+        run: python -m pip install --upgrade pip pyinstaller==6.22.0 ziglang==0.16.0
+
+      - name: Run patcher tests
+        run: python -m unittest tests.test_patch_announcer_zip tests.test_stadium_fx_probe
+
+      - name: Build Windows package
+        shell: powershell
+        run: tools/build_announcer_builder.ps1 -Python python
+
+      - name: Verify packaged executable
+        run: dist/announcer-builder/StadiumBattleFX-Announcer-Builder/StadiumBattleFX-Announcer-Builder.exe --self-test
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: announcer-builder-windows
+          path: |
+            dist/StadiumBattleFX-Announcer-Builder-windows.zip
+            dist/StadiumBattleFX-Announcer-Builder-windows.zip.sha256
+          if-no-files-found: error
+
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            artifact: announcer-builder-macos-arm64
+          - runner: macos-15-intel
+            arch: x86_64
+            artifact: announcer-builder-macos-x86_64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install macOS build dependencies
+        run: python -m pip install --upgrade pip pyinstaller==6.22.0
+
+      - name: Run patcher tests
+        run: python -m unittest tests.test_patch_announcer_zip tests.test_stadium_fx_probe
+
+      - name: Build macOS package
+        env:
+          ANNOUNCER_BUILDER_PYTHON: python
+          ANNOUNCER_BUILDER_MACOS_ARCH: ${{ matrix.arch }}
+        run: bash tools/build_announcer_builder_macos.sh
+
+      - name: Verify packaged app
+        run: |
+          set -euo pipefail
+          dist/announcer-builder-macos/StadiumBattleFX-Announcer-Builder.app/Contents/MacOS/StadiumBattleFX-Announcer-Builder \
+            --self-test
+          codesign --verify --deep --strict \
+            dist/announcer-builder-macos/StadiumBattleFX-Announcer-Builder.app
+
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/StadiumBattleFX-Announcer-Builder-macos-${{ matrix.arch }}.zip
+            dist/StadiumBattleFX-Announcer-Builder-macos-${{ matrix.arch }}.zip.sha256
+          if-no-files-found: error
+
+  publish-release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v5
+
+      - name: Download packages
+        uses: actions/download-artifact@v5
+        with:
+          pattern: announcer-builder-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify release payload
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum --check *.sha256
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 8
+
       - name: Publish experimental release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,7 +167,6 @@ jobs:
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --title "StadiumBattleFX Announcer Builder (SteamOS experimental)" \
-            --notes-file tools/ANNOUNCER_BUILDER_LINUX_RELEASE_NOTES.md \
-            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz \
-            dist/StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz.sha256
+            --title "StadiumBattleFX Announcer Builder (cross-platform experimental)" \
+            --notes-file tools/ANNOUNCER_BUILDER_RELEASE_NOTES.md \
+            release-assets/*
