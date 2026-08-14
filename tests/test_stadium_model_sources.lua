@@ -3,10 +3,11 @@ local chunk = assert(load(source:read("*a"), "@lib/StadiumModelSources.lua"))
 source:close()
 
 local selected
+local optionReads = 0
 local active = { STADIUM2_IMPORTER = true }
 local namespace = {
   mod = {
-    options = { get = function() return selected end },
+    options = { get = function() optionReads = optionReads + 1 return selected end },
     find = function(id) return active[id] and { id=id } or nil end,
   },
   log = { info=function() end, warn=function() end },
@@ -38,10 +39,13 @@ local hybrid = Sources.decorate(25, "shiny", "stadium1")
 assert(hybrid.species == 25 and hybrid.variant == "shiny")
 assert(hybrid.base == "stadium1")
 assert(availabilityChecks == 1)
+local readsAfterAcquire = optionReads
 Sources.keep(25, "shiny")
 Sources.keep(25, "shiny")
 assert(keeps == 2 and availabilityChecks == 1,
   "per-frame model cache touches must not run source availability scans")
+assert(optionReads == readsAfterAcquire,
+  "per-frame model cache touches repeated the option-schema lookup")
 
 active.STADIUM2_IMPORTER = nil
 assert(Sources.decorate(25, "shiny", "stadium1") == "stadium1")

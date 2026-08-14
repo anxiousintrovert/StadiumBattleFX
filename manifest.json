@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -10,7 +10,13 @@
   "priority": 110,
   "dependencies": [],
   "optional_dependencies": [
-    "BATTLE_ART_VOXEL_FORK"
+    "BATTLE_ART_VOXEL_FORK",
+    "DRAMATIC_SHAPE",
+    "potato_voxel",
+    "FOLLOWERS_EX",
+    "kanto_dynamic_weather",
+    "wild_skies",
+    "overworld_wild_spawns"
   ],
   "conflicts": [
     "DRAMALESS_SHAPE@<2.0.0",

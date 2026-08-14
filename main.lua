@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.1"
+local VERSION = "2.1.2"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path }
@@ -73,9 +73,8 @@ local stadium2SourceDefinition = {
   load = function(species, variant, base)
     return Stadium2ModelPackApi.hybridModel(species, variant, base)
   end,
-  keep = function(species, variant)
-    return Stadium2ModelPackApi.keepHybrid(species, variant)
-  end,
+  -- Hybrid records are resident until invalidateHybrids(), so this source
+  -- deliberately has no per-frame keep callback.
   invalidate = function() Stadium2ModelPackApi.invalidateHybrids() end,
 }
 -- Preserve the companion mod's old source id so existing saved selections
@@ -141,7 +140,10 @@ local optionSchema = {
     help = "Shader used by the embedded Stadium 2 appearance pack." },
 }
 local modelSourceRow = StadiumModelSources.optionRow()
-modelSourceRow.default = STADIUM2_SOURCE_ID
+-- Stadium 2 appearances carry substantially more geometry than the Stadium 1
+-- battle packs and are CPU-skinned by the shared runtime. Keep the lightweight
+-- source as the safe default; players can opt into the imported appearance pack.
+modelSourceRow.default = StadiumModelSources.DEFAULT
 optionSchema[#optionSchema + 1] = modelSourceRow
 for _, row in ipairs(BattleProviders.optionRows()) do
   optionSchema[#optionSchema + 1] = row
@@ -244,6 +246,8 @@ mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
 mod.exports.battleCinematicsCompatibility = BattleCinematicsCompat.status
+mod.exports.externalBattleCompatibility = BattleArtCompat.status
+-- Retained for consumers of the original single-backend export name.
 mod.exports.battleArtCompatibility = BattleArtCompat.status
 
 -- Offer the one-time cache build only after the real overworld owns the
@@ -429,6 +433,7 @@ mod.events:on("battle.fainted", function(payload)
 end)
 
 mod.events:on("mods.loaded", function()
+  if type(BattleArtCompat.refresh) == "function" then BattleArtCompat.refresh() end
   -- UI mods may replace BattleState:draw after StadiumBattleFX first loads.
   -- Re-chain against the final method once the complete mod set is known so
   -- the battle world compositor remains the outer owner of the frame.

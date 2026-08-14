@@ -17,22 +17,24 @@ end
 
 function State.read(companion, attackerIsPlayer, cameraCompanion)
   local ok, result = pcall(function()
-    local battleArt = V.require("BattleArtCompat").presentationState()
-    if battleArt then
+    local external = V.require("BattleArtCompat").presentationState()
+    if external then
       local cameraMod = cameraCompanion and cameraCompanion()
       local cameraExports = cameraMod and cameraMod.exports
-      battleArt.voxelLevel = nil
-      battleArt.voxelAngle = nil
-      battleArt.battleMode = "BATTLE_ART"
-      -- These mean a Stadium skeletal model is visible. Battle Art owns sprite
-      -- cards instead, so body-only moves must retain the ordinary Gen1 path.
-      battleArt.attackerShowing = false
-      battleArt.targetShowing = false
-      battleArt.attackerFootprint = nil
-      battleArt.targetFootprint = nil
-      battleArt.battleCinematicsVersion = cameraExports and cameraExports.version or nil
-      battleArt.externalCamera = true
-      return battleArt
+      external.voxelLevel = nil
+      external.voxelAngle = nil
+      external.battleMode = external.owner == "BATTLE_ART_VOXEL_FORK"
+        and "BATTLE_ART" or external.owner
+      -- These mean a Stadium skeletal model is visible. Shape-family staged
+      -- renderers own sprite cards instead, so body-only moves must retain the
+      -- ordinary Gen1 path.
+      external.attackerShowing = false
+      external.targetShowing = false
+      external.attackerFootprint = nil
+      external.targetFootprint = nil
+      external.battleCinematicsVersion = cameraExports and cameraExports.version or nil
+      external.externalCamera = true
+      return external
     end
     local Host = V.require("BattleHost")
     local function modelCall(method, ...)

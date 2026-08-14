@@ -10,6 +10,7 @@ Sources.DEFAULT = "stadium:default"
 
 local catalog = {}
 local warned = {}
+local keepers = {}
 local row = {
   key = "model_source",
   label = "BTL MODEL PACK",
@@ -113,10 +114,19 @@ local function selectedEntry()
 end
 
 function Sources.decorate(species, variant, base)
+  local keepKey = tostring(species) .. ":" .. tostring(variant)
   local entry = selectedEntry()
-  if not entry then return base end
+  if not entry then
+    keepers[keepKey] = nil
+    return base
+  end
   local ok, model, err = pcall(entry.definition.load, species, variant, base)
-  if ok and model then return model end
+  if ok and model then
+    keepers[keepKey] = type(entry.definition.keep) == "function"
+      and entry.definition.keep or nil
+    return model
+  end
+  keepers[keepKey] = nil
   logOnce(("load:%s:%s:%s"):format(entry.id, tostring(species), tostring(variant)),
     "Stadium model source failed; using Stadium 1: id=%s species=%s variant=%s error=%s",
     entry.id, tostring(species), tostring(variant), tostring(err or model))
@@ -124,18 +134,15 @@ function Sources.decorate(species, variant, base)
 end
 
 function Sources.keep(species, variant)
-  -- This is a per-side, per-frame cache touch. Do not call selectedEntry()
-  -- here: source availability may legitimately verify a complete imported
-  -- roster, which is hundreds of filesystem probes. Availability is checked
-  -- when the species is acquired by decorate(); an already acquired model
-  -- only needs its source cache touched while it remains on the field.
-  local id = Sources.selectedId()
-  local entry = id ~= Sources.DEFAULT and catalog[id] or nil
-  local keep = entry and entry.definition.keep
+  -- Decoration records the exact callback for this acquired species/variant.
+  -- Avoid both source availability and the option-schema lookup in this
+  -- per-side, per-frame path.
+  local keep = keepers[tostring(species) .. ":" .. tostring(variant)]
   if type(keep) == "function" then pcall(keep, species, variant) end
 end
 
 function Sources.invalidate()
+  keepers = {}
   for _, entry in pairs(catalog) do
     local invalidate = entry.definition.invalidate
     if type(invalidate) == "function" then pcall(invalidate) end
