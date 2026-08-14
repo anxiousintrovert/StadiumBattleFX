@@ -116,6 +116,18 @@ assert(Compat.update({ battle = {}, arena = { id = "battle-art:map" } }, 0.25))
 assert(updates == beforeBattleArtUpdate,
   "Battle Art's shared BattleCam advanced twice")
 
+handles.BATTLE_ART_VOXEL_FORK = nil
+for _, id in ipairs({ "DRAMATIC_SHAPE", "potato_voxel" }) do
+  handles[id] = {
+    version = id == "DRAMATIC_SHAPE" and "1.8.2" or "1.5.2",
+    exports = { lib = { require = function() return camera end } },
+  }
+  local before = updates
+  assert(Compat.update({ battle = {}, arena = { id = id .. ":map" } }, 0.25))
+  assert(updates == before, id .. " shared BattleCam advanced twice")
+  handles[id] = nil
+end
+
 camera.__bcStandaloneDW3Wrapped = nil
 assert(not Compat.status().active,
   "an unwrapped renderer camera was mistaken for Battle Cinematics")

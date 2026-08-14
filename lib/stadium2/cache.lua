@@ -1,4 +1,5 @@
 local Cache = {}
+local availability = {}
 
 Cache.FORMAT = "S2G1M02"
 Cache.ROOT = "stadium2_gen1_model_pack"
@@ -18,6 +19,10 @@ local function file(path)
   if not (f and f.getInfo) then return false end
   local ok, info = pcall(f.getInfo, path, "file")
   return ok and info and true or false
+end
+
+local function invalidateAvailability()
+  availability = {}
 end
 
 function Cache.path(species, variant)
@@ -46,6 +51,7 @@ function Cache.ensureDirectories()
 end
 
 function Cache.clear(count)
+  invalidateAvailability()
   local f = fs()
   if not f then return false, "filesystem unavailable" end
   count = math.min(151, math.max(1, tonumber(count) or 151))
@@ -70,6 +76,7 @@ function Cache.clear(count)
 end
 
 function Cache.writeSpecial(name,bytes)
+  invalidateAvailability()
   local f=fs()
   if not (f and f.write) then return false,"filesystem unavailable" end
   local ok,err=Cache.ensureDirectories()
@@ -79,6 +86,7 @@ function Cache.writeSpecial(name,bytes)
 end
 
 function Cache.writePair(species, normalBytes, shinyBytes)
+  invalidateAvailability()
   local f = fs()
   if not (f and f.write) then return false, "filesystem unavailable" end
   local ok, err = Cache.ensureDirectories()
@@ -112,17 +120,29 @@ end
 
 function Cache.available(count)
   count = tonumber(count) or 151
+  if availability[count] ~= nil then return availability[count] end
   local marker = Cache.marker()
-  if not marker or marker.format ~= Cache.FORMAT or (marker.count or 0) < count then return false end
+  if not marker or marker.format ~= Cache.FORMAT or (marker.count or 0) < count then
+    availability[count] = false
+    return false
+  end
   for species = 1, count do
     if not file(Cache.path(species, "normal"))
-        or not file(Cache.path(species, "shiny")) then return false end
+        or not file(Cache.path(species, "shiny")) then
+      availability[count] = false
+      return false
+    end
   end
-  if not file(Cache.specialPath("substitute")) then return false end
+  if not file(Cache.specialPath("substitute")) then
+    availability[count] = false
+    return false
+  end
+  availability[count] = true
   return true
 end
 
 function Cache.finish(meta, count)
+  invalidateAvailability()
   local f = fs()
   if not (f and f.write) then return false, "filesystem unavailable" end
   local text = table.concat({
@@ -135,6 +155,8 @@ function Cache.finish(meta, count)
   local ok, err = pcall(f.write, Cache.MARKER, text)
   return ok and true or false, ok and nil or tostring(err)
 end
+
+Cache.invalidateAvailability = invalidateAvailability
 
 function Cache.writeError(text)
   local f = fs()

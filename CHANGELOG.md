@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.1.2
+
+- Removed repeated per-frame Stadium 2 filesystem availability scans, model
+  source option lookups, hybrid-cache touches, and unchanged texture-wrap
+  calls. Cache invalidation still occurs after imports, writes, and clears.
+- Added pairwise compatibility with Dramatic Shape 1.8.2 and PotatoVoxel
+  1.5.2. Their staged battle presentation remains authoritative while SBFX
+  continues move effects and announcer timing.
+- Updated Battle Art compatibility to consume its public, read-only
+  `battleStage` API v1 in 1.8.8 and later. The previous internal module lookup
+  remains available only for older Battle Art releases.
+- Recorded pairwise lifecycle compatibility with Followers EX 1.0.19, Kanto
+  Dynamic Weather 1.0.3, Wild Skies 1.10.0, and Wilds of Kanto 2.1.0. SBFX does
+  not validate or manage interactions among those third-party mods.
+
 ## 2.1.1
 
 - Added a read-only Battle Art Voxel Fork 1.8.x compatibility bridge. While

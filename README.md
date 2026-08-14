@@ -320,19 +320,37 @@ expose camera-ownership protocol 1 negotiate automatically: a BC attack claim
 makes SBFX yield only its attack-camera timeline while move graphics, model
 animation, impacts, sound, and announcer timing continue normally.
 
-### Battle Art compatibility
+### Shape-family voxel compatibility
 
-Battle Art Voxel Fork 1.8.x may remain installed with StadiumBattleFX. When
-Battle Art's **3D-BTL** mode has an active staged battle, its arena, sprite
-cards, camera, trainer art, HUD treatment, and transition remain authoritative.
-SBFX automatically yields its competing arena/model/camera presentation while
-continuing Stadium move effects and optional announcer timing. Local particles
-follow Battle Art's projected Pokemon cards, and screen-wide effects remain
-aligned with the complete battle surface.
+Battle Art Voxel Fork 1.8.x, Dramatic Shape 1.8.x, and PotatoVoxel 1.5.x are
+supported as alternative voxel renderers. When the installed renderer's
+**3D-BTL** mode has an active staged battle, its arena, sprite cards, camera,
+trainer art, HUD treatment, and transition remain authoritative. SBFX yields
+its competing arena/model/camera presentation while continuing Stadium move
+effects and optional announcer timing. Local particles follow the external
+renderer's projected Pokemon cards, screen-wide effects remain aligned with
+the complete battle surface, and a shared Battle Cinematics clock is advanced
+only once.
 
-Turning Battle Art's **3D-BTL** mode off returns arena, model, camera, trainer
-portrait, hit, and faint presentation to the normal SBFX provider selections.
-Neither mod changes the other's saved options.
+Battle Art 1.8.8 and later is consumed through its versioned, read-only
+`exports.battleStage` API. SBFX retains its previous `OverworldBattle` lookup
+only as a compatibility fallback for older Battle Art releases.
+
+Turning **3D-BTL** off returns arena, model, camera, trainer portrait, hit, and
+faint presentation to the normal SBFX provider selections. StadiumBattleFX
+does not change the external renderer's saved options.
+
+### Overworld companion compatibility
+
+Followers EX, Kanto Dynamic Weather, Wild Skies, and Wilds of Kanto do not own
+the battle renderer. StadiumBattleFX therefore leaves their overworld hooks,
+encounter selection, return-to-map handling, and settings untouched. Wild
+Skies and Wilds-created encounters enter the ordinary Stadium wild-battle
+lifecycle, including run and catch exits.
+
+Compatibility here is deliberately pairwise: StadiumBattleFX adapts to each
+listed mod without attempting to validate, block, or manage interactions
+between those other mods.
 
 ## Settings
 
@@ -343,6 +361,8 @@ Neither mod changes the other's saved options.
 | **ATTACK SPEED** | 100% | Slows Stadium VFX, impact timing, sound events, and the attack camera together in 10% steps. At 0%, the normal Gen1 presentation is used with no Stadium attack camera. |
 | **STADIUM ANNOUNCER** | On | Master switch for locally installed announcer audio; has no effect without a valid voice pack. |
 | **ANNOUNCER BATTLES** | Gym / Elite 4 / Champion | Chooses where announcer audio plays: Gym/Elite 4/Champion, all trainer battles, or all battles including wild Pokemon. |
+| **BTL MODEL PACK** | Pokemon Stadium | Chooses the battle-model appearance source. The lighter Stadium 1 source is the performance-safe default; the imported Stadium 2 appearance pack is opt-in. |
+| **STADIUM 2 MODEL PACK** | On | Makes an imported Stadium 2 pack available to the model-source selector. It has no rendering cost while **BTL MODEL PACK** remains on Pokemon Stadium. |
 | **BTL ARENA / MODELS / ANIM / CAMERA / EFFECTS / VOICE / HUD / OVERLAY / TRANS** | Stadium Default | Selects the provider for each independent presentation area. Registered mod providers appear alphabetically; `OFF` disables only that area. The camera OFF rung also disables the temporary Battle Cinematics 0.7.96 bridge. |
 | **STADIUM ROM** | Import/Replace | Validates and copies a selected Stadium ROM into this installed mod's `baseroms` folder; Android uses the system document picker. |
 | **REFRESH FX CACHE** | Rebuild | Forces a fresh extraction from the bundled local ROM. |
@@ -435,7 +455,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.1.1.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.2.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

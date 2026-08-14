@@ -35,7 +35,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.1.1")
+assert(mod.exports.version == "2.1.2")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -49,8 +49,8 @@ assert(values.attack_speed == "100", "attack speed did not default to 100%")
 assert(values.trainer_portraits == true
        and schemas.trainer_portraits.type == "toggle",
        "Stadium trainer portraits did not expose an enabled-by-default toggle")
-assert(values.model_source == "STADIUM2_IMPORTER:gen1-model-pack",
-  "combined release did not default to its embedded Stadium 2 source")
+assert(values.model_source == "stadium:default",
+  "performance-safe Stadium 1 model source was not the default")
 assert(values.stadium2_models == true and values.stadium2_shader == "stadium",
   "embedded Stadium 2 options were not defined")
 assert(type(mod.exports.stadium2) == "table"
@@ -76,6 +76,8 @@ assert(type(mod.exports.announcerStatus) == "function")
 assert(type(mod.exports.faintStatus) == "function")
 assert(type(mod.exports.battleArtCompatibility) == "function",
   "Battle Art compatibility diagnostics were not exported")
+assert(type(mod.exports.externalBattleCompatibility) == "function",
+  "Shape-family compatibility diagnostics were not exported")
 assert(type(handlers["mods.loaded"]) == "function")
 assert(type(handlers["hook:ui.options.rows"]) == "function",
   "cache import/rebuild option rows were not registered")
@@ -137,4 +139,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.1 embedded Stadium 2 runtime wiring")
+print("ok 2.1.2 embedded Stadium 2 runtime wiring")

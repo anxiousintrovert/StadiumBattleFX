@@ -57,6 +57,18 @@ local Voxel3D = V.require("StadiumRender")
 local StadiumPack = V.require("StadiumPack")
 
 local StadiumRig = {}
+local textureWrap = setmetatable({}, { __mode = "k" })
+
+local function applyWrap(part)
+  local texture, prim = part.texture, part.prim
+  if not (texture and texture.setWrap and prim and prim.wrapS) then return end
+  local wrapS, wrapT = prim.wrapS, prim.wrapT or prim.wrapS
+  local prior = textureWrap[texture]
+  if prior and prior[1] == wrapS and prior[2] == wrapT then return end
+  if pcall(texture.setWrap, texture, wrapS, wrapT) then
+    textureWrap[texture] = { wrapS, wrapT }
+  end
+end
 StadiumRig.__index = StadiumRig
 
 local sin, cos, floor = math.sin, math.cos, math.floor
@@ -823,9 +835,7 @@ function StadiumRig:draw(matrix, pull)
       additive = additive or {}
       additive[#additive + 1] = part
     elseif part.texture then
-      if part.texture.setWrap and part.prim.wrapS then
-        pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
-      end
+      applyWrap(part)
       Voxel3D.draw(part.mesh, part.texture, matrix, pull)
     end
   end
@@ -833,9 +843,7 @@ function StadiumRig:draw(matrix, pull)
     Voxel3D.blend("add")
     for _, part in ipairs(additive) do
       if part.texture then
-        if part.texture.setWrap and part.prim.wrapS then
-          pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
-        end
+        applyWrap(part)
         Voxel3D.draw(part.mesh, part.texture, matrix, pull)
       end
     end
@@ -852,12 +860,12 @@ end
 function StadiumRig:caster(shadowMap, matrix)
   for _, part in ipairs(self.parts) do
     if part.texture and not part.prim.additive then
-      if part.texture.setWrap and part.prim.wrapS then
-        pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
-      end
+      applyWrap(part)
       shadowMap.draw(part.mesh, part.texture, matrix)
     end
   end
 end
+
+StadiumRig._applyWrap = applyWrap
 
 return StadiumRig

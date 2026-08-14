@@ -21,6 +21,7 @@ return {
       "HP-drain-synchronized Stadium faint animations for player and opponent Pokemon",
       "Selectable Stadium arenas for Gym Leaders, the Elite Four, and the Champion",
       "Cooperative phase-scoped attack-camera ownership with Battle Cinematics",
+      "Read-only staged-battle ownership adapters for Battle Art, Dramatic Shape, and PotatoVoxel",
       "Optional local voice-pack playback for Gym Leaders, the Elite Four, all 151 Pokemon names, and all 165 moves",
     },
     known = {

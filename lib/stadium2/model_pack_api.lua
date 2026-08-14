@@ -676,7 +676,13 @@ function Api.hybridModel(species, variant, base)
 end
 
 function Api.keepHybrid(species, variant)
-  return Importer.loadModel(validSpecies(species), variant)
+  -- The hybrid owns copied primitive/texture records and remains resident in
+  -- hybridCache until explicit invalidation. Re-entering Importer.loadModel
+  -- here only rebuilt a key and reshuffled its LRU twice per rendered frame.
+  species = validSpecies(species)
+  if not species then return false end
+  local key = species .. ":" .. (variant == "shiny" and "shiny" or "normal")
+  return hybridCache[key] ~= nil
 end
 
 function Api.invalidateHybrids()

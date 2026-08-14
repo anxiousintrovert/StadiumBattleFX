@@ -38,4 +38,10 @@ assert(state.battleMode == "BATTLE_ART" and state.layerOwnsProjection)
 assert(state.projectedAnchors.player[1] == 31 and state.animationScale == nil)
 assert(not state.attackerShowing and not state.targetShowing,
   "Battle Art sprite cards were mistaken for Stadium skeletal models")
+
+battleArtState.owner = "DRAMATIC_SHAPE"
+state = State.read(nil, false)
+assert(state.battleMode == "DRAMATIC_SHAPE"
+    and not state.attackerShowing and not state.targetShowing,
+  "Dramatic Shape sprite cards were mistaken for Stadium skeletal models")
 print("ok selected model-provider state")

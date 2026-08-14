@@ -25,6 +25,7 @@ local failedFinished = false
 local compatClaim, compatUpdates = false, 0
 local portraitApplyCalls = 0
 local battleArtActive, battleArtOwns = false, false
+local externalOwnerId
 local battle
 local failingProvider = {
   update = function() failedUpdates = failedUpdates + 1; error("expected") end,
@@ -75,6 +76,11 @@ local Host = assert(loader("lib/BattleHost.lua"))({
       return {
         active = function(got) assert(got == battle); return battleArtActive end,
         ownsBattle = function(got) assert(got == battle); return battleArtOwns end,
+        owner = function(got) assert(got == battle); return externalOwnerId end,
+        ownerLabel = function(got)
+          assert(got == battle)
+          return externalOwnerId == "DRAMATIC_SHAPE" and "Dramatic Shape" or nil
+        end,
       }
     end
     if name == "StadiumTrainerPortraits" then
@@ -134,6 +140,7 @@ assert(portraitApplyCalls == 2,
 Host.finish("portraits-disabled-test")
 
 battleArtOwns, battleArtActive = true, true
+externalOwnerId = "DRAMATIC_SHAPE"
 local function countCall(wanted)
   local count = 0
   for _, value in ipairs(calls) do if value == wanted then count = count + 1 end end
@@ -149,10 +156,10 @@ assert(countCall("arena.update") == arenaUpdatesBefore
     and countCall("models.update") == modelUpdatesBefore,
   "Battle Art ownership did not pause the hidden arena/model update paths")
 local modelOK, modelReason = Host.call("models", "showing", "player")
-assert(not modelOK and tostring(modelReason):find("Battle Art", 1, true),
-  "hidden Stadium models remained available under Battle Art")
+assert(not modelOK and tostring(modelReason):find("Dramatic Shape", 1, true),
+  "hidden Stadium models remained available under an external renderer")
 assert(not Host.draw(battle),
   "SBFX rendered a competing world while Battle Art owned the battle")
-assert(Host.session.externalPresentation == "BATTLE_ART_VOXEL_FORK")
+assert(Host.session.externalPresentation == "DRAMATIC_SHAPE")
 Host.finish("battle-art-test")
 print("ok protected battle-provider lifecycle")

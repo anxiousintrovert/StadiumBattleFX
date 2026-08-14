@@ -18,6 +18,25 @@ local SERVICE_SLOTS = {
 }
 local defaultArena
 
+local function externalOwner(battle)
+  if type(BattleArtCompat.owner) == "function" then
+    return BattleArtCompat.owner(battle)
+  end
+  -- Compatibility with older injected test/companion bridges.
+  if type(BattleArtCompat.active) == "function"
+      and BattleArtCompat.active(battle) then
+    return "BATTLE_ART_VOXEL_FORK"
+  end
+  return nil
+end
+
+local function externalOwnerLabel(battle, owner)
+  if type(BattleArtCompat.ownerLabel) == "function" then
+    return BattleArtCompat.ownerLabel(battle) or owner
+  end
+  return owner == "BATTLE_ART_VOXEL_FORK" and "Battle Art" or owner
+end
+
 local function invoke(session, slot, provider, method, ...)
   if session.failed[slot] and method ~= "finish" and method ~= "invalidate" then
     return false, "provider disabled"
@@ -275,11 +294,13 @@ end
 function Host.begin(battle, trainerPortraitsEnabled)
   Host.finish("replaced")
   if not battle then return false end
+  if type(BattleArtCompat.refresh) == "function" then BattleArtCompat.refresh() end
   local session = { battle = battle, context = contextFor(battle), providers = {},
                     ids = {}, failed = {} }
   Host.session = session
-  -- Battle Art owns its selected trainer collection while it owns the staged
-  -- battle. Do not replace that source before it captures the trainer card.
+  -- Shape-family renderers own their selected trainer collection while they
+  -- own the staged battle. Do not replace that source before it captures the
+  -- trainer card.
   if trainerPortraitsEnabled ~= false
       and not BattleArtCompat.ownsBattle(battle) then
     session.trainerPortraits = TrainerPortraits.apply(battle)
@@ -335,16 +356,17 @@ end
 function Host.update(dt)
   local session = Host.session
   if not session then return end
-  local battleArtOwns = BattleArtCompat.active(session.battle)
-  session.externalPresentation = battleArtOwns and "BATTLE_ART_VOXEL_FORK" or nil
-  if battleArtOwns and session.trainerPortraits then
+  local owner = externalOwner(session.battle)
+  local externalOwns = owner ~= nil
+  session.externalPresentation = owner
+  if externalOwns and session.trainerPortraits then
     TrainerPortraits.restore(session.trainerPortraits)
     session.trainerPortraits = nil
     if session.battle then session.battle.stadiumTrainerPortraitToken = nil end
   else
     TrainerPortraits.update(session.trainerPortraits)
   end
-  if not battleArtOwns then
+  if not externalOwns then
     invoke(session, "arena", session.providers.arena, "update", dt, session.context.arena)
     invoke(session, "models", session.providers.models, "update", dt)
   end
@@ -379,8 +401,12 @@ end
 
 function Host.call(slot, method, ...)
   local session = Host.session
-  if slot == "models" and session and BattleArtCompat.active(session.battle) then
-    return false, "Battle Art owns the visible battle models"
+  if slot == "models" and session then
+    local owner = externalOwner(session.battle)
+    if owner then
+      local label = externalOwnerLabel(session.battle, owner)
+      return false, label .. " owns the visible battle models"
+    end
   end
   local provider = session and session.providers[slot]
   if not provider then return false, "no active " .. tostring(slot) .. " provider" end
@@ -416,12 +442,13 @@ function Host.draw(battle)
     end
     return false
   end
-  -- Battle Art's wrapper will present its already-rendered voxel/art canvas
+  -- The external wrapper will present its already-rendered voxel/art canvas
   -- from innerDraw. Rendering SBFX first would leave model projections from
   -- one camera attached to a surface subsequently replaced by another.
-  if BattleArtCompat.active(battle) then
+  local owner = externalOwner(battle)
+  if owner then
     session.presented = false
-    session.externalPresentation = "BATTLE_ART_VOXEL_FORK"
+    session.externalPresentation = owner
     return false
   end
   session.externalPresentation = nil
