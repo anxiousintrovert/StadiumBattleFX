@@ -150,6 +150,34 @@ local Player = playerChunk({ require = function(name)
   error(name)
 end })
 
+-- Older WideBattle releases inspect the native player's private step fields
+-- before invoking draw. The adapter must forward those fields while delegated
+-- and expose a non-empty sentinel while Stadium owns the animation.
+local compatInner = {
+  steps = { { sprites = { { x = 12 } } } }, stepIndex = 1,
+}
+local compatAdapter = Player.new(compatInner, function() return true end)
+assert(compatAdapter.steps[compatAdapter.stepIndex]
+      == compatInner.steps[compatInner.stepIndex]
+    and compatAdapter.stepIndex == 1,
+  "delegated adapter did not proxy native WideBattle step metadata")
+compatAdapter.custom = true
+assert(type(compatAdapter.steps) == "table"
+    and type(compatAdapter.steps[compatAdapter.stepIndex].sprites) == "table"
+    and #compatAdapter.steps[1].sprites > 0
+    and compatAdapter.stepIndex == 1,
+  "custom adapter did not expose safe WideBattle step metadata")
+compatAdapter.custom = false
+compatInner.steps, compatInner.stepIndex = nil, nil
+assert(type(compatAdapter.steps[compatAdapter.stepIndex].sprites) == "table",
+  "malformed inner player did not receive safe WideBattle step metadata")
+compatInner.steps, compatInner.stepIndex = { false }, 1
+assert(type(compatAdapter.steps[compatAdapter.stepIndex].sprites) == "table",
+  "non-table inner step did not receive safe WideBattle metadata")
+compatInner.steps = { { sprites = false } }
+assert(type(compatAdapter.steps[compatAdapter.stepIndex].sprites) == "table",
+  "non-table inner sprites did not receive safe WideBattle metadata")
+
 for id = 1, 165 do
   local inner = { started = nil }
   function inner:start(move) self.started = move end

@@ -8,7 +8,8 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-mod.exports.version = "2.0.2"
+local VERSION = "2.1.0"
+mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path }
 local modules = {}
@@ -34,12 +35,53 @@ function namespace.require(name)
   return value
 end
 
+-- The former STADIUM2_IMPORTER modules are embedded under SBFX.
+-- Keep their normal dotted require names, but route them back through SBFX's
+-- loader so Build/Pack names cannot collide with the Stadium 1 runtime.
+local stadium2Modules = {
+  "animation_routing", "build", "cache", "discovery", "effect_renderer",
+  "extract", "fragment", "fx", "handler_registry", "import_screen",
+  "importer", "layout", "materials", "model_handlers", "model_pack_api",
+  "pack", "palette", "render_contract", "renderer", "rom", "sampler",
+  "texture_parity", "vertex_semantics", "effects.dynamic_object",
+  "effects.dynamic_object_manifest", "render_callbacks.dual_texture_material",
+  "render_callbacks.flame", "render_callbacks.phase5_geometry",
+}
+for _, name in ipairs(stadium2Modules) do
+  local moduleName = name
+  local alias = "mods.STADIUM_BATTLE_FX.lib.stadium2." .. moduleName
+  package.preload[alias] = function()
+    return namespace.require("stadium2/" .. moduleName:gsub("%.", "/"))
+  end
+end
+
 local StadiumRom = namespace.require("StadiumRom")
 local ModStorage = namespace.require("ModStorage")
 namespace.storage = ModStorage
 local StadiumLog = namespace.require("StadiumLog")
 namespace.log = StadiumLog.new(mod.log)
 local BattleProviders = namespace.require("BattleProviders")
+local StadiumModelSources = namespace.require("StadiumModelSources")
+local Stadium2Importer = namespace.require("stadium2/importer")
+local Stadium2ModelPackApi = namespace.require("stadium2/model_pack_api")
+Stadium2Importer.bind(mod)
+Stadium2Importer.configure({ count=151, meshOnly=true, includeUnownForms=false })
+local stadium2SourceDefinition = {
+  label = "STADIUM 2 (GEN 1 RIG)",
+  embedded = true,
+  available = function() return Stadium2ModelPackApi.available() end,
+  load = function(species, variant, base)
+    return Stadium2ModelPackApi.hybridModel(species, variant, base)
+  end,
+  keep = function(species, variant)
+    return Stadium2ModelPackApi.keepHybrid(species, variant)
+  end,
+  invalidate = function() Stadium2ModelPackApi.invalidateHybrids() end,
+}
+-- Preserve the companion mod's old source id so existing saved selections
+-- continue to resolve after installing the combined release.
+local STADIUM2_SOURCE_ID = StadiumModelSources.register(
+  "STADIUM2_IMPORTER", "gen1-model-pack", stadium2SourceDefinition)
 local ThunderShockSpec = namespace.require("effects/ThunderShockSpec")
 local StadiumAssets = namespace.require("StadiumAssets")
 local StadiumArenaAssets = namespace.require("StadiumArenaAssets")
@@ -65,6 +107,9 @@ local function noLegacyCompanion() return nil end
 
 local optionSchema = {
   { key = "enabled", label = "STADIUM FX", type = "toggle", default = true },
+  { key = "trainer_portraits", label = "STADIUM TRAINER PORTRAITS",
+    type = "toggle", default = true,
+    help = "Replace opening trainer sprites with portraits imported from Pokemon Stadium." },
   { key = "attack_camera", label = "ATTACK CAMERA", type = "toggle", default = true },
   { key = "attack_speed", label = "ATTACK SPEED", type = "choice", default = "100",
     choices = {
@@ -87,7 +132,16 @@ local optionSchema = {
       { "OFF", "off" }, { "10%", "10" }, { "25%", "25" },
       { "35%", "35" }, { "50%", "50" },
     } },
+  { key = "stadium2_models", label = "STADIUM 2 MODEL PACK", type = "toggle",
+    default = true },
+  { key = "stadium2_shader", label = "MODEL SHADER", type = "choice",
+    default = "stadium",
+    choices = { { "STADIUM", "stadium" }, { "WATERCOLOR MANGA", "cel" } },
+    help = "Shader used by the embedded Stadium 2 appearance pack." },
 }
+local modelSourceRow = StadiumModelSources.optionRow()
+modelSourceRow.default = STADIUM2_SOURCE_ID
+optionSchema[#optionSchema + 1] = modelSourceRow
 for _, row in ipairs(BattleProviders.optionRows()) do
   optionSchema[#optionSchema + 1] = row
 end
@@ -127,6 +181,33 @@ mod.exports.diagnosticLog = function() return namespace.log:contents() end
 mod.exports.faintStatus = DramaticShapeFaint.status
 mod.exports.arenaProvider = StadiumArena
 mod.exports.modelProvider = StadiumModelProvider
+mod.exports.modelSources = {
+  version = StadiumModelSources.VERSION,
+  DEFAULT = StadiumModelSources.DEFAULT,
+  register = function(_, owner, id, definition)
+    return StadiumModelSources.register(owner, id, definition)
+  end,
+  list = function() return StadiumModelSources.list() end,
+  selectedId = function() return StadiumModelSources.selectedId() end,
+}
+mod.exports.stadium2 = {
+  version = "1",
+  speciesCount = 151,
+  sourceId = STADIUM2_SOURCE_ID,
+  modelPack = Stadium2ModelPackApi,
+  status = Stadium2Importer.status,
+  available = Stadium2Importer.available,
+  request = Stadium2Importer.request,
+  beginFrom = Stadium2Importer.beginFrom,
+  beginPath = Stadium2Importer.beginPath,
+  modelPath = Stadium2Importer.modelPath,
+  readPack = Stadium2Importer.readPack,
+  parsePack = Stadium2Importer.parsePack,
+  loadModel = Stadium2Importer.loadModel,
+  releaseModels = Stadium2Importer.releaseModels,
+  US_MD5 = Stadium2Importer.US_MD5,
+  FORMAT = Stadium2Importer.FORMAT,
+}
 mod.exports.battles = {
   version = BattleProviders.VERSION,
   FALLBACK = BattleProviders.FALLBACK,
@@ -143,6 +224,21 @@ mod.exports.battles = {
 local function stadiumOwns(slot)
   return BattleProviders.resolve(slot) == BuiltinProviders[slot]
 end
+
+local stadium2ImportScreen
+local function showStadium2ImportScreen(game)
+  local state = Stadium2Importer.status().state
+  if stadium2ImportScreen or not (game and game.stack)
+      or (state ~= "building" and state ~= "picking" and state ~= "failed") then
+    return false
+  end
+  local ImportScreen = namespace.require("stadium2/import_screen")
+  stadium2ImportScreen = ImportScreen.new(game, Stadium2Importer, function(screen)
+    if stadium2ImportScreen == screen then stadium2ImportScreen = nil end
+  end)
+  game.stack:push(stadium2ImportScreen)
+  return true
+end
 mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
@@ -154,6 +250,8 @@ mod.exports.battleCinematicsCompatibility = BattleCinematicsCompat.status
 mod.hooks:wrap("input.step", function(next, game, dt)
   ModStorage.setGame(game)
   local result = next(game, dt)
+  Stadium2Importer.step()
+  showStadium2ImportScreen(game)
   BattleHost.update(dt)
   if stadiumOwns("announcer") then Announcer.update(dt, game) end
   FailureNotice.update(dt)
@@ -194,7 +292,7 @@ mod.events:on("battle.started", function(payload)
   elseif hookErr then
     namespace.log:info("battle presentation host reattached at battle start")
   end
-  BattleHost.begin(battle)
+  BattleHost.begin(battle, mod.options:get("trainer_portraits") ~= false)
   namespace.log:info("battle started; animation adapter=%s", battle and battle.animPlayer and "available" or "missing")
   if stadiumOwns("announcer") then Announcer.beginBattle(battle) end
   if not (battle and battle.animPlayer) then return end
@@ -248,7 +346,14 @@ mod.hooks:wrap("ui.options.rows", function(next, game, rows)
   out[#out + 1] = StadiumRomPicker.importRow()
   out[#out + 1] = StadiumRomPicker.refreshRow()
   out[#out + 1] = StadiumLogExport.row()
+  Stadium2Importer.appendRow(out)
   return out
+end)
+
+mod.events:on("game.ready", function(ev)
+  Stadium2Importer.configure({ count=151, meshOnly=true, includeUnownForms=false })
+  Stadium2Importer.autoImport()
+  showStadium2ImportScreen((ev and ev.game) or mod.game)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter

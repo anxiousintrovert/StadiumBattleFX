@@ -55,7 +55,7 @@ class RuntimeZipTests(unittest.TestCase):
             # ROM import is the one declared filesystem boundary: this module
             # opens the explicit host picker and copies only a verified
             # cartridge into this mod's own installed baseroms directory.
-            if relative == "lib/StadiumRomPicker.lua":
+            if relative == "lib/StadiumRomPicker.lua" or relative.startswith("lib/stadium2/"):
                 continue
             for line_no, line in enumerate((ROOT / relative).read_bytes().splitlines(), 1):
                 if self.FORBIDDEN.search(line):

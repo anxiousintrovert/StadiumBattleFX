@@ -1,7 +1,26 @@
 # Changelog
 
+## 2.1.0
+
+- Embedded the Gen 1 Stadium 2 appearance importer directly into
+  StadiumBattleFX. Normal and shiny Stadium 2 appearances use the established
+  Stadium 1 skeletal animations, battle timing, attachments, and reactions.
+- Added a dedicated **STADIUM 2 ROM** import action and private model cache.
+- Combined the trainer-portrait compatibility fix and enabled-by-default
+  **STADIUM TRAINER PORTRAITS** toggle in the same public release.
+- Corrected hybrid geometry and materials for Charizard, Wartortle, Blastoise,
+  the Pidgey evolution line, Ponyta, Rapidash, and Moltres. Blastoise's cannons
+  now remain mounted on the upper shell during Stadium 1 animation playback.
+- Preserved Gastly's aura, Koffing/Weezing gas, animated faces, fire sheets,
+  and shiny palettes across the embedded compatibility renderer.
+- The official ZIP remains ROM-free. Pokemon Stadium (US) 1.0 must normalize
+  to MD5 `ed1378bc12115f71209a77844965ba50`; Pokemon Stadium 2 (US) must
+  normalize to MD5 `1561c75d11cedf356a8ddb1a4a5f9d5d`.
+
 ## 2.0.3
 
+- Added a **STADIUM TRAINER PORTRAITS** settings toggle. Turning it off keeps
+  the original Gen 1 gym-leader and trainer sprites during battle openings.
 - Promoted StadiumBattleFX out of experimental status in its manifest and
   mod-card tags. This release contains the same Stadium 1 feature set as
   2.0.2 and does not include the in-development Stadium 2 importer.

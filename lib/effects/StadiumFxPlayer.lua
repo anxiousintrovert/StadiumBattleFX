@@ -73,7 +73,11 @@ function Player.new(inner, options, logger, companion, cameraCompanion, cameraOp
     if player.custom then return WIDE_COMPAT_STEP end
     local steps = inner and inner.steps
     local step = type(steps) == "table" and steps[inner.stepIndex]
-    return step or WIDE_COMPAT_STEP
+    if type(step) ~= "table" then return WIDE_COMPAT_STEP end
+    if step.sprites ~= nil and type(step.sprites) ~= "table" then
+      return WIDE_COMPAT_STEP
+    end
+    return step
   end })
   return player
 end

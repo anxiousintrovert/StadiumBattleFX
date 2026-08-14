@@ -271,13 +271,15 @@ local function presentWorld(session, battle, surface)
   return true
 end
 
-function Host.begin(battle)
+function Host.begin(battle, trainerPortraitsEnabled)
   Host.finish("replaced")
   if not battle then return false end
   local session = { battle = battle, context = contextFor(battle), providers = {},
                     ids = {}, failed = {} }
   Host.session = session
-  session.trainerPortraits = TrainerPortraits.apply(battle)
+  if trainerPortraitsEnabled ~= false then
+    session.trainerPortraits = TrainerPortraits.apply(battle)
+  end
   battle.stadiumTrainerPortraitToken = session.trainerPortraits
 
   local arenaProvider = acquire(session, "arena")
