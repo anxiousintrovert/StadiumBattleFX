@@ -34,8 +34,16 @@ local mod = {
   log = { info = function() end, warn = function() end, error = function() end },
 }
 
-assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.1.3")
+-- Release builds of current Gen1Recomp do not expose the mutable Lua package
+-- table to mod chunks. The mod must still boot and load its embedded importer.
+local runtimePackage = package
+package = nil
+local booted, bootError = pcall(function()
+  assert(loader("main.lua"))(mod)
+end)
+package = runtimePackage
+assert(booted, bootError)
+assert(mod.exports.version == "2.1.4")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -143,4 +151,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.3 Stadium model API and embedded Stadium 2 runtime wiring")
+print("ok 2.1.4 sandbox compatibility and embedded Stadium 2 runtime wiring")

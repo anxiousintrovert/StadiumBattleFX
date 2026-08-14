@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.4
+
+- Fixed startup on newer Gen1Recomp builds that do not expose Lua's mutable
+  `package` table to mods. The embedded Stadium 2 importer now resolves its
+  private modules through StadiumBattleFX's own loader instead of writing to
+  `package.preload`.
+- Added a sandbox regression test that boots the complete mod with
+  `package = nil` and verifies the embedded Stadium 2 runtime still loads.
+
 ## 2.1.3
 
 - Added the public, versioned `exports.models` Stadium Model API v1. Other mods

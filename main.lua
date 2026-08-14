@@ -8,10 +8,10 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.3"
+local VERSION = "2.1.4"
 mod.exports.version = VERSION
 
-local namespace = { mod = mod, path = mod.path }
+local namespace = { mod = mod, path = mod.path, engineRequire = require }
 local modules = {}
 
 local function moduleChunk(name)
@@ -19,6 +19,23 @@ local function moduleChunk(name)
   local source = mod:read(rel)
   if not source then
     error(("STADIUM_BATTLE_FX: missing %s; reinstall the mod"):format(rel), 0)
+  end
+  -- Current Gen1Recomp sandboxes keep require available but no longer expose
+  -- the mutable package table.  The embedded Stadium 2 importer used to
+  -- register aliases in package.preload; give those chunks a private require
+  -- instead so their original dotted module names stay isolated to this mod.
+  if name:match("^stadium2/") then
+    source = [[
+local __sbfxNamespace = ...
+local function require(name)
+  local embedded = type(name) == "string" and
+    name:match("^mods%.STADIUM_BATTLE_FX%.lib%.stadium2%.(.+)$")
+  if embedded then
+    return __sbfxNamespace.require("stadium2/" .. embedded:gsub("%.", "/"))
+  end
+  return __sbfxNamespace.engineRequire(name)
+end
+]] .. source
   end
   local chunk, err = load(source, "@" .. mod.path .. "/" .. rel)
   if not chunk then
@@ -33,26 +50,6 @@ function namespace.require(name)
   local value = moduleChunk(name)(namespace)
   modules[name] = value
   return value
-end
-
--- The former STADIUM2_IMPORTER modules are embedded under SBFX.
--- Keep their normal dotted require names, but route them back through SBFX's
--- loader so Build/Pack names cannot collide with the Stadium 1 runtime.
-local stadium2Modules = {
-  "animation_routing", "build", "cache", "discovery", "effect_renderer",
-  "extract", "fragment", "fx", "handler_registry", "import_screen",
-  "importer", "layout", "materials", "model_handlers", "model_pack_api",
-  "pack", "palette", "render_contract", "renderer", "rom", "sampler",
-  "texture_parity", "vertex_semantics", "effects.dynamic_object",
-  "effects.dynamic_object_manifest", "render_callbacks.dual_texture_material",
-  "render_callbacks.flame", "render_callbacks.phase5_geometry",
-}
-for _, name in ipairs(stadium2Modules) do
-  local moduleName = name
-  local alias = "mods.STADIUM_BATTLE_FX.lib.stadium2." .. moduleName
-  package.preload[alias] = function()
-    return namespace.require("stadium2/" .. moduleName:gsub("%.", "/"))
-  end
 end
 
 local StadiumRom = namespace.require("StadiumRom")
