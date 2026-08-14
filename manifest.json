@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -24,8 +24,7 @@
   ],
   "incompatible": [],
   "permissions": [
-    "engine_internals",
-    "filesystem"
+    "engine_internals"
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,

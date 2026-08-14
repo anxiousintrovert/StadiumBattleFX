@@ -1,5 +1,10 @@
 local calls = {}
 local records = {}
+local packaged = {
+  ["cache/storage/_catalog.lua"] = "return {format='SBFX-PACKAGED-CACHE-1'}",
+  ["cache/storage/models/packs/026.lua"] = "return {format=6}",
+  ["cache/storage/models/packs/026.bin"] = "PACKAGED",
+}
 local game = { save = { version = "red" } }
 local mod = {
   storage = {
@@ -20,6 +25,7 @@ local mod = {
   },
   read = function(_, path)
     if path == "baseroms/baserom.z64" then return "ROM" end
+    return packaged[path]
   end,
 }
 
@@ -33,4 +39,6 @@ local path, rom = Storage.bundledRom()
 assert(path == "baseroms/baserom.z64" and rom == "ROM")
 assert(Storage.delete("models/packs/025"))
 assert(Storage.bytes("models/packs/025") == nil)
+local packagedBytes, packagedRecord = Storage.bytes("models/packs/026")
+assert(packagedBytes == "PACKAGED" and packagedRecord.format == 6)
 return true

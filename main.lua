@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.4"
+local VERSION = "2.1.5"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path, engineRequire = require }
@@ -85,8 +85,6 @@ local StadiumTrainerPortraits = namespace.require("StadiumTrainerPortraits")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
 local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
-local EffectCacheScreen = namespace.require("EffectCacheScreen")
-local StadiumRomPicker = namespace.require("StadiumRomPicker")
 local AttackCinematics = namespace.require("AttackCinematics")
 local DramaticShapeFaint = namespace.require("DramaticShapeFaint")
 local Announcer = namespace.require("Announcer")
@@ -227,20 +225,6 @@ local function stadiumOwns(slot)
   return BattleProviders.resolve(slot) == BuiltinProviders[slot]
 end
 
-local stadium2ImportScreen
-local function showStadium2ImportScreen(game)
-  local state = Stadium2Importer.status().state
-  if stadium2ImportScreen or not (game and game.stack)
-      or (state ~= "building" and state ~= "picking" and state ~= "failed") then
-    return false
-  end
-  local ImportScreen = namespace.require("stadium2/import_screen")
-  stadium2ImportScreen = ImportScreen.new(game, Stadium2Importer, function(screen)
-    if stadium2ImportScreen == screen then stadium2ImportScreen = nil end
-  end)
-  game.stack:push(stadium2ImportScreen)
-  return true
-end
 mod.exports.battleCinematics = function()
   return mod.find("BATTLE_CINEMATICS")
 end
@@ -255,20 +239,9 @@ mod.exports.battleArtCompatibility = BattleArtCompat.status
 mod.hooks:wrap("input.step", function(next, game, dt)
   ModStorage.setGame(game)
   local result = next(game, dt)
-  Stadium2Importer.step()
-  showStadium2ImportScreen(game)
   BattleHost.update(dt)
   if stadiumOwns("announcer") then Announcer.update(dt, game) end
   FailureNotice.update(dt)
-  -- Android returns from its Storage Access Framework picker asynchronously.
-  -- Consume the staged Stadium ROM before first-run cache detection so the
-  -- newly imported cartridge can start building immediately.
-  local pollOk, pollErr = pcall(StadiumRomPicker.poll, game)
-  if not pollOk then namespace.log:warn("Stadium ROM picker failed: %s", tostring(pollErr)) end
-  if mod.options:get("enabled") ~= false then
-    local ok, err = pcall(EffectCacheScreen.maybePush, game)
-    if not ok then namespace.log:warn("attack cache screen unavailable: %s", tostring(err)) end
-  end
   return result
 end)
 
@@ -344,22 +317,13 @@ mod.events:on("battle.started", function(payload)
     end)
 end)
 
--- These are actions, not persisted mod settings: importing replaces the
--- player-owned ROM and rebuilding refreshes derived cache data immediately.
+-- Cartridge-derived caches are built by the external personalized-pack
+-- builder. Runtime options contain no file picker or cache mutation actions.
 mod.hooks:wrap("ui.options.rows", function(next, game, rows)
   local out = next(game, rows)
   if type(out) ~= "table" then return out end
-  out[#out + 1] = StadiumRomPicker.importRow()
-  out[#out + 1] = StadiumRomPicker.refreshRow()
   out[#out + 1] = StadiumLogExport.row()
-  Stadium2Importer.appendRow(out)
   return out
-end)
-
-mod.events:on("game.ready", function(ev)
-  Stadium2Importer.configure({ count=151, meshOnly=true, includeUnownForms=false })
-  Stadium2Importer.autoImport()
-  showStadium2ImportScreen((ev and ev.game) or mod.game)
 end)
 
 -- The context is recorded read-only for attachment/timing work. The adapter

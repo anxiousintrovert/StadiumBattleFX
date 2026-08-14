@@ -63,29 +63,23 @@ StadiumBattleFX 2.0 because both would otherwise own the same battle systems.
 1. Install the versioned `STADIUM_BATTLE_FX-<version>.zip` through
    Gen1Recomp's mod manager.
 2. Enable **StadiumBattleFX**.
-3. For cartridge-backed models, arenas, textures, and portraits, open Options
-   and choose **STADIUM ROM → IMPORT**. Desktop opens a host file dialog;
-   Android opens Gen1Recomp's system document picker. The selected `.z64`,
-   `.n64`, or `.v64` is validated as Pokemon Stadium (US) 1.0 and copied to
-   this installed mod's `baseroms/baserom.z64`. A personalized local ZIP may
-   instead bundle the owned ROM there. Never redistribute either copy.
-4. For Stadium 2 normal/shiny appearances, choose **STADIUM 2 ROM → IMPORT**
-   and select Pokemon Stadium 2 (US). This builds a private Gen 1 appearance
-   cache; Stadium 1 continues to provide the skeletal battle animations.
-5. On the first overworld load, the **STADIUM ATTACK FX**
-   screen builds the private effect cache and closes automatically.
+3. The official ROM-free ZIP loads with procedural effects. For
+   cartridge-backed models, arenas, textures, portraits, and announcer audio,
+   use the external **StadiumBattleFX Personalized Pack Builder**.
+4. Select Pokemon Stadium (USA) v1.0, optionally Pokemon Stadium 2 (USA), the
+   official voice-free ZIP, and an output location. The builder validates the
+   cartridges and generates every derived cache before installation.
+5. Install the personalized ZIP instead of the public copy. Both use the same
+   mod ID and must not be installed together.
 
 Required normalized ROM MD5 hashes:
 
 - Pokemon Stadium (US) 1.0: `ed1378bc12115f71209a77844965ba50`
 - Pokemon Stadium 2 (US): `1561c75d11cedf356a8ddb1a4a5f9d5d`
 
-The importer accepts `.z64`, `.n64`, and `.v64` byte orders, normalizes them,
+The external builder accepts `.z64`, `.n64`, and `.v64` byte orders, normalizes them,
 and then checks the corresponding hash above. Other regions and revisions are
 not supported.
-
-Use **OPTIONS → REFRESH FX CACHE → REBUILD** after replacing the ROM or if a
-cache build was interrupted. It re-extracts the effects immediately.
 
 Set **STADIUM TRAINER PORTRAITS** to **OFF** to keep the original Gen 1 trainer
 sprites during battle openings. The setting is enabled by default.
@@ -96,18 +90,9 @@ reinstall action. If the displayed version does not change, remove every old
 then install the new ZIP. This clears same-ID folders left by older mod-manager
 versions without deleting the private effect cache.
 
-Example ROM layout:
-
-```text
-baseroms/baserom.z64
-```
-
-Do not put the ROM in a regional subfolder such as `baseroms/us/`.
-
-The official ZIP remains ROM-free and falls back to procedural presentation
-when no local cartridge is bundled. A source checkout may
-place the owned ROM under `baseroms/` beside `main.lua` using a recognized name
-shown above. Never redistribute a package containing your ROM.
+The official ZIP and personalized ZIP contain no source ROM. The personalized
+ZIP contains ROM-derived caches and audio, is for the builder's user only, and
+must never be redistributed.
 
 ## Stadium animations
 
@@ -189,31 +174,30 @@ If no voice pack is installed—or if an individual clip is unavailable—the
 animation mod continues normally and skips that line. **STADIUM ANNOUNCER** is
 enabled by default but does nothing until a valid local pack is present.
 
-### Build a local announcer pack on Windows
+### Build a personalized cached pack on Windows
 
 Download `StadiumBattleFX-Announcer-Builder-windows.zip` from the GitHub
 release, verify its published SHA-256, extract it, and run
 `StadiumBattleFX-Announcer-Builder.exe` from the extracted folder. Then select:
 
 1. your Pokemon Stadium (USA) v1.0 `.z64`, `.v64`, or `.n64` ROM;
-2. the downloaded, voice-free StadiumBattleFX ZIP; and
-3. a destination for the personalized ZIP.
+2. optionally, your Pokemon Stadium 2 (USA) ROM for normal/shiny appearances;
+3. the downloaded, voice-free StadiumBattleFX ZIP; and
+4. a destination for the personalized ZIP.
 
-Choose **Build Announcer Pack**. The builder verifies the ROM and base mod,
-extracts and converts the 823 clips, adds them under `assets/announcer/`, and
-writes a local validation marker. It creates a new `-local-announcer.zip`; it
-does not modify the official download. It also places the verified ROM inside
-the personalized package so the sandboxed runtime can build cartridge-backed
-  assets. On first use, the complete validated voice bank and derived cartridge
-  data are copied into playthrough-scoped `mod.storage` records.
+Choose **Build Personalized Pack**. The builder verifies the ROMs and base mod,
+extracts and converts the 823 clips, and precomputes the attack-effect, arena,
+trainer-portrait, Stadium 1 model, Thunder Shock, and optional Stadium 2
+appearance caches. It creates a new `-personalized.zip` and does not modify the
+official download.
 
 Install the personalized ZIP through Gen1Recomp's mod manager and remove or
 replace the voice-free copy. Both intentionally use the same mod ID and should
 not be enabled together.
 
-Nothing is uploaded. The owned ROM is copied only into your local personalized
-ZIP, and temporary audio is deleted after the build. The personalized ZIP and
-private cache are ROM-derived artifacts; do not redistribute either.
+Nothing is uploaded. The source ROMs are not copied into the personalized ZIP,
+and temporary extraction data is deleted after the build. The personalized ZIP
+contains ROM-derived artifacts; do not redistribute it.
 
 Developers can build the inspectable Windows application folder with Python,
 PyInstaller, and `ziglang` installed:
@@ -221,6 +205,9 @@ PyInstaller, and `ziglang` installed:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_announcer_builder.ps1
 ```
+
+The build environment also needs the `lupa` package, which embeds the LuaJIT
+runtime used to execute the mod's own cache converters.
 
 For public releases, use a trusted Authenticode certificate and publish the
 generated SHA-256 file. See
@@ -364,22 +351,20 @@ between those other mods.
 | **BTL MODEL PACK** | Pokemon Stadium | Chooses the battle-model appearance source. The lighter Stadium 1 source is the performance-safe default; the imported Stadium 2 appearance pack is opt-in. |
 | **STADIUM 2 MODEL PACK** | On | Makes an imported Stadium 2 pack available to the model-source selector. It has no rendering cost while **BTL MODEL PACK** remains on Pokemon Stadium. |
 | **BTL ARENA / MODELS / ANIM / CAMERA / EFFECTS / VOICE / HUD / OVERLAY / TRANS** | Stadium Default | Selects the provider for each independent presentation area. Registered mod providers appear alphabetically; `OFF` disables only that area. The camera OFF rung also disables the temporary Battle Cinematics 0.7.96 bridge. |
-| **STADIUM ROM** | Import/Replace | Validates and copies a selected Stadium ROM into this installed mod's `baseroms` folder; Android uses the system document picker. |
-| **REFRESH FX CACHE** | Rebuild | Forces a fresh extraction from the bundled local ROM. |
 | **SAVE DIAGNOSTIC SNAPSHOT** | Save | Saves diagnostics in this mod's playthrough storage. The text is also exposed as `mod.find("STADIUM_BATTLE_FX").exports.diagnosticLog()`. |
 
 ## ROM data and private cache
 
-On first use, StadiumBattleFX decodes 36 bounded texture ranges in native I4,
-IA8, or RGBA16 form—about 157 KiB total—and stores them under logical keys in
-`mod.storage`:
+The personalized builder decodes 36 bounded texture ranges in native I4, IA8,
+or RGBA16 form—about 157 KiB total—and packages them under read-only logical
+cache keys:
 
 ```text
 stadium_battle_fx/effects/v3/
 ```
 
 The versioned marker is written last and records the size and checksum of each
-primitive. Interrupted, incomplete, or stale caches are rejected and rebuilt.
+primitive. Interrupted or incomplete external builds do not produce an output ZIP.
 The cache never contains the ROM, a complete archive member, or a decompressed
 Stadium fragment. Cache revision 3 intentionally replaces the older
 eight-asset cache.
@@ -406,18 +391,12 @@ announcer/clips/000 .. announcer/clips/822
 ```
 
 Their completion markers are also written last. A marker is never accepted
-for an interrupted import, so a finished cache is reused on the next launch
-while a partial one safely resumes by rebuilding.
+from an incomplete personalized build.
 
-All four cache families appear in one startup dashboard: attack FX, arenas,
-models, and the optional announcer bank. Each completed cache is scoped to the
-active playthrough by the engine.
-
-The engine owns every derived-cache path and scopes each record to this mod and
-active playthrough. The explicit ROM import action is the only exception: it
-has declared filesystem permission and writes only the validated cartridge to
-this installed mod's `baseroms/baserom.z64`; runtime cache code remains on
-logical `mod.storage` keys.
+The runtime reads packaged cache files through `mod:read`. It does not expose a
+ROM picker, cache refresh action, filesystem permission, or raw cache path. To
+replace or refresh cartridge-derived data, run the external builder again and
+install the newly generated personalized ZIP.
 
 ## Fidelity and known limitations
 
@@ -455,7 +434,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.1.4.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.5.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

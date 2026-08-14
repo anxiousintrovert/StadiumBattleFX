@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Inject locally decoded Stadium announcer WAVs into a release mod ZIP.
+"""Inject locally derived Stadium audio and cache assets into a release ZIP.
 
-This is the packaging half of the planned Windows voice-pack builder. It never
-modifies the downloaded ZIP in place and never uploads ROM-derived output.
+This is the packaging half of the external personalized-pack builder. It never
+modifies the downloaded ZIP in place, embeds a ROM, or uploads derived output.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ MOD_ID = "STADIUM_BATTLE_FX"
 CLIP_COUNT = 823
 VOICE_ROOT = "assets/announcer"
 MARKER = f"{VOICE_ROOT}/voicepack.json"
+CACHE_ROOT = "cache"
 BATCH_NAME = re.compile(
     r"^BANK_([0-9A-F]+)_INSTR_[0-9A-F]+_SND_[0-9A-F]+\.wav$", re.IGNORECASE
 )
@@ -119,6 +120,7 @@ def patch_zip(
     output: Path,
     *,
     rom: Path | bytes | None = None,
+    cache_dir: Path | None = None,
     require_complete: bool = True,
     progress: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -149,6 +151,8 @@ def patch_zip(
                 for item in source.infolist():
                     normalized = item.filename.replace("\\", "/")
                     if normalized == MARKER or normalized.startswith(VOICE_ROOT + "/"):
+                        continue
+                    if cache_dir is not None and normalized.startswith(CACHE_ROOT + "/"):
                         continue
                     if rom is not None and normalized.startswith("baseroms/baserom."):
                         continue
@@ -193,6 +197,23 @@ def patch_zip(
                     entry.compress_type = zipfile.ZIP_DEFLATED
                     entry.external_attr = 0o100644 << 16
                     target.writestr(entry, rom_data, compresslevel=9)
+                cache_files = 0
+                cache_bytes = 0
+                if cache_dir is not None:
+                    cache_dir = Path(cache_dir)
+                    for path in sorted(cache_dir.rglob("*")):
+                        if not path.is_file():
+                            continue
+                        relative = path.relative_to(cache_dir).as_posix()
+                        data = path.read_bytes()
+                        entry = zipfile.ZipInfo(
+                            f"{CACHE_ROOT}/{relative}", (1980, 1, 1, 0, 0, 0)
+                        )
+                        entry.compress_type = zipfile.ZIP_DEFLATED
+                        entry.external_attr = 0o100644 << 16
+                        target.writestr(entry, data, compresslevel=9)
+                        cache_files += 1
+                        cache_bytes += len(data)
         temporary.replace(output)
     except Exception:
         if temporary.exists():
@@ -204,6 +225,8 @@ def patch_zip(
         "pcm_bytes": total_pcm,
         "zip_bytes": output.stat().st_size,
         "rom_bundled": rom is not None,
+        "cache_files": cache_files,
+        "cache_bytes": cache_bytes,
     }
 
 

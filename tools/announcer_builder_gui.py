@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small desktop GUI for building a local StadiumBattleFX announcer pack."""
+"""Desktop GUI for building a locally cached StadiumBattleFX pack."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from tkinter import filedialog, messagebox, ttk
 from build_announcer_pack import build_announcer_pack
 
 
-APP_TITLE = "StadiumBattleFX Announcer Builder"
+APP_TITLE = "StadiumBattleFX Personalized Pack Builder"
 
 
 class BuilderApp:
@@ -31,22 +31,23 @@ class BuilderApp:
         self.completed_output: Path | None = None
 
         self.rom = tk.StringVar()
+        self.stadium2_rom = tk.StringVar()
         self.pack = tk.StringVar()
         self.output = tk.StringVar()
-        self.status = tk.StringVar(value="Choose your ROM and the voice-free mod pack.")
+        self.status = tk.StringVar(value="Choose your ROMs and the voice-free mod pack.")
         self.percent = tk.DoubleVar(value=0)
 
         outer = ttk.Frame(root, padding=18)
         outer.grid(sticky="nsew")
         ttk.Label(
             outer,
-            text="Add the Pokemon Stadium announcer to StadiumBattleFX",
+            text="Build a cached, personalized StadiumBattleFX pack",
             font=("Segoe UI Semibold", 13),
         ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         ttk.Label(
             outer,
-            text=("Everything stays local. The ROM is copied into the personalized ZIP; "
-                  "never redistribute it."),
+            text=("Everything stays local. Only derived caches and announcer clips are "
+                  "placed in the ZIP; never redistribute it."),
             foreground="#555555",
         ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 16))
 
@@ -55,30 +56,35 @@ class BuilderApp:
             "Select your Pokemon Stadium (USA) v1.0 .z64/.v64/.n64/.bin ROM."
         )
         self._file_row(
-            outer, 5, "StadiumBattleFX pack", self.pack, self.choose_pack,
+            outer, 5, "Pokemon Stadium 2 ROM (optional)", self.stadium2_rom,
+            self.choose_stadium2_rom,
+            "Adds the Stadium 2 normal/shiny appearance cache when selected."
+        )
+        self._file_row(
+            outer, 8, "StadiumBattleFX pack", self.pack, self.choose_pack,
             "Select the downloaded voice-free StadiumBattleFX .zip."
         )
         self._file_row(
-            outer, 8, "Personalized output", self.output, self.choose_output,
+            outer, 11, "Personalized output", self.output, self.choose_output,
             "A new ZIP is created; the original pack is left unchanged."
         )
 
-        ttk.Separator(outer).grid(row=11, column=0, columnspan=3, sticky="ew", pady=(16, 14))
+        ttk.Separator(outer).grid(row=14, column=0, columnspan=3, sticky="ew", pady=(16, 14))
         ttk.Progressbar(
             outer, variable=self.percent, maximum=100, length=580, mode="determinate"
-        ).grid(row=12, column=0, columnspan=3, sticky="ew")
+        ).grid(row=15, column=0, columnspan=3, sticky="ew")
         ttk.Label(outer, textvariable=self.status).grid(
-            row=13, column=0, columnspan=3, sticky="w", pady=(7, 16)
+            row=16, column=0, columnspan=3, sticky="w", pady=(7, 16)
         )
 
         buttons = ttk.Frame(outer)
-        buttons.grid(row=14, column=0, columnspan=3, sticky="e")
+        buttons.grid(row=17, column=0, columnspan=3, sticky="e")
         self.open_button = ttk.Button(
             buttons, text="Open Output Folder", command=self.open_output, state="disabled"
         )
         self.open_button.grid(row=0, column=0, padx=(0, 8))
         self.build_button = ttk.Button(
-            buttons, text="Build Announcer Pack", command=self.start_build
+            buttons, text="Build Personalized Pack", command=self.start_build
         )
         self.build_button.grid(row=0, column=1)
         outer.columnconfigure(1, weight=1)
@@ -121,10 +127,19 @@ class BuilderApp:
             self.pack.set(path)
             if not self.output_touched:
                 source = Path(path)
-                self.output.set(str(source.with_name(source.stem + "-local-announcer.zip")))
+                self.output.set(str(source.with_name(source.stem + "-personalized.zip")))
+
+    def choose_stadium2_rom(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Select Pokemon Stadium 2 ROM",
+            filetypes=[("Nintendo 64 ROM", "*.z64 *.v64 *.n64 *.bin"), ("All files", "*.*")],
+        )
+        if path:
+            self.stadium2_rom.set(path)
 
     def choose_output(self) -> None:
-        initial = Path(self.output.get()) if self.output.get() else Path("StadiumBattleFX-local-announcer.zip")
+        initial = (Path(self.output.get()) if self.output.get()
+                   else Path("StadiumBattleFX-personalized.zip"))
         path = filedialog.asksaveasfilename(
             title="Save personalized StadiumBattleFX pack",
             defaultextension=".zip",
@@ -138,6 +153,8 @@ class BuilderApp:
 
     def start_build(self) -> None:
         rom = Path(self.rom.get().strip())
+        stadium2_rom = (Path(self.stadium2_rom.get().strip())
+                        if self.stadium2_rom.get().strip() else None)
         pack = Path(self.pack.get().strip())
         output = Path(self.output.get().strip())
         if not self.rom.get().strip() or not self.pack.get().strip() or not self.output.get().strip():
@@ -158,15 +175,20 @@ class BuilderApp:
         self.build_button.configure(state="disabled")
         self.open_button.configure(state="disabled")
         threading.Thread(
-            target=self._build_worker, args=(rom, pack, output), daemon=True
+            target=self._build_worker,
+            args=(rom, stadium2_rom, pack, output),
+            daemon=True,
         ).start()
 
-    def _build_worker(self, rom: Path, pack: Path, output: Path) -> None:
+    def _build_worker(
+        self, rom: Path, stadium2_rom: Path | None, pack: Path, output: Path
+    ) -> None:
         try:
             result = build_announcer_pack(
                 rom,
                 pack,
                 output,
+                stadium2_rom=stadium2_rom,
                 progress=lambda fraction, text: self.events.put(
                     ("progress", (fraction, text))
                 ),
@@ -194,14 +216,14 @@ class BuilderApp:
                     self.running = False
                     self.completed_output = Path(output)
                     self.percent.set(100)
-                    self.status.set("Done — 823 announcer clips added successfully.")
+                    self.status.set("Done — personalized caches and announcer are ready.")
                     self.build_button.configure(state="normal")
                     self.open_button.configure(state="normal")
                     size_mb = result["zip_bytes"] / (1024 * 1024)
                     messagebox.showinfo(
                         APP_TITLE,
                         f"Your personalized pack is ready.\n\n{output}\n\n"
-                        f"823 clips added · {size_mb:.1f} MB",
+                        f"823 clips · {result['cache_files']} cache files · {size_mb:.1f} MB",
                     )
         except queue.Empty:
             pass

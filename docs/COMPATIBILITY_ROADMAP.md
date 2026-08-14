@@ -23,6 +23,19 @@ upstream repository or release before opening a pull request.
 | [Wild Skies](https://github.com/shanehudson-gen1recomp-mods/wild_skies/releases) | `wild_skies` release v1.10.0, published 2026-08-13 | Optional dependency recorded. Preserve encounter start, battle completion, run, and catch return paths. | Propose stable encounter provenance in the battle context (for example `sourceMod` and `sourceId`) so SBFX providers can react without inspecting private encounter hooks. |
 | [Wilds of Kanto / Overworld Spawn Mod](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod) | `overworld_wild_spawns` 2.1.0; commit `77ce8fc2bac106de5ddca29256ad1415f49b9f29` | Optional dependency recorded. Preserve encounter start, battle completion, run, and catch return paths. | Propose the same stable encounter-provenance fields as Wild Skies, plus documented battle-return lifecycle semantics. |
 
+## Gen1Recomp sandbox compatibility
+
+Gen1Recomp 0.1.86 runs every mod-authored chunk in a restricted environment
+that denies raw `love.filesystem`, `love.system`, `io`, and host-path access.
+SBFX 2.1.5 treats cartridge conversion as an external build step: the official
+ZIP remains ROM-free, the personalized builder writes derived `cache/` files,
+and the runtime consumes those files read-only through `mod:read`.
+
+The runtime must not reintroduce ROM picker, cache refresh, or import action
+rows until Gen1Recomp provides a scoped binary import API. `mod.storage` remains
+appropriate for small playthrough data and diagnostics, but personalized
+binary cache assets are package-scoped so they are reusable across saves.
+
 ## Existing SBFX integration surface
 
 The public integration contract is documented in

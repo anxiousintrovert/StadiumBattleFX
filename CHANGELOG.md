@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.1.5
+
+- Restored startup on Gen1Recomp 0.1.86's restricted mod sandbox. The shipped
+  runtime no longer accesses `love.filesystem`, `love.system`, `io`, or the
+  removed in-game ROM import/cache actions.
+- Expanded the external personalized-pack builder to generate the complete
+  attack-effect, native-arena, trainer-portrait, Stadium 1 model, Thunder
+  Shock, and optional Stadium 2 appearance caches before packaging.
+- Added a read-only packaged-cache backend using `mod:read`. Personalized ZIPs
+  contain derived cache files and announcer clips but no source ROM.
+- Removed the obsolete `filesystem` manifest permission and closed the
+  packaging-test exemption that had allowed the embedded Stadium 2 modules to
+  bypass sandbox scanning.
+- Added exact Gen1Recomp 0.1.86 loader regression coverage for both the public
+  ROM-free ZIP and the fully cached personalized ZIP.
+
 ## 2.1.4
 
 - Fixed startup on newer Gen1Recomp builds that do not expose Lua's mutable

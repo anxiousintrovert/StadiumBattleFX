@@ -11,6 +11,11 @@ $dist = Join-Path $project "dist\announcer-builder"
 $work = Join-Path $project "build\announcer-builder"
 $releaseZip = Join-Path $project "dist\StadiumBattleFX-Announcer-Builder-windows.zip"
 
+& $Python -c "from lupa.luajit21 import LuaRuntime"
+if ($LASTEXITCODE -ne 0) {
+    throw "The builder environment needs lupa (python -m pip install lupa)."
+}
+
 # Deliberately produce ordinary, inspectable PE files. Do not use PyInstaller
 # --onefile or static linking: both create a self-extracting executable shape
 # that reputation and heuristic scanners frequently classify as a dropper.
@@ -37,7 +42,9 @@ if ($LASTEXITCODE -ne 0) {
     --windowed `
     --name "StadiumBattleFX-Announcer-Builder" `
     --paths $PSScriptRoot `
+    --hidden-import "lupa.luajit21" `
     --add-binary "$decoder;." `
+    --add-data "$(Join-Path $PSScriptRoot 'build_stadium_cache.lua');." `
     --distpath $dist `
     --workpath $work `
     --specpath $work `

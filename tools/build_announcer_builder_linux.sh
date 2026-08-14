@@ -10,6 +10,11 @@ archive_name="StadiumBattleFX-Announcer-Builder-steamos-x86_64.tar.gz"
 python_bin="${ANNOUNCER_BUILDER_PYTHON:-python3}"
 decoder="$build_dir/native/mort_decoder"
 
+"$python_bin" -c 'from lupa.luajit21 import LuaRuntime' || {
+  printf 'The builder environment needs lupa (python3 -m pip install lupa).\n' >&2
+  exit 1
+}
+
 rm -rf "$build_dir" "$dist_dir"
 mkdir -p "$(dirname "$decoder")" "$dist_dir"
 
@@ -31,7 +36,9 @@ g++ \
   --windowed \
   --name "$app_name" \
   --paths "$tools_dir" \
+  --hidden-import "lupa.luajit21" \
   --add-binary "$decoder:." \
+  --add-data "$tools_dir/build_stadium_cache.lua:." \
   --distpath "$dist_dir" \
   --workpath "$build_dir/pyinstaller" \
   --specpath "$build_dir/pyinstaller" \

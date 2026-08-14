@@ -52,11 +52,6 @@ class RuntimeZipTests(unittest.TestCase):
         for relative in module.FILES:
             if not relative.endswith(".lua"):
                 continue
-            # ROM import is the one declared filesystem boundary: this module
-            # opens the explicit host picker and copies only a verified
-            # cartridge into this mod's own installed baseroms directory.
-            if relative == "lib/StadiumRomPicker.lua" or relative.startswith("lib/stadium2/"):
-                continue
             for line_no, line in enumerate((ROOT / relative).read_bytes().splitlines(), 1):
                 if self.FORBIDDEN.search(line):
                     hits.append(f"{relative}:{line_no}: {line.decode(errors='replace')}")
@@ -64,12 +59,7 @@ class RuntimeZipTests(unittest.TestCase):
 
         manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual("main.lua", manifest["entry"])
-        self.assertIn("filesystem", manifest.get("permissions", []))
-        picker = (ROOT / "lib/StadiumRomPicker.lua").read_text(encoding="utf-8")
-        self.assertIn('love.system.pickFile, "stadium"', picker)
-        self.assertIn('root:match("^mods/[^/]+$")', picker)
-        self.assertIn('Assets.validateRom(bytes)', picker)
-        self.assertNotIn("os.execute", picker)
+        self.assertNotIn("filesystem", manifest.get("permissions", []))
         self.assertFalse((ROOT / "main.lua").read_bytes().startswith(b"\x1bLua"))
 
 

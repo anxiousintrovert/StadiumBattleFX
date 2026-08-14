@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a local StadiumBattleFX announcer pack directly from a Stadium ROM."""
+"""Build a local StadiumBattleFX personalized pack from selected Stadium ROMs."""
 
 from __future__ import annotations
 
@@ -9,11 +9,13 @@ import os
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Callable
 
 from extract_stadium_announcer import StadiumRomError, inventory, open_rom
 from patch_announcer_zip import CLIP_COUNT, VoicePackError, patch_zip
+from build_stadium_cache import StadiumCacheBuildError, build_stadium_cache
 
 
 Progress = Callable[[float, str], None]
@@ -83,6 +85,7 @@ def build_announcer_pack(
     output: Path,
     *,
     decoder: Path | None = None,
+    stadium2_rom: Path | None = None,
     progress: Progress | None = None,
 ) -> dict[str, object]:
     """Verify, extract, decode, and inject all Stadium announcer clips."""
@@ -92,12 +95,15 @@ def build_announcer_pack(
     base_zip = Path(base_zip)
     output = Path(output)
     decoder = Path(decoder) if decoder else default_decoder()
+    stadium2_rom = Path(stadium2_rom) if stadium2_rom else None
     if not rom.is_file():
         raise AnnouncerBuildError(f"Stadium ROM not found: {rom}")
     if not base_zip.is_file():
         raise AnnouncerBuildError(f"StadiumBattleFX pack not found: {base_zip}")
     if not decoder.is_file():
         raise AnnouncerBuildError(f"MORT decoder not found: {decoder}")
+    if stadium2_rom and not stadium2_rom.is_file():
+        raise AnnouncerBuildError(f"Stadium 2 ROM not found: {stadium2_rom}")
 
     report(0.01, "Verifying Pokemon Stadium ROM...")
     reader, rom_report = open_rom(rom)
@@ -113,8 +119,30 @@ def build_announcer_pack(
         work = Path(temporary)
         mort_dir = work / "mort"
         wav_dir = work / "wav"
+        cache_dir = work / "cache"
+        runtime = work / "runtime"
         mort_dir.mkdir()
         wav_dir.mkdir()
+
+        with zipfile.ZipFile(base_zip) as archive:
+            for item in archive.infolist():
+                relative = Path(item.filename.replace("\\", "/"))
+                if relative.is_absolute() or ".." in relative.parts:
+                    raise AnnouncerBuildError(
+                        f"Base mod ZIP contains an unsafe path: {item.filename}"
+                    )
+                if item.is_dir():
+                    continue
+                destination = runtime / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(archive.read(item.filename))
+        cache_script = bundled_path("build_stadium_cache.lua")
+        if not cache_script.is_file():
+            raise AnnouncerBuildError("The bundled Stadium cache builder is missing.")
+        (runtime / "tools").mkdir(parents=True, exist_ok=True)
+        (runtime / "tools" / "build_stadium_cache.lua").write_bytes(
+            cache_script.read_bytes()
+        )
 
         report(0.04, "Extracting 823 compressed voice clips...")
         for clip in clips:
@@ -125,13 +153,26 @@ def build_announcer_pack(
         # One bounded child process performs the full conversion. The inputs
         # and outputs are fixed temporary directories created above.
         _run_decoder_batch(decoder, mort_dir, wav_dir)
-        report(0.77, "Converting announcer audio (823/823)...")
+        report(0.45, "Converting announcer audio (823/823)...")
 
-        report(0.78, "Injecting voice files into StadiumBattleFX pack...")
+        cache_stages = [0]
+        def cache_progress(message: str) -> None:
+            cache_stages[0] += 1
+            report(min(0.84, 0.46 + cache_stages[0] * 0.06), message)
+
+        cache_result = build_stadium_cache(
+            rom,
+            cache_dir,
+            stadium2_rom=stadium2_rom,
+            mod_root=runtime,
+            progress=cache_progress,
+        )
+
+        report(0.86, "Injecting voice files and caches into StadiumBattleFX pack...")
 
         def zip_progress(done: int, total: int) -> None:
             report(
-                0.78 + 0.21 * done / total,
+                0.86 + 0.13 * done / total,
                 f"Compressing personalized pack ({done}/823)...",
             )
 
@@ -139,14 +180,13 @@ def build_announcer_pack(
             base_zip,
             wav_dir,
             output,
-            # The runtime expects canonical big-endian bytes regardless of
-            # whether the selected dump was z64, v64, n64, or copier-headered.
-            rom=reader.data,
+            cache_dir=cache_dir,
             require_complete=True,
             progress=zip_progress,
         )
     report(1.0, "Personalized StadiumBattleFX pack is ready.")
     result["rom_revision"] = rom_report["revision"]
+    result.update(cache_result)
     return result
 
 
@@ -156,6 +196,7 @@ def main() -> int:
     parser.add_argument("base_zip", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--decoder", type=Path)
+    parser.add_argument("--stadium2-rom", type=Path)
     args = parser.parse_args()
     try:
         result = build_announcer_pack(
@@ -163,11 +204,13 @@ def main() -> int:
             args.base_zip,
             args.output,
             decoder=args.decoder,
+            stadium2_rom=args.stadium2_rom,
             progress=lambda fraction, message: print(
                 f"[{fraction * 100:6.2f}%] {message}", flush=True
             ),
         )
-    except (OSError, StadiumRomError, VoicePackError, AnnouncerBuildError) as exc:
+    except (OSError, StadiumRomError, VoicePackError, AnnouncerBuildError,
+            StadiumCacheBuildError) as exc:
         parser.error(str(exc))
     print(json.dumps(result, indent=2))
     return 0

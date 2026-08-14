@@ -43,7 +43,7 @@ local booted, bootError = pcall(function()
 end)
 package = runtimePackage
 assert(booted, bootError)
-assert(mod.exports.version == "2.1.4")
+assert(mod.exports.version == "2.1.5")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -92,14 +92,11 @@ assert(type(mod.exports.externalBattleCompatibility) == "function",
   "Shape-family compatibility diagnostics were not exported")
 assert(type(handlers["mods.loaded"]) == "function")
 assert(type(handlers["hook:ui.options.rows"]) == "function",
-  "cache import/rebuild option rows were not registered")
+  "diagnostic option row hook was not registered")
 local optionRows = handlers["hook:ui.options.rows"](
   function(_, rows) return rows end, {}, {})
-assert(optionRows[#optionRows - 3].id == "STADIUM_BATTLE_FX:stadiumRom"
-    and optionRows[#optionRows - 2].id == "STADIUM_BATTLE_FX:refreshCache"
-    and optionRows[#optionRows - 1].id == "STADIUM_BATTLE_FX:exportLog"
-    and optionRows[#optionRows].id == "STADIUM2_IMPORTER:rom",
-  "Stadium 1, Stadium 2, and log action rows were not appended")
+assert(#optionRows == 1 and optionRows[1].id == "STADIUM_BATTLE_FX:exportLog",
+  "runtime ROM import/cache actions must not be exposed in the sandbox")
 
 -- Battle Cinematics loads after Stadium's supported renderer and wraps that
 -- renderer's shared BattleCam table. The final mod-load event must consume the
@@ -151,4 +148,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.4 sandbox compatibility and embedded Stadium 2 runtime wiring")
+print("ok 2.1.5 packaged-cache sandbox compatibility")

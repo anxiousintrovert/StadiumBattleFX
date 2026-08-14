@@ -94,6 +94,25 @@ class AnnouncerZipPatcherTests(unittest.TestCase):
         with zipfile.ZipFile(output) as archive:
             self.assertEqual(b"canonical-z64", archive.read("baseroms/baserom.z64"))
 
+    def test_prebuilt_cache_tree_is_injected_and_replaces_stale_cache(self) -> None:
+        (self.wavs / "stadium_mort_000.wav").write_bytes(wav())
+        cache = self.root / "cache"
+        (cache / "storage").mkdir(parents=True)
+        (cache / "storage" / "_catalog.lua").write_text("return {format='test'}\n")
+        with zipfile.ZipFile(self.base, "a") as archive:
+            archive.writestr("cache/storage/stale.bin", b"stale")
+        output = self.root / "cached.zip"
+        result = PATCHER.patch_zip(
+            self.base, self.wavs, output, require_complete=False, cache_dir=cache
+        )
+        self.assertEqual(1, result["cache_files"])
+        with zipfile.ZipFile(output) as archive:
+            self.assertEqual(
+                (cache / "storage" / "_catalog.lua").read_bytes(),
+                archive.read("cache/storage/_catalog.lua"),
+            )
+            self.assertNotIn("cache/storage/stale.bin", archive.namelist())
+
     def test_official_zip_cannot_be_overwritten(self) -> None:
         (self.wavs / "stadium_mort_000.wav").write_bytes(wav())
         with self.assertRaisesRegex(PATCHER.VoicePackError, "must not overwrite"):

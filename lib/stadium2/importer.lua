@@ -1,7 +1,6 @@
 local Rom = require("mods.STADIUM_BATTLE_FX.lib.stadium2.rom")
 local Extract = require("mods.STADIUM_BATTLE_FX.lib.stadium2.extract")
 local Cache = require("mods.STADIUM_BATTLE_FX.lib.stadium2.cache")
-local Discovery = require("mods.STADIUM_BATTLE_FX.lib.stadium2.discovery")
 local Palette = require("mods.STADIUM_BATTLE_FX.lib.stadium2.palette")
 local Handlers = require("mods.STADIUM_BATTLE_FX.lib.stadium2.model_handlers")
 local Pack = require("mods.STADIUM_BATTLE_FX.lib.stadium2.pack")
@@ -31,24 +30,15 @@ local status = {
 }
 
 local function platformName()
-  local system = love and love.system
-  if not (system and type(system.getOS) == "function") then return nil end
-  local ok, platform = pcall(system.getOS)
-  return ok and platform or nil
+  return nil
 end
 
 local function nativePickerAvailable()
-  local system = love and love.system
-  return platformName() == "Android"
-    and system ~= nil and type(system.pickFile) == "function"
+  return false
 end
 
 local function pickedFingerprint(path)
-  local fs = love and love.filesystem
-  if not (fs and type(fs.getInfo) == "function") then return nil end
-  local ok, info = pcall(fs.getInfo, path, "file")
-  if not (ok and info) then return nil end
-  return table.concat({ tostring(info.size or "?"), tostring(info.modtime or "?") }, ":")
+  return nil
 end
 
 local function clearNativePicker(restore)
@@ -65,30 +55,11 @@ local function clearNativePicker(restore)
 end
 
 local function openNativePicker()
-  if not nativePickerAvailable() then return false, "Android native picker unavailable" end
-  nativePickPrevious = {
-    state = status.state, phase = status.phase, error = status.error, rom = status.rom,
-  }
-  nativePickBefore = pickedFingerprint(NATIVE_PICKED)
-  nativePickLostFocus = false
-  -- Match Gen1Recomp 0.1.36's own Android ROM importer exactly: the ROM
-  -- picker is the no-argument form and the native bridge writes picked_rom.gb.
-  local ok, opened = pcall(love.system.pickFile)
-  if not (ok and opened) then
-    clearNativePicker(true)
-    return false, ok and "Android file picker did not open" or tostring(opened)
-  end
-  nativePickPending = true
-  status.state = "picking"
-  status.phase = "picker"
-  status.error = nil
-  status.rom = nil
-  return true
+  return false, "Use the external personalized-pack builder to add Stadium 2 models"
 end
 
 local function removePickedFile()
-  local fs = love and love.filesystem
-  if fs and type(fs.remove) == "function" then pcall(fs.remove, NATIVE_PICKED) end
+  return false
 end
 
 local function fail(stage, reason)
@@ -317,19 +288,11 @@ function Importer.beginFrom(bytes, label)
 end
 
 local function beginCandidate(candidate, options)
-  options = type(options) == "table" and options or {}
-  local bytes, err = Discovery.read(candidate)
-  if not bytes then
-    if options.removeAfter then removePickedFile() end
-    return fail("reading ROM", err)
-  end
-  local started, beginErr = Importer.beginFrom(bytes, options.label or candidate.path)
-  if options.removeAfter then removePickedFile() end
-  return started, beginErr
+  return false, "Use the external personalized-pack builder to add Stadium 2 models"
 end
 
 function Importer.beginPath(path)
-  return beginCandidate({ kind = "host", path = path })
+  return false, "Use the external personalized-pack builder to add Stadium 2 models"
 end
 
 local function pollNativePicker()
@@ -361,29 +324,11 @@ function Importer.autoImport()
     setReady()
     return true
   end
-  local candidate = Discovery.find()
-  if not candidate then return false, "no Pokemon Stadium 2 US ROM found" end
-  return beginCandidate(candidate)
+  return false, "Use the external personalized-pack builder to add Stadium 2 models"
 end
 
 function Importer.request()
-  if job then return false, "Stadium 2 import is already running" end
-  if nativePickPending then return false, "Android file picker already open" end
-
-  local platform = platformName()
-  if platform == "Android" then
-    if nativePickerAvailable() then
-      local opened, pickerErr = openNativePicker()
-      if opened then return true end
-      return fail("opening Android file picker", pickerErr)
-    end
-    return fail("opening Android file picker",
-      "Gen1Recomp Android picker bridge (love.system.pickFile) is unavailable")
-  end
-
-  local path = Discovery.choose()
-  if not path then return false, "cancelled" end
-  return Importer.beginPath(path)
+  return false, "Use the external personalized-pack builder to add Stadium 2 models"
 end
 
 function Importer.step()

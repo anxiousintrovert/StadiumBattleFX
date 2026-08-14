@@ -5,6 +5,26 @@ local V = ...
 local Storage = {}
 local currentGame
 local fallback = {}
+local PACKAGED_ROOT = "cache/storage/"
+
+local function packaged(relative)
+  local ok, bytes = pcall(V.mod.read, V.mod, PACKAGED_ROOT .. relative)
+  if ok and type(bytes) == "string" then return bytes end
+end
+
+local function packagedRecord(key)
+  local source = packaged(key .. ".lua")
+  if type(source) ~= "string" then return nil end
+  local chunk, compileErr = load(source, "@" .. PACKAGED_ROOT .. key .. ".lua")
+  if not chunk then return nil, "invalid_packaged_cache", tostring(compileErr) end
+  local ok, record = pcall(chunk)
+  if not ok or type(record) ~= "table" then
+    return nil, "invalid_packaged_cache", tostring(record)
+  end
+  local bytes = packaged(key .. ".bin")
+  if bytes then record.bytes = bytes end
+  return record
+end
 
 function Storage.setGame(game)
   if game then currentGame = game end
@@ -18,15 +38,25 @@ function Storage.game()
 end
 
 function Storage.active()
-  return V.mod and V.mod.storage ~= nil and Storage.game() ~= nil
+  if V.mod and V.mod.storage ~= nil and Storage.game() ~= nil then return true end
+  return packaged("_catalog.lua") ~= nil
 end
 
 function Storage.read(key)
   local api, game = V.mod and V.mod.storage, Storage.game()
-  if api and api.read and game then return api:read(game, key) end
+  if api and api.read and game then
+    local value, code, message = api:read(game, key)
+    if value ~= nil then return value end
+    local bundled, bundledCode, bundledMessage = packagedRecord(key)
+    if bundled ~= nil then return bundled end
+    return nil, bundledCode or code, bundledMessage or message
+  end
+  local bundled, code, message = packagedRecord(key)
+  if bundled ~= nil then return bundled end
   local value = fallback[key]
   if value ~= nil then return value end
-  return nil, "storage_unavailable", "Mod storage needs an active playthrough."
+  return nil, code or "storage_unavailable",
+    message or "Mod storage needs an active playthrough."
 end
 
 function Storage.write(key, value)

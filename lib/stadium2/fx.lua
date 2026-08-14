@@ -1,3 +1,4 @@
+local V = ...
 local Fx = {}
 
 local floor = math.floor
@@ -134,10 +135,10 @@ end
 
 function Fx.loadSymbolMap(path)
   if type(path) ~= "string" or path == "" then return nil, "symbol map path is required" end
-  local file, err = io.open(path, "rb")
-  if not file then return nil, err end
-  local text = file:read("*a")
-  file:close()
+  local ok, text = pcall(V.mod.read, V.mod, path)
+  if not ok or type(text) ~= "string" then
+    return nil, ok and "symbol map is unavailable" or tostring(text)
+  end
   local parsed, parseErr = Fx.parseSymbolMap(text)
   if not parsed then return nil, parseErr end
   parsed.path = path

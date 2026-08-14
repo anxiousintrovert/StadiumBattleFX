@@ -1,3 +1,6 @@
+local V = ...
+local Storage = V.require("ModStorage")
+local Writer = V.cacheWriter
 local Cache = {}
 local availability = {}
 
@@ -10,15 +13,13 @@ Cache.MARKER = Cache.ROOT .. "/pack.info"
 Cache.ERROR = Cache.ROOT .. "/import_error.log"
 Cache.UNOWN_FORMS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-local function fs()
-  return love and love.filesystem
+local function packaged(path)
+  if Writer and Writer.read then return Writer.read(path) end
+  return Storage.bundled("cache/" .. path)
 end
 
 local function file(path)
-  local f = fs()
-  if not (f and f.getInfo) then return false end
-  local ok, info = pcall(f.getInfo, path, "file")
-  return ok and info and true or false
+  return packaged(path) ~= nil
 end
 
 local function invalidateAvailability()
@@ -41,63 +42,34 @@ function Cache.unownPath(letter,variant)
 end
 
 function Cache.ensureDirectories()
-  local f = fs()
-  if not (f and f.createDirectory) then return false, "filesystem unavailable" end
-  for _, path in ipairs({ Cache.ROOT, Cache.NORMAL, Cache.SHINY, Cache.BATTLE }) do
-    local ok, err = pcall(f.createDirectory, path)
-    if not ok then return false, tostring(err) end
+  if Writer and Writer.ensure then
+    return Writer.ensure({ Cache.ROOT, Cache.NORMAL, Cache.SHINY, Cache.BATTLE })
   end
-  return true
+  return false, "Stadium 2 caches are created by the external personalized-pack builder"
 end
 
 function Cache.clear(count)
   invalidateAvailability()
-  local f = fs()
-  if not f then return false, "filesystem unavailable" end
-  count = math.min(151, math.max(1, tonumber(count) or 151))
-  for species = 1, count do
-    if f.remove then
-      pcall(f.remove, Cache.path(species, "normal"))
-      pcall(f.remove, Cache.path(species, "shiny"))
-    end
-  end
-  if f.remove then pcall(f.remove, Cache.MARKER) end
-  if f.remove then pcall(f.remove,Cache.specialPath("substitute")) end
-  if f.remove then
-    -- Old development builds may have written form packs. They are not part
-    -- of the Gen-1-only cache and are removed during a rebuild.
-    for i=2,#Cache.UNOWN_FORMS do
-      local letter=Cache.UNOWN_FORMS:sub(i,i)
-      pcall(f.remove,Cache.unownPath(letter,"normal"))
-      pcall(f.remove,Cache.unownPath(letter,"shiny"))
-    end
+  if Writer and Writer.clear then
+    return Writer.clear(Cache.ROOT, math.min(151, math.max(1, tonumber(count) or 151)))
   end
   return Cache.ensureDirectories()
 end
 
 function Cache.writeSpecial(name,bytes)
   invalidateAvailability()
-  local f=fs()
-  if not (f and f.write) then return false,"filesystem unavailable" end
-  local ok,err=Cache.ensureDirectories()
-  if not ok then return false,err end
-  local wrote,writeErr=pcall(f.write,Cache.specialPath(name),bytes)
-  return wrote and true or false,wrote and nil or tostring(writeErr)
+  if Writer and Writer.write then return Writer.write(Cache.specialPath(name), bytes) end
+  return false, "Stadium 2 caches are read-only inside the mod"
 end
 
 function Cache.writePair(species, normalBytes, shinyBytes)
   invalidateAvailability()
-  local f = fs()
-  if not (f and f.write) then return false, "filesystem unavailable" end
-  local ok, err = Cache.ensureDirectories()
-  if not ok then return false, err end
-  local normalPath = Cache.path(species, "normal")
-  local shinyPath = Cache.path(species, "shiny")
-  local okNormal, normalErr = pcall(f.write, normalPath, normalBytes)
-  if not okNormal then return false, tostring(normalErr) end
-  local okShiny, shinyErr = pcall(f.write, shinyPath, shinyBytes)
-  if not okShiny then return false, tostring(shinyErr) end
-  return true
+  if Writer and Writer.write then
+    local ok, err = Writer.write(Cache.path(species, "normal"), normalBytes)
+    if not ok then return false, err end
+    return Writer.write(Cache.path(species, "shiny"), shinyBytes)
+  end
+  return false, "Stadium 2 caches are read-only inside the mod"
 end
 
 local function parseMarker(text)
@@ -112,10 +84,8 @@ local function parseMarker(text)
 end
 
 function Cache.marker()
-  local f = fs()
-  if not (f and f.read and file(Cache.MARKER)) then return nil end
-  local ok, text = pcall(f.read, Cache.MARKER)
-  return ok and parseMarker(text) or nil
+  local text = packaged(Cache.MARKER)
+  return type(text) == "string" and parseMarker(text) or nil
 end
 
 function Cache.available(count)
@@ -143,41 +113,36 @@ end
 
 function Cache.finish(meta, count)
   invalidateAvailability()
-  local f = fs()
-  if not (f and f.write) then return false, "filesystem unavailable" end
-  local text = table.concat({
-    "format=" .. Cache.FORMAT,
-    "count=" .. tostring(count),
-    "md5=" .. tostring(meta and meta.md5 or "unknown"),
-    "title=" .. tostring(meta and meta.title or "unknown"),
-    "byte_order=" .. tostring(meta and meta.byteOrder or "unknown"),
-  }, "\n") .. "\n"
-  local ok, err = pcall(f.write, Cache.MARKER, text)
-  return ok and true or false, ok and nil or tostring(err)
+  if Writer and Writer.write then
+    local text = table.concat({
+      "format=" .. Cache.FORMAT,
+      "count=" .. tostring(count),
+      "md5=" .. tostring(meta and meta.md5 or "unknown"),
+      "title=" .. tostring(meta and meta.title or "unknown"),
+      "byte_order=" .. tostring(meta and meta.byteOrder or "unknown"),
+    }, "\n") .. "\n"
+    return Writer.write(Cache.MARKER, text)
+  end
+  return false, "Stadium 2 caches are finalized by the external builder"
 end
 
 Cache.invalidateAvailability = invalidateAvailability
 
 function Cache.writeError(text)
-  local f = fs()
-  if f and f.createDirectory then pcall(f.createDirectory, Cache.ROOT) end
-  if f and f.write then pcall(f.write, Cache.ERROR, tostring(text or "unknown error") .. "\n") end
+  if Writer and Writer.write then
+    return Writer.write(Cache.ERROR, tostring(text or "unknown error") .. "\n")
+  end
+  return false
 end
 
 function Cache.read(species, variant)
-  local f = fs()
   local path = Cache.path(species, variant)
-  if not (f and f.read and file(path)) then return nil end
-  local ok, bytes = pcall(f.read, path)
-  return ok and bytes or nil
+  return packaged(path)
 end
 
 function Cache.readSpecial(name)
-  local f=fs()
   local path=Cache.specialPath(name)
-  if not (f and f.read and file(path)) then return nil end
-  local ok,bytes=pcall(f.read,path)
-  return ok and bytes or nil
+  return packaged(path)
 end
 
 return Cache

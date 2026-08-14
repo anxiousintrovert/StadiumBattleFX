@@ -1,14 +1,19 @@
-# Announcer Builder distribution and security notes
+# Personalized Pack Builder distribution and security notes
 
-The builder is a local conversion utility. It reads a player-selected Stadium
-ROM, writes temporary MORT and WAV files in one private temporary directory,
+The builder is a local conversion utility. It reads player-selected Stadium
+ROMs, writes temporary conversion files in one private temporary directory,
 and creates one new ZIP selected by the player. It does not download code,
 connect to the network, change the supplied ROM or base mod ZIP, request
 administrator access, or run a shell command.
 
-The personalized output deliberately contains a normalized copy of the
-selected ROM so the sandboxed mod can read it from its own package. The UI
-labels that output local-only; it must never be redistributed.
+The personalized output contains only derived caches and announcer WAVs. The
+selected ROMs are not copied into it. The UI labels the output local-only
+because those derived files must never be redistributed.
+
+The cache stage embeds LuaJIT through the `lupa` Python package and runs the
+same bounded Lua converters shipped by the selected base mod ZIP. Those
+converters can read only the explicitly selected ROMs and write only inside
+the builder's private temporary cache directory.
 
 ## Release requirements
 

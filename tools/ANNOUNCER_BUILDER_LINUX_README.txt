@@ -1,4 +1,4 @@
-StadiumBattleFX Announcer Builder — experimental SteamOS/Linux build
+StadiumBattleFX Personalized Pack Builder — experimental SteamOS/Linux build
 
 Target: Steam Deck Desktop Mode and x86-64 glibc Linux.
 
@@ -7,12 +7,13 @@ Target: Steam Deck Desktop Mode and x86-64 glibc Linux.
 3. Select your legally owned, uncompressed Pokemon Stadium (USA) v1.0 ROM.
    ZIP/7-Zip/RAR files must be extracted first. Standard z64, v64, n64, and
    common copier-headered dumps are accepted.
-4. Select the official voice-free StadiumBattleFX ZIP.
-5. Choose a new output ZIP and build it.
+4. Optionally select Pokemon Stadium 2 (USA) for normal/shiny appearances.
+5. Select the official voice-free StadiumBattleFX ZIP.
+6. Choose a new output ZIP and build it.
 
 Everything runs locally. The personalized output ZIP contains ROM-derived
-audio and a copy of the selected ROM for the sandboxed runtime. Never upload
-or redistribute that personalized ZIP.
+audio and read-only caches, but no source ROM. Never upload or redistribute
+that personalized ZIP.
 
 If the file manager does not launch the app, open a terminal in this folder:
 
