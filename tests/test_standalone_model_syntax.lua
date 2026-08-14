@@ -11,6 +11,7 @@ local files = {
   "lib/StadiumMon.lua",
   "lib/StadiumModels.lua",
   "lib/StadiumModelProvider.lua",
+  "lib/StadiumModelApi.lua",
   "lib/BattleProviders.lua",
   "lib/BattleArtCompat.lua",
   "lib/BattleHost.lua",
