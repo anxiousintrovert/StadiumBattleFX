@@ -468,6 +468,16 @@ and does not call the selected camera provider for that frame.
 
 ## Stadium model appearance sources
 
+Mods that need an isolated Stadium actor outside the Battle Presentation
+host can use the versioned `STADIUM_BATTLE_FX.exports.models` service. It can
+acquire explicit Stadium 1, Stadium 2, or player-selected actors and exposes
+animation, attachment, drawing, and shadow-casting methods without importing
+SBFX internals. See [`STADIUM_MODEL_API.md`](STADIUM_MODEL_API.md).
+
+An arena provider should normally keep using its host-supplied
+`drawActors(world)` callback. That path honors the player's independently
+selected model provider and is what enables arena/model mix-and-match.
+
 Mods that only replace the built-in Stadium model's appearance should use
 `STADIUM_BATTLE_FX.exports.modelSources` instead of registering a complete
 `models` provider. This keeps StadiumBattleFX's battle state, Stadium 1

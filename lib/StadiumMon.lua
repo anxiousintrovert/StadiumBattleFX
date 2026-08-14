@@ -229,15 +229,15 @@ end
 -- DATA rather than a list of dex numbers, so a future extraction bug that
 -- corrupts a species' idle falls back to the sprite instead of coming
 -- apart on the field -- and nothing here has to be edited when it does.
-function StadiumMon:setSpecies(dex, variant)
+function StadiumMon:setModel(dex, variant, model)
   variant = variant == "shiny" and "shiny" or "normal"
-  if dex == self.species and variant == self.variant then return self.rig ~= nil end
+  if dex == self.species and variant == self.variant and model == self.model then
+    return self.rig ~= nil
+  end
   if self.rig then self.rig:release() end
   self.rig, self.model, self.species, self.variant = nil, nil, dex, variant
   self.grow, self.grewOwn = nil, nil
-  if not dex then return false end
-  local model = StadiumPack.load(dex, variant)
-  if not model then return false end
+  if not (dex and model) then return false end
   if model.staticPose then return false end
   local rig = StadiumRig.new(model)
   if not rig then return false end
@@ -247,6 +247,13 @@ function StadiumMon:setSpecies(dex, variant)
   self.state, self.anim, self.time = nil, nil, 0
   self:play("idle")
   return true
+end
+
+function StadiumMon:setSpecies(dex, variant)
+  variant = variant == "shiny" and "shiny" or "normal"
+  if dex == self.species and variant == self.variant then return self.rig ~= nil end
+  local model = dex and StadiumPack.load(dex, variant) or nil
+  return self:setModel(dex, variant, model)
 end
 
 -- ------- the state machine

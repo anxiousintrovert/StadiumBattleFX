@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.2"
+local VERSION = "2.1.3"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path }
@@ -98,6 +98,7 @@ local StadiumLogExport = namespace.require("StadiumLogExport")
 local StadiumArena = namespace.require("StadiumArena")
 local StadiumModels = namespace.require("StadiumModels")
 local StadiumModelProvider = namespace.require("StadiumModelProvider")
+local StadiumModelApi = namespace.require("StadiumModelApi")
 local BattleHost = namespace.require("BattleHost")
 local BuiltinProviders = namespace.require("BuiltinProviders")
 local BattleCinematicsCompat = namespace.require("BattleCinematicsCompat")
@@ -184,6 +185,7 @@ mod.exports.diagnosticLog = function() return namespace.log:contents() end
 mod.exports.faintStatus = DramaticShapeFaint.status
 mod.exports.arenaProvider = StadiumArena
 mod.exports.modelProvider = StadiumModelProvider
+mod.exports.models = StadiumModelApi
 mod.exports.modelSources = {
   version = StadiumModelSources.VERSION,
   DEFAULT = StadiumModelSources.DEFAULT,

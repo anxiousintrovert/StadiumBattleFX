@@ -455,7 +455,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.1.2.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.3.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,
@@ -465,6 +465,8 @@ Further technical documentation:
 
 - [`docs/BATTLE_PRESENTATION_API.md`](docs/BATTLE_PRESENTATION_API.md) — public
   provider API contract for developers and LLM implementers
+- [`docs/STADIUM_MODEL_API.md`](docs/STADIUM_MODEL_API.md) — public Stadium 1/2
+  model actor API for compatible arenas and presentation mods
 - [`docs/DRAMALESS_2_0_PR_LEDGER.md`](docs/DRAMALESS_2_0_PR_LEDGER.md) — tracked
   companion-side split work and PR acceptance evidence
 - [`docs/move-roster.md`](docs/move-roster.md) — complete 165-move registry

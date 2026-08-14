@@ -560,13 +560,15 @@ function StadiumPack.available(species)
   return readPack(species) ~= nil
 end
 
--- The model for a National Dex number (1..151), or nil.
-function StadiumPack.load(species, variant)
+-- The undecorated Stadium 1 model for a National Dex number (1..151), or nil.
+-- Public consumers use this through StadiumModelApi; keeping source selection
+-- out of this function makes an explicit Stadium 1 request deterministic.
+function StadiumPack.loadBase(species)
   if not (species and species >= 1 and species <= 151) then return nil end
   local hit = cache[species]
   if hit ~= nil then
     touch(species)
-    return hit and V.require("StadiumModelSources").decorate(species, variant, hit) or nil
+    return hit or nil
   end
 
   local bytes = readPack(species)
@@ -600,7 +602,15 @@ function StadiumPack.load(species, variant)
 
   cache[species] = model
   touch(species)
-  return V.require("StadiumModelSources").decorate(species, variant, model)
+  return model
+end
+
+-- The model for the player-selected appearance source. Stadium 1 is always
+-- the skeleton/animation base; a source may replace its geometry and textures.
+function StadiumPack.load(species, variant)
+  local base = StadiumPack.loadBase(species)
+  if not base then return nil end
+  return V.require("StadiumModelSources").decorate(species, variant, base)
 end
 
 -- Drop everything (hot reload, or a graphics context that went away).

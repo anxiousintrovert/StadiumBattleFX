@@ -35,12 +35,16 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.1.2")
+assert(mod.exports.version == "2.1.3")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
        and type(mod.exports.battles.resolve) == "function",
        "provider registration/resolution methods were not exported")
+assert(type(mod.exports.models) == "table" and mod.exports.models.version == 1
+       and type(mod.exports.models.acquire) == "function"
+       and type(mod.exports.models.withRenderer) == "function",
+       "public Stadium model actor API 1 was not exported")
 assert(values.provider_arena == "stadium:default"
        and values.provider_models == "stadium:default"
        and values.provider_animations == "stadium:default",
@@ -139,4 +143,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.2 embedded Stadium 2 runtime wiring")
+print("ok 2.1.3 Stadium model API and embedded Stadium 2 runtime wiring")

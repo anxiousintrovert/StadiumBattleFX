@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.1.3
+
+- Added the public, versioned `exports.models` Stadium Model API v1. Other mods
+  can acquire isolated Stadium 1, Stadium 2, or player-selected actors, drive
+  their animations, query attachments and geometry, render them with a
+  row-major view-projection matrix, cast compatible shadows, and release them
+  without importing SBFX private modules.
+- Documented the boundary between isolated actors and Battle Presentation
+  arenas: arena providers should use the host's `drawActors(world)` callback
+  so the player's independently selected model provider remains authoritative.
+- Prepared and submitted Battle Presentation arena-provider patches for Battle
+  Art 1.8.8, Dramatic Shape 1.8.2, and PotatoVoxel 1.5.2. Those upstream mods
+  remain optional and retain their standalone behavior.
+
 ## 2.1.2
 
 - Removed repeated per-frame Stadium 2 filesystem availability scans, model
