@@ -12,6 +12,7 @@ local files = {
   "lib/StadiumModels.lua",
   "lib/StadiumModelProvider.lua",
   "lib/BattleProviders.lua",
+  "lib/BattleArtCompat.lua",
   "lib/BattleHost.lua",
 }
 

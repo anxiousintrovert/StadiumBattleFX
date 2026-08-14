@@ -125,6 +125,14 @@ function Compat.update(context, dt)
       and arenaId:match("^dramaless:") then
     return true
   end
+  -- Battle Art advances its shared BattleCam from OverworldBattle.update.
+  -- Advancing the wrapped table here as well doubles every BC timeline.
+  if backendId == "BATTLE_ART_VOXEL_FORK" then
+    local ok, battleArt = pcall(V.require, "BattleArtCompat")
+    if ok and battleArt and battleArt.active(context and context.battle) then
+      return true
+    end
+  end
   local ok, err = pcall(camera.update, dt or 0)
   if not ok and not warned and V.log and V.log.warn then
     warned = true

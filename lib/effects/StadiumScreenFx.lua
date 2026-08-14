@@ -71,8 +71,12 @@ end
 -- exact inverse of BattleHost's current framebuffer projection. Because this
 -- runs after the world render but before Renderer composites the UI, beams
 -- and impacts can reach models in the margins without covering the HUD.
-function ScreenFx.beginAnchored(g)
+function ScreenFx.beginAnchored(g, owner)
   if not (g and g.getCanvas and g.setCanvas) then return nil end
+  -- Battle Art owns the outer animation-layer projection. Keep local particles
+  -- in that layer so its drawAnimLayer transform places them on the cards;
+  -- redirecting to the world surface would require invisible Stadium bones.
+  if owner and owner.dsState and owner.dsState.layerOwnsProjection then return nil end
   local viewport = liveViewport()
   if not (viewport and viewport.surface and viewport.scale > 0) then return nil end
   local token = { canvas = g.getCanvas(), scale = viewport.scale,

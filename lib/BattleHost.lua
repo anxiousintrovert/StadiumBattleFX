@@ -5,6 +5,7 @@ local Providers = V.require("BattleProviders")
 local Mat4 = V.require("Mat4")
 local Render = V.require("StadiumRender")
 local CinematicsCompat = V.require("BattleCinematicsCompat")
+local BattleArtCompat = V.require("BattleArtCompat")
 local TrainerPortraits = V.require("StadiumTrainerPortraits")
 
 local Host = { session = nil }
@@ -277,7 +278,10 @@ function Host.begin(battle, trainerPortraitsEnabled)
   local session = { battle = battle, context = contextFor(battle), providers = {},
                     ids = {}, failed = {} }
   Host.session = session
-  if trainerPortraitsEnabled ~= false then
+  -- Battle Art owns its selected trainer collection while it owns the staged
+  -- battle. Do not replace that source before it captures the trainer card.
+  if trainerPortraitsEnabled ~= false
+      and not BattleArtCompat.ownsBattle(battle) then
     session.trainerPortraits = TrainerPortraits.apply(battle)
   end
   battle.stadiumTrainerPortraitToken = session.trainerPortraits
@@ -331,9 +335,19 @@ end
 function Host.update(dt)
   local session = Host.session
   if not session then return end
-  TrainerPortraits.update(session.trainerPortraits)
-  invoke(session, "arena", session.providers.arena, "update", dt, session.context.arena)
-  invoke(session, "models", session.providers.models, "update", dt)
+  local battleArtOwns = BattleArtCompat.active(session.battle)
+  session.externalPresentation = battleArtOwns and "BATTLE_ART_VOXEL_FORK" or nil
+  if battleArtOwns and session.trainerPortraits then
+    TrainerPortraits.restore(session.trainerPortraits)
+    session.trainerPortraits = nil
+    if session.battle then session.battle.stadiumTrainerPortraitToken = nil end
+  else
+    TrainerPortraits.update(session.trainerPortraits)
+  end
+  if not battleArtOwns then
+    invoke(session, "arena", session.providers.arena, "update", dt, session.context.arena)
+    invoke(session, "models", session.providers.models, "update", dt)
+  end
   if session.ids.camera == Providers.DEFAULT then
     CinematicsCompat.update(session.context, dt)
   end
@@ -365,6 +379,9 @@ end
 
 function Host.call(slot, method, ...)
   local session = Host.session
+  if slot == "models" and session and BattleArtCompat.active(session.battle) then
+    return false, "Battle Art owns the visible battle models"
+  end
   local provider = session and session.providers[slot]
   if not provider then return false, "no active " .. tostring(slot) .. " provider" end
   return invoke(session, slot, provider, method, ...)
@@ -399,6 +416,15 @@ function Host.draw(battle)
     end
     return false
   end
+  -- Battle Art's wrapper will present its already-rendered voxel/art canvas
+  -- from innerDraw. Rendering SBFX first would leave model projections from
+  -- one camera attached to a surface subsequently replaced by another.
+  if BattleArtCompat.active(battle) then
+    session.presented = false
+    session.externalPresentation = "BATTLE_ART_VOXEL_FORK"
+    return false
+  end
+  session.externalPresentation = nil
   if not session.render then
     if not session.renderDisabledLogged then
       V.log:warn("battle draw skipped: no arena or model renderer active")

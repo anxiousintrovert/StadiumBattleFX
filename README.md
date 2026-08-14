@@ -320,6 +320,20 @@ expose camera-ownership protocol 1 negotiate automatically: a BC attack claim
 makes SBFX yield only its attack-camera timeline while move graphics, model
 animation, impacts, sound, and announcer timing continue normally.
 
+### Battle Art compatibility
+
+Battle Art Voxel Fork 1.8.x may remain installed with StadiumBattleFX. When
+Battle Art's **3D-BTL** mode has an active staged battle, its arena, sprite
+cards, camera, trainer art, HUD treatment, and transition remain authoritative.
+SBFX automatically yields its competing arena/model/camera presentation while
+continuing Stadium move effects and optional announcer timing. Local particles
+follow Battle Art's projected Pokemon cards, and screen-wide effects remain
+aligned with the complete battle surface.
+
+Turning Battle Art's **3D-BTL** mode off returns arena, model, camera, trainer
+portrait, hit, and faint presentation to the normal SBFX provider selections.
+Neither mod changes the other's saved options.
+
 ## Settings
 
 | Setting | Default | Purpose |
@@ -421,7 +435,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.1.0.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.1.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

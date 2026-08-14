@@ -1,6 +1,7 @@
 local loader = love and love.filesystem and love.filesystem.load or loadfile
 
 local updates = 0
+local battleArtActive = false
 local camera = {
   __bcStandaloneDW3Wrapped = true,
   rigFor = function() return {} end,
@@ -31,6 +32,10 @@ local handles = {
 local Compat = assert(loader("lib/BattleCinematicsCompat.lua"))({
   mod = { find = function(id) return handles[id] end },
   log = { info = function() end, warn = function() end },
+  require = function(name)
+    assert(name == "BattleArtCompat")
+    return { active = function() return battleArtActive end }
+  end,
 })
 
 local context = { arena = { id = "stadium:neutral" }, groundY = 7 }
@@ -97,6 +102,19 @@ assert(Compat.claim(context),
   "future hook-compatible Battle Cinematics release was rejected by version")
 assert(Compat.status().active,
   "future hook-compatible Battle Cinematics release was not detected")
+
+-- Battle Art advances the wrapped table in its own staged-battle update.
+-- SBFX must not run the same clock a second time.
+handles.DRAMALESS_SHAPE = nil
+handles.BATTLE_ART_VOXEL_FORK = {
+  version = "1.8.7",
+  exports = { lib = { require = function() return camera end } },
+}
+battleArtActive = true
+local beforeBattleArtUpdate = updates
+assert(Compat.update({ battle = {}, arena = { id = "battle-art:map" } }, 0.25))
+assert(updates == beforeBattleArtUpdate,
+  "Battle Art's shared BattleCam advanced twice")
 
 camera.__bcStandaloneDW3Wrapped = nil
 assert(not Compat.status().active,

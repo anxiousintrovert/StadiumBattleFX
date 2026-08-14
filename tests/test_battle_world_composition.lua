@@ -110,6 +110,10 @@ local Host = assert(loader("lib/BattleHost.lua"))({
     if name == "BattleCinematicsCompat" then
       return { claim = function() return false end, update = function() end }
     end
+    if name == "BattleArtCompat" then
+      return { active = function() return false end,
+        ownsBattle = function() return false end }
+    end
     if name == "StadiumTrainerPortraits" then
       return { apply = function() end, update = function() end,
         restore = function() end }
