@@ -35,7 +35,7 @@ local mod = {
 }
 
 assert(loader("main.lua"))(mod)
-assert(mod.exports.version == "2.0.2")
+assert(mod.exports.version == "2.1.0")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -46,6 +46,17 @@ assert(values.provider_arena == "stadium:default"
        and values.provider_animations == "stadium:default",
        "modular presentation selectors did not default to Stadium")
 assert(values.attack_speed == "100", "attack speed did not default to 100%")
+assert(values.trainer_portraits == true
+       and schemas.trainer_portraits.type == "toggle",
+       "Stadium trainer portraits did not expose an enabled-by-default toggle")
+assert(values.model_source == "STADIUM2_IMPORTER:gen1-model-pack",
+  "combined release did not default to its embedded Stadium 2 source")
+assert(values.stadium2_models == true and values.stadium2_shader == "stadium",
+  "embedded Stadium 2 options were not defined")
+assert(type(mod.exports.stadium2) == "table"
+    and mod.exports.stadium2.speciesCount == 151
+    and mod.exports.stadium2.sourceId == "STADIUM2_IMPORTER:gen1-model-pack",
+  "embedded Stadium 2 API was not exported")
 assert(values.announcer_scope == "gym", "announcer scope did not default to Gym/Elite Four/Champion")
 assert(#schemas.announcer_scope.choices == 3
        and schemas.announcer_scope.choices[1][2] == "gym"
@@ -68,10 +79,11 @@ assert(type(handlers["hook:ui.options.rows"]) == "function",
   "cache import/rebuild option rows were not registered")
 local optionRows = handlers["hook:ui.options.rows"](
   function(_, rows) return rows end, {}, {})
-assert(optionRows[#optionRows - 2].id == "STADIUM_BATTLE_FX:stadiumRom"
-    and optionRows[#optionRows - 1].id == "STADIUM_BATTLE_FX:refreshCache"
-    and optionRows[#optionRows].id == "STADIUM_BATTLE_FX:exportLog",
-  "cache and log action rows were not appended")
+assert(optionRows[#optionRows - 3].id == "STADIUM_BATTLE_FX:stadiumRom"
+    and optionRows[#optionRows - 2].id == "STADIUM_BATTLE_FX:refreshCache"
+    and optionRows[#optionRows - 1].id == "STADIUM_BATTLE_FX:exportLog"
+    and optionRows[#optionRows].id == "STADIUM2_IMPORTER:rom",
+  "Stadium 1, Stadium 2, and log action rows were not appended")
 
 -- Battle Cinematics loads after Stadium's supported renderer and wraps that
 -- renderer's shared BattleCam table. The final mod-load event must consume the
@@ -123,4 +135,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.0.2 runtime event wiring")
+print("ok 2.1.0 embedded Stadium 2 runtime wiring")

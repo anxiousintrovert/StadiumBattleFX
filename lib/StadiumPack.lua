@@ -547,8 +547,9 @@ end
 -- So the mode says, every frame, which two species are actually standing
 -- there (see Stadium.update). With KEEP at 4 and two sides, the two in use
 -- are always the two most recent and cannot reach the front of the queue.
-function StadiumPack.keep(species)
+function StadiumPack.keep(species, variant)
   if species and cache[species] then touch(species) end
+  V.require("StadiumModelSources").keep(species, variant)
 end
 
 -- Whether a pack for this species is on disk at all. Cheap enough to ask
@@ -560,12 +561,12 @@ function StadiumPack.available(species)
 end
 
 -- The model for a National Dex number (1..151), or nil.
-function StadiumPack.load(species)
+function StadiumPack.load(species, variant)
   if not (species and species >= 1 and species <= 151) then return nil end
   local hit = cache[species]
   if hit ~= nil then
     touch(species)
-    return hit or nil
+    return hit and V.require("StadiumModelSources").decorate(species, variant, hit) or nil
   end
 
   local bytes = readPack(species)
@@ -599,7 +600,7 @@ function StadiumPack.load(species)
 
   cache[species] = model
   touch(species)
-  return model
+  return V.require("StadiumModelSources").decorate(species, variant, model)
 end
 
 -- Drop everything (hot reload, or a graphics context that went away).
@@ -614,6 +615,7 @@ function StadiumPack.invalidate()
       end
     end
   end
+  V.require("StadiumModelSources").invalidate()
 end
 
 function StadiumPack.forget()

@@ -107,6 +107,7 @@ function StadiumRig.new(model)
     -- carries and neither matrix can hold
     accX = {}, accY = {}, accZ = {},
     parts = {},
+    effectTick = 0,
     -- what the pose walk last answered, so a frame that neither moved the
     -- animation nor turned the model can skip the whole thing
     poseKey = nil,
@@ -776,10 +777,15 @@ function StadiumRig:textures(aux)
   local model = self.model
   local anim = aux and model.auxAnims and model.auxAnims[aux] or nil
   local frame = self.frameAt or 0
+  self.effectTick = (self.effectTick or 0) + 0.5
   for _, part in ipairs(self.parts) do
     local prim = part.prim
     local index = prim.tex
-    if anim and prim.texAnim and prim.texAnim >= 0 and prim.texMap then
+    if type(prim.fxFrames) == "table" and #prim.fxFrames > 0 then
+      local phase = tonumber(prim.effectPhase) or 0
+      local at = math.floor(self.effectTick / 3 + phase) % #prim.fxFrames + 1
+      index = prim.fxFrames[at]
+    elseif anim and prim.texAnim and prim.texAnim >= 0 and prim.texMap then
       local stream = anim.channels[prim.texAnim + 1]
       local n = stream and #stream or 0
       if n > 0 then
@@ -817,6 +823,9 @@ function StadiumRig:draw(matrix, pull)
       additive = additive or {}
       additive[#additive + 1] = part
     elseif part.texture then
+      if part.texture.setWrap and part.prim.wrapS then
+        pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
+      end
       Voxel3D.draw(part.mesh, part.texture, matrix, pull)
     end
   end
@@ -824,6 +833,9 @@ function StadiumRig:draw(matrix, pull)
     Voxel3D.blend("add")
     for _, part in ipairs(additive) do
       if part.texture then
+        if part.texture.setWrap and part.prim.wrapS then
+          pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
+        end
         Voxel3D.draw(part.mesh, part.texture, matrix, pull)
       end
     end
@@ -840,6 +852,9 @@ end
 function StadiumRig:caster(shadowMap, matrix)
   for _, part in ipairs(self.parts) do
     if part.texture and not part.prim.additive then
+      if part.texture.setWrap and part.prim.wrapS then
+        pcall(part.texture.setWrap,part.texture,part.prim.wrapS,part.prim.wrapT or part.prim.wrapS)
+      end
       shadowMap.draw(part.mesh, part.texture, matrix)
     end
   end

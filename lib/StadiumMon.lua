@@ -201,7 +201,7 @@ end
 
 function StadiumMon:release()
   if self.rig then self.rig:release() end
-  self.rig, self.model, self.species = nil, nil, nil
+  self.rig, self.model, self.species, self.variant = nil, nil, nil, nil
 end
 
 -- ------- which species this side is showing
@@ -229,13 +229,14 @@ end
 -- DATA rather than a list of dex numbers, so a future extraction bug that
 -- corrupts a species' idle falls back to the sprite instead of coming
 -- apart on the field -- and nothing here has to be edited when it does.
-function StadiumMon:setSpecies(dex)
-  if dex == self.species then return self.rig ~= nil end
+function StadiumMon:setSpecies(dex, variant)
+  variant = variant == "shiny" and "shiny" or "normal"
+  if dex == self.species and variant == self.variant then return self.rig ~= nil end
   if self.rig then self.rig:release() end
-  self.rig, self.model, self.species = nil, nil, dex
+  self.rig, self.model, self.species, self.variant = nil, nil, dex, variant
   self.grow, self.grewOwn = nil, nil
   if not dex then return false end
-  local model = StadiumPack.load(dex)
+  local model = StadiumPack.load(dex, variant)
   if not model then return false end
   if model.staticPose then return false end
   local rig = StadiumRig.new(model)

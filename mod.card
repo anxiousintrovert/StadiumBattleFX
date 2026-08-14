@@ -1,5 +1,5 @@
 return {
-  summary = "Recreates Stadium move effects in Gen1Recomp from your own Stadium cartridge.",
+  summary = "Stadium battle effects, trainer portraits, and Stadium 2 appearances for Gen1Recomp.",
   author = "Stadium Attack Animations contributors",
   tags = { "graphics", "battle", "stadium" },
   differences = {
@@ -14,6 +14,7 @@ return {
       "Versioned private announcer cache imported from a personalized mod package",
       "First-run attack-effect caching progress screen",
       "Standalone Stadium model extraction, rendering, camera staging, attachments, and reactions",
+      "Embedded Stadium 2 ROM importer for normal and shiny Gen-1 model appearances using Stadium 1 animations",
       "Versioned provider API and independent player selectors for each presentation area",
       "Windup, travel, impact, and recovery camera staging for Stadium battles",
       "Animated Stadium attachment origins and impact-synchronized skeletal hit reactions",

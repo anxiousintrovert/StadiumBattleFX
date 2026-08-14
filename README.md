@@ -4,12 +4,6 @@
 
 **[Download the latest release](https://github.com/anxiousintrovert/StadiumBattleFX/releases/latest)**
 
-> [!WARNING]
-> This project is an experimental, AI-assisted prototype. It is not an
-> authoritative or frame-perfect reimplementation of Pokemon Stadium. Expect
-> inaccuracies, rough edges, and code that may eventually be replaced by a
-> native implementation from an experienced developer.
-
 StadiumBattleFX brings Pokemon Stadium-inspired battles to Gen1Recomp. It gives
 all 165 Gen 1 moves a Stadium-style presentation, owns its live animated
 Stadium models and battle arenas, and can add the original Stadium announcer
@@ -75,11 +69,26 @@ StadiumBattleFX 2.0 because both would otherwise own the same battle systems.
    `.n64`, or `.v64` is validated as Pokemon Stadium (US) 1.0 and copied to
    this installed mod's `baseroms/baserom.z64`. A personalized local ZIP may
    instead bundle the owned ROM there. Never redistribute either copy.
-4. On the first overworld load, the **STADIUM ATTACK FX**
+4. For Stadium 2 normal/shiny appearances, choose **STADIUM 2 ROM → IMPORT**
+   and select Pokemon Stadium 2 (US). This builds a private Gen 1 appearance
+   cache; Stadium 1 continues to provide the skeletal battle animations.
+5. On the first overworld load, the **STADIUM ATTACK FX**
    screen builds the private effect cache and closes automatically.
+
+Required normalized ROM MD5 hashes:
+
+- Pokemon Stadium (US) 1.0: `ed1378bc12115f71209a77844965ba50`
+- Pokemon Stadium 2 (US): `1561c75d11cedf356a8ddb1a4a5f9d5d`
+
+The importer accepts `.z64`, `.n64`, and `.v64` byte orders, normalizes them,
+and then checks the corresponding hash above. Other regions and revisions are
+not supported.
 
 Use **OPTIONS → REFRESH FX CACHE → REBUILD** after replacing the ROM or if a
 cache build was interrupted. It re-extracts the effects immediately.
+
+Set **STADIUM TRAINER PORTRAITS** to **OFF** to keep the original Gen 1 trainer
+sprites during battle openings. The setting is enabled by default.
 
 When upgrading from an older release, use the mod manager's update or
 reinstall action. If the displayed version does not change, remove every old
@@ -412,7 +421,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.0.2.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.0.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

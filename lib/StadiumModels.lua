@@ -51,8 +51,29 @@ local V = ...
 local Voxel3D = V.require("StadiumRender")
 local StadiumPack = V.require("StadiumPack")
 local StadiumMon = V.require("StadiumMon")
-
 local Stadium = {}
+
+local function shinyVariant(mon)
+  -- SHINY_POKEMON 1.0.8 treats an explicit true flag as authoritative for
+  -- imported/overworld-decorated monsters, then falls through to the public
+  -- Gen 2 DV formula. Mirror that order so its battle sprite and our Stadium
+  -- 2 model can never disagree about the active variant.
+  if mon and mon.shiny == true then return "shiny" end
+  local dvs = mon and mon.dvs
+  if type(dvs) ~= "table" then return "normal" end
+  -- Gen1Recomp explicitly allowlists this read-only helper for presentation
+  -- mods. Keep the equivalent fallback for the standalone research viewer.
+  local ok, Stats = pcall(require, "src.pokemon.Stats")
+  if ok and Stats and type(Stats.isShiny) == "function" then
+    return Stats.isShiny(dvs) and "shiny" or "normal"
+  end
+  local attack = dvs.attack or 0
+  local attackShiny = attack == 2 or attack == 3 or attack == 6 or attack == 7
+    or attack == 10 or attack == 11 or attack == 14 or attack == 15
+  return dvs.defense == 10 and dvs.speed == 10 and dvs.special == 10
+    and attackShiny and "shiny" or "normal"
+end
+Stadium._shinyVariant = shinyVariant
 
 -- The stored values of the two 3D-BTL rungs that select this mode. Strings
 -- rather than further booleans so an older save's `true` still means the
@@ -451,7 +472,8 @@ function Stadium.update(dt, battle, groundY)
       end
     end
 
-    mon:setSpecies(dex)
+    local variant = shinyVariant(battler and battler.mon)
+    mon:setSpecies(dex, variant)
     -- Trainer AI switches do not call startGrowIn. Keep their replacement in
     -- its ball through the queued switch text, then use the same Stadium
     -- release and species entrance as every ordinary trainer send-out.
@@ -467,7 +489,7 @@ function Stadium.update(dt, battle, groundY)
       end
     end
     -- Keep live species hot in the four-entry pack cache.
-    if mon.species then StadiumPack.keep(mon.species) end
+    if mon.species then StadiumPack.keep(mon.species, mon.variant) end
     mon.visible = (mon.rig ~= nil) and onField(battle, side, mon)
                   and not (battler and battler.substituteHP)
     mon.model_matrix = nil

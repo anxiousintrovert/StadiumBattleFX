@@ -26,6 +26,13 @@ local gameBattle = {
 }
 assert(Stadium._dexOf("MEW", gameBattle) == 151,
   "live game data fallback did not resolve the Stadium species pack")
+assert(Stadium._shinyVariant({ dvs={ attack=10, defense=10, speed=10, special=10 } })
+    == "shiny", "Gen 1 shiny DVs did not select the shiny model appearance")
+assert(Stadium._shinyVariant({ dvs={ attack=9, defense=10, speed=10, special=10 } })
+    == "normal", "ordinary DVs selected the shiny model appearance")
+assert(Stadium._shinyVariant({ shiny=true,
+    dvs={ attack=9, defense=9, speed=9, special=9 } }) == "shiny",
+  "SHINY_POKEMON's explicit mon.shiny flag did not select the shiny model")
 
 -- A send-out flag becomes true while its message is still on screen. It is
 -- context, not permission to draw: the model enters on the first update after

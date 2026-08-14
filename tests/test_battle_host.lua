@@ -23,6 +23,7 @@ local serviceProvider = {
 local failedUpdates = 0
 local failedFinished = false
 local compatClaim, compatUpdates = false, 0
+local portraitApplyCalls = 0
 local failingProvider = {
   update = function() failedUpdates = failedUpdates + 1; error("expected") end,
   finish = function() failedFinished = true end,
@@ -69,7 +70,8 @@ local Host = assert(loader("lib/BattleHost.lua"))({
       }
     end
     if name == "StadiumTrainerPortraits" then
-      return { apply = function() end, update = function() end,
+      return { apply = function() portraitApplyCalls = portraitApplyCalls + 1 end,
+        update = function() end,
         restore = function() end }
     end
     if name == "AttackCinematics" then
@@ -85,6 +87,7 @@ local battle = {
   currentMapId = function() return "PEWTER_GYM" end,
 }
 assert(Host.begin(battle))
+assert(portraitApplyCalls == 1, "trainer portraits were not enabled by default")
 assert(Host.session.context.arena == arena)
 local captureOk, captureValue =
   Host.session.context.services.withNativeBattlePics(function() return 42 end)
@@ -116,4 +119,9 @@ assert(Host.begin(battle))
 assert(Host.session.context.arena.id == "builtin")
 assert(table.concat(calls, "|"):find("builtin.begin", 1, true))
 Host.finish("fallback-test")
+
+assert(Host.begin(battle, false))
+assert(portraitApplyCalls == 2,
+  "disabling trainer portraits still replaced the opening trainer sprite")
+Host.finish("portraits-disabled-test")
 print("ok protected battle-provider lifecycle")

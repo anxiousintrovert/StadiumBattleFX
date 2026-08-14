@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -11,7 +11,8 @@
   "dependencies": [],
   "optional_dependencies": [],
   "conflicts": [
-    "DRAMALESS_SHAPE@<2.0.0"
+    "DRAMALESS_SHAPE@<2.0.0",
+    "STADIUM2_IMPORTER"
   ],
   "incompatible": [],
   "permissions": [
@@ -20,5 +21,5 @@
   ],
   "github": "anxiousintrovert/StadiumBattleFX",
   "affects_link": false,
-  "description": "Recreates Stadium battle effects with optional locally generated announcer audio."
+  "description": "Stadium battle effects, trainer portraits, and Stadium 2 appearances for Gen1Recomp."
 }

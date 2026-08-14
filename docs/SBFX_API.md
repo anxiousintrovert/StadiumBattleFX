@@ -466,6 +466,33 @@ fallback.
 cannot follow a directed camera. When locked, SBFX uses the arena's base camera
 and does not call the selected camera provider for that frame.
 
+## Stadium model appearance sources
+
+Mods that only replace the built-in Stadium model's appearance should use
+`STADIUM_BATTLE_FX.exports.modelSources` instead of registering a complete
+`models` provider. This keeps StadiumBattleFX's battle state, Stadium 1
+animations, move routing, attachments, reactions, camera, and shared render
+pass:
+
+```lua
+local api = mod.find("STADIUM_BATTLE_FX").exports.modelSources
+api:register(mod.id, "my-pack", {
+  label = "MY MODEL PACK",
+  available = function() return true end,
+  load = function(species, variant, stadium1Model)
+    -- Return a StadiumPack-compatible model with replacement prims/textures.
+    -- `variant` is "normal" or "shiny" from the live battler's explicit
+    -- shiny flag (used by SHINY_POKEMON) or Gen 1 DVs.
+    return myHybridModel(species, variant, stadium1Model)
+  end,
+  keep = function(species, variant) end, -- optional cache touch
+  invalidate = function() end,           -- optional graphics reset
+})
+```
+
+The player chooses the source through `BTL MODEL PACK`. A missing, disabled,
+unavailable, or failed source falls back per species to the Stadium 1 model.
+
 SBFX's move presenter also capability-checks these model methods through the
 same protected dispatcher:
 
