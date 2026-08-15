@@ -7,8 +7,14 @@ local SBFX = WORKSPACE .. "/StadiumBattleFX"
 local APPDATA = assert(os.getenv("APPDATA"), "APPDATA is unavailable")
 local S1_CACHE = APPDATA .. "/pokemon-love2d/stadium_battle_fx/models/v5"
 local S1_PACK_ROOT = os.getenv("S1_PACK_ROOT")
-local S2_CACHE = APPDATA .. "/pokemon-love2d"
+-- The external SBFX cache builder writes the same relative Stadium 2 cache
+-- tree used by the embedded importer. Point this at a temporary builder output
+-- when validating a native-pose conversion; retain the old save root as a
+-- convenience for existing appearance-only developer caches.
+local S2_CACHE = os.getenv("S2_CACHE_ROOT") or (APPDATA .. "/pokemon-love2d")
 local TRACE = os.getenv("S2_VIEWER_TRACE")
+-- Forward declaration: the package searcher below closes over this namespace.
+local namespace
 local function trace(message)
   if not TRACE then return end
   local file=io.open(TRACE,"ab")
@@ -23,7 +29,9 @@ table.insert(package.loaders or package.searchers, 1, function(name)
   if not relative then return nil end
   local path = SBFX .. "/lib/stadium2/" .. relative:gsub("%.", "/") .. ".lua"
   local chunk, err = loadfile(path)
-  if chunk then return chunk end
+  -- Embedded Stadium 2 modules are factory chunks: their vararg is the SBFX
+  -- namespace.  `require` invokes loaders without it, so adapt them here.
+  if chunk then return function() return chunk(namespace) end end
   return "\n\t" .. tostring(err)
 end)
 
@@ -59,9 +67,17 @@ love.filesystem.getInfo = function(path, kind)
 end
 
 local modules = {}
-local namespace = {
+namespace = {
   mod = {
     read = function(_, path)
+      local cachePath = type(path) == "string" and path:match("^cache/(stadium2_gen1_model_pack/.+)$")
+      if cachePath then
+        local file = io.open(S2_CACHE .. "/" .. cachePath, "rb")
+        if not file then return nil end
+        local bytes = file:read("*a")
+        file:close()
+        return bytes
+      end
       local species = path:match("(%d%d%d)%.dsm$")
       if not species then return nil end
       local file = io.open(S1_CACHE .. "/" .. species .. ".dsm", "rb")
@@ -79,13 +95,18 @@ local namespace = {
 function namespace.require(name)
   if modules[name] ~= nil then return modules[name] end
   if name == "ModStorage" then
-    modules[name]={bytes=function(key)
-      if not S1_PACK_ROOT then return nil end
-      local species=key:match("(%d+)$")
-      local chunk=species and loadfile(S1_PACK_ROOT .. "/" .. ("%03d.lua"):format(species))
-      local record=chunk and chunk()
-      return record and record.bytes
-    end}
+    modules[name]={
+      bytes=function(key)
+        if not S1_PACK_ROOT then return nil end
+        local species=key:match("(%d+)$")
+        local chunk=species and loadfile(S1_PACK_ROOT .. "/" .. ("%03d.lua"):format(species))
+        local record=chunk and chunk()
+        return record and record.bytes
+      end,
+      bundled=function(relative)
+        return namespace.mod:read(relative)
+      end,
+    }
     return modules[name]
   end
   if name == "StadiumInstall" then
@@ -102,15 +123,20 @@ function namespace.require(name)
 end
 
 local Mat4 = namespace.require("Mat4")
+trace("mat4-loaded")
 local StadiumPack = namespace.require("StadiumPack")
+trace("pack-loaded")
 local StadiumRig = namespace.require("StadiumRig")
+trace("rig-loaded")
 local StadiumRender = namespace.require("StadiumRender")
+trace("render-loaded")
 local Hybrid = require("mods.STADIUM_BATTLE_FX.lib.stadium2.model_pack_api")
 trace("modules-loaded")
 
+-- Representative prior failures: callback flame, cannon attachment, and gas.
 local targets = {
   { species=4, name="CHARMANDER" },
-  { species=88, name="GRIMER" },
+  { species=9, name="BLASTOISE" },
   { species=109, name="KOFFING" },
 }
 local requested=os.getenv("S2_VIEWER_SPECIES")
@@ -145,7 +171,7 @@ local function loadModels()
     local base, baseErr = StadiumPack.load(target.species, "normal")
     if not base then app.error = tostring(baseErr); return end
     local model, hybridErr
-    if os.getenv("S2_VIEWER_BASE") == "1" then model=base
+    if os.getenv("S2_VIEWER_FORCE_S1") == "1" then model=base
     else model,hybridErr=Hybrid.hybridModel(target.species,app.variant,base) end
     trace("hybrid-" .. target.species)
     if not model then app.error = tostring(hybridErr); return end
@@ -201,10 +227,22 @@ local function loadModels()
     local rig = StadiumRig.new(model)
     trace("rig-" .. target.species)
     if not rig then app.error = "Could not construct GPU rig for " .. target.name; return end
-    local idle=(base.ctx and base.ctx[1] and base.ctx[1]~=StadiumPack.NONE)
-      and (base.ctx[1]+1) or 1
+    -- A native-pose hybrid supplies its own action contexts. A failed pose
+    -- decode leaves the Stadium 1 fallback model and its original contexts.
+    local idle=(model.ctx and model.ctx[1] and model.ctx[1]~=StadiumPack.NONE)
+      and (model.ctx[1]+1) or 1
     app.entries[#app.entries+1] = { target=target, model=model, rig=rig, anim=idle }
   end
+end
+
+local function cycleAnimation(delta)
+  for _, entry in ipairs(app.entries) do
+    local count=#(entry.model.anims or {})
+    if count > 0 then
+      entry.anim=((entry.anim-1+delta)%count)+1
+    end
+  end
+  app.time=0
 end
 
 local function posedBounds(entry, bodyOnly)
@@ -281,6 +319,8 @@ function love.keypressed(key)
   if key == "s" then app.variant=app.variant=="normal" and "shiny" or "normal"; loadModels() end
   if key == "left" then app.yaw=app.yaw-0.18 end
   if key == "right" then app.yaw=app.yaw+0.18 end
+  if key == "q" then cycleAnimation(-1) end
+  if key == "e" then cycleAnimation(1) end
   if key == "escape" then love.event.quit() end
   if key == "f12" then love.graphics.captureScreenshot("hybrid-model-viewer.png") end
 end
@@ -306,12 +346,17 @@ function love.draw()
   end
 
   g.setColor(0.94,0.95,1,1)
-  g.print("STADIUM 2 APPEARANCE / STADIUM 1 ANIMATIONS",24,20)
+  g.print("STADIUM 2 NATIVE POSES / SBFX RENDERER",24,20)
   g.setColor(0.7,0.74,0.84,1)
-  g.print(("variant: %s   S shiny/normal   SPACE pause   LEFT/RIGHT rotate   R reload   F12 screenshot"):format(app.variant),24,46)
+  g.print(("variant: %s   Q/E animation   S shiny/normal   SPACE pause   LEFT/RIGHT rotate   R reload   F12 screenshot"):format(app.variant),24,46)
   for i,target in ipairs(targets) do
     g.setColor(0.9,0.91,0.96,1)
-    g.printf(target.name,w*(i-1)/3,h-52,w/3,"center")
+    local entry=app.entries[i]
+    local mode=entry and (entry.model.stadium2NativePose and "S2 NATIVE POSE" or "S1 FALLBACK") or "NOT LOADED"
+    local animation=entry and entry.model.anims and entry.model.anims[entry.anim]
+    local caption=target.name .. "\n" .. mode
+      .. (animation and ("  " .. (animation.name or ("ANIM " .. entry.anim))) or "")
+    g.printf(caption,w*(i-1)/3,h-68,w/3,"center")
   end
   if app.error then
     g.setColor(1,0.35,0.3,1)

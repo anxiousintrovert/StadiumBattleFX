@@ -1,7 +1,7 @@
 {
   "id": "STADIUM_BATTLE_FX",
   "name": "StadiumBattleFX",
-  "version": "2.1.5",
+  "version": "2.1.7",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -9,6 +9,24 @@
   "game_version": "0.0.0-dev || >=0.1.37 <2.0.0",
   "priority": 110,
   "dependencies": [],
+  "required_imports": [
+    {
+      "id": "stadium1_rom",
+      "name": "Pokemon Stadium (USA) v1.0 ROM",
+      "file": "baserom.z64",
+      "format": "n64",
+      "md5": "ed1378bc12115f71209a77844965ba50"
+    }
+  ],
+  "optional_imports": [
+    {
+      "id": "stadium2_rom",
+      "name": "Pokemon Stadium 2 (USA) ROM",
+      "file": "stadium2.z64",
+      "format": "n64",
+      "md5": "1561c75d11cedf356a8ddb1a4a5f9d5d"
+    }
+  ],
   "optional_dependencies": [
     "BATTLE_ART_VOXEL_FORK",
     "DRAMATIC_SHAPE",

@@ -85,6 +85,7 @@ FILES = (
     "lib/AttackCinematics.lua",
     "lib/Announcer.lua",
     "lib/FailureNotice.lua",
+    "lib/EffectCacheScreen.lua",
     "lib/effects/MoveSpecs.lua",
     "lib/effects/StadiumFidelityProfiles.lua",
     "lib/effects/StadiumTimingProfiles.lua",

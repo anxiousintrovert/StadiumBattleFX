@@ -121,6 +121,54 @@ local function retargetContext(appearance, base)
   return context
 end
 
+-- A decoded Stadium 2 pose bundle is self-consistent with the Stadium 2 mesh:
+-- its track transforms, bind pose and rigid skin indices describe the same
+-- coordinate spaces. Keep that rig intact and let the existing shared Stadium
+-- renderer draw it. Stadium 1 remains the fallback for an absent or
+-- undecodable source pose bundle, and continues to supply battle ownership.
+local function sourcePoseReady(appearance)
+  return type(appearance) == "table"
+    and appearance.stadium2AnimationFallback ~= true
+    and type(appearance.anims) == "table"
+    and #appearance.anims > 1
+end
+
+local function applySourceRig(model, appearance)
+  local parents, restT, restR, restS = {}, {}, {}, {}
+  for index, bone in ipairs(appearance.bones or {}) do
+    local offset = (index - 1) * 3
+    -- DSM4 stores source parents as -1 roots / zero-based children, while the
+    -- shared rig stores zero roots / one-based children.
+    parents[index] = (tonumber(bone.parent) or -1) + 1
+    for axis = 1, 3 do
+      restT[offset + axis] = (bone.t or {})[axis] or 0
+      restR[offset + axis] = (bone.r or {})[axis] or 0
+      restS[offset + axis] = (bone.s or {})[axis] or 1
+    end
+  end
+  -- Stadium 2's decoder keeps channels grouped as `{ t={...}, r={...},
+  -- s={...} }`; StadiumRig consumes its long-standing flat nine-component
+  -- fold.  Preserve compressed constants/arrays while adapting that shape.
+  for _, animation in ipairs(appearance.anims or {}) do
+    for boneIndex, track in pairs(animation.tracks or {}) do
+      if track.t then
+        animation.tracks[boneIndex] = {
+          track.t[1] or 0, track.t[2] or 0, track.t[3] or 0,
+          track.r[1] or 0, track.r[2] or 0, track.r[3] or 0,
+          track.s[1] or 1, track.s[2] or 1, track.s[3] or 1,
+        }
+      end
+    end
+  end
+  model.parent, model.restT, model.restR, model.restS = parents, restT, restR, restS
+  model.rootScale = appearance.rootScale or model.rootScale
+  model.staticPose = appearance.staticPose
+  model.anims, model.auxAnims = appearance.anims, appearance.auxAnims
+  model.moveAnim, model.moveAux = appearance.moveAnim, appearance.moveAux
+  model.ctx = appearance.context
+  model.stadium2NativePose = true
+end
+
 local copyTable
 
 local function convertPrimitive(source, retarget)
@@ -527,7 +575,9 @@ function Api.hybridModel(species, variant, base)
   if not textureValid then
     return nil, "incompatible Stadium 2 texture animation: " .. tostring(textureErr)
   end
-  if appearance.boneCount ~= base.boneCount then
+  -- A fallback mesh must share the Stadium 1 rig.  A native-pose model owns
+  -- both its geometry and skeleton, so differing bone counts are valid.
+  if appearance.boneCount ~= base.boneCount and not sourcePoseReady(appearance) then
     return nil, ("rig mismatch: Stadium 1 has %d bones, Stadium 2 has %d")
       :format(base.boneCount or -1, appearance.boneCount or -1)
   end
@@ -543,8 +593,16 @@ function Api.hybridModel(species, variant, base)
     end
     model.textures[#model.textures+1] = copyTable(translated)
   end
-  local retarget = retargetContext(appearance,base)
-  if stadium1MaterialLayout(species) then
+  local nativePose = sourcePoseReady(appearance)
+  if nativePose then applySourceRig(model, appearance) end
+  local retarget = nil
+  if not nativePose then retarget = retargetContext(appearance,base) end
+  -- Callback-heavy Stadium 1 meshes were previously retained as a material
+  -- compatibility workaround.  They cannot be skinned by a Stadium 2 pose
+  -- bundle reliably (Muk is the clearest failure), so native models always
+  -- retain their authored Stadium 2 primitives.  The old path remains for
+  -- source-pose fallbacks where its rig relationship is still required.
+  if stadium1MaterialLayout(species) and not nativePose then
     for primIndex,prim in ipairs(base.prims or {}) do
       if type(prim.fxFrames)=="table" and #prim.fxFrames>0 then
         -- Effect primitives need their Stadium 1 animation texture sets and
@@ -671,6 +729,7 @@ function Api.hybridModel(species, variant, base)
   model._stadium1Base = base
   model._stadium2Appearance = appearance
   model.bindRetargeted = retarget ~= nil
+  model.stadium2NativePose = nativePose
   hybridCache[key] = model
   return model
 end

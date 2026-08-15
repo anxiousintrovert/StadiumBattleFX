@@ -4,7 +4,9 @@ local Writer = V.cacheWriter
 local Cache = {}
 local availability = {}
 
-Cache.FORMAT = "S2G1M02"
+-- M03 adds decoded Stadium 2 pose and auxiliary-animation streams.  Older
+-- appearance-only packs must not be selected for the native-pose experiment.
+Cache.FORMAT = "S2G1M03"
 Cache.ROOT = "stadium2_gen1_model_pack"
 Cache.NORMAL = Cache.ROOT .. "/normal"
 Cache.SHINY = Cache.ROOT .. "/shiny"
@@ -90,6 +92,10 @@ end
 
 function Cache.available(count)
   count = tonumber(count) or 151
+  -- The mod entry loads before a playthrough is attached. A false result at
+  -- that point must not be memoized or a completed runtime cache would look
+  -- absent for the rest of the process.
+  if Writer and Writer.active and not Writer.active() then return false end
   if availability[count] ~= nil then return availability[count] end
   local marker = Cache.marker()
   if not marker or marker.format ~= Cache.FORMAT or (marker.count or 0) < count then

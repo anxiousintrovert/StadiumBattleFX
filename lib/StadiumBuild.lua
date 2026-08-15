@@ -515,7 +515,7 @@ function StadiumBuild.pack(data, species, moveRows, ctx)
   local idle = (idleIndex ~= NONE16) and anims[idleIndex + 1] or nil
   local static = idleIsBroken(data, idle)
 
-  w:raw("DSM6")
+  w:raw("DSM7")
   w:u16(species)
   w:u16(#bones)
   w:u16(#prims)
@@ -543,8 +543,8 @@ function StadiumBuild.pack(data, species, moveRows, ctx)
   -- combatant's body origin, not attachment tag 0xFF.
   for m = 1, N_MOVES do w:u8((moveRows[m] and moveRows[m][3]) or 0xFF) end
   for m = 1, N_MOVES do w:u8((moveRows[m] and moveRows[m][4]) or 0xFF) end
-  -- DSM6 retains the twelve bytes DSM5 discarded. Stadium's controller
-  -- compares these with the live body frame for VFX/camera/impact events.
+  -- DSM6 retained the twelve bytes DSM5 discarded; DSM7 keeps those rows
+  -- and adds per-material texture-coordinate generation for the renderer.
   for m = 1, N_MOVES do
     local row = moveRows[m]
     for field = 5, 16 do
@@ -587,6 +587,7 @@ function StadiumBuild.pack(data, species, moveRows, ctx)
     -- the display list's own cull mode: 1024 is G_CULL_BACK
     w:u8((p.cull and p.cull ~= 0) and 1 or 0)
     w:u8((p.blend == "add") and 1 or 0)
+    w:u8(p.texGen and 1 or 0)
     w:i16(p.texAnim or -1)
     -- sorted by the stream's own byte, which is what the reader keys on
     local keys = {}

@@ -223,8 +223,8 @@ assert(texture ~= nil, "Thunder Shock texture cache failed: " .. tostring(textur
 if stadium2Bytes then
   local Importer = namespace.require("stadium2/importer")
   Importer.bind(mod)
-  Importer.configure({ count = 151, meshOnly = true, includeUnownForms = false })
-  runStage("Building Stadium 2 appearance cache...",
+  Importer.configure({ count = 151, meshOnly = false, includeUnownForms = false })
+  runStage("Building Stadium 2 model and native-pose cache...",
     function() return Importer.beginFrom(stadium2Bytes, "external builder") end,
     Importer.step, Importer.status, 4096)
 end

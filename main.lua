@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.5"
+local VERSION = "2.1.7"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path, engineRequire = require }
@@ -55,6 +55,31 @@ end
 local StadiumRom = namespace.require("StadiumRom")
 local ModStorage = namespace.require("ModStorage")
 namespace.storage = ModStorage
+-- Route the embedded Stadium 2 extractor through playthrough-scoped mod
+-- storage. Neither the importer nor the mod receives a host filesystem path.
+local STADIUM2_STORAGE = "stadium2/"
+namespace.cacheWriter = {
+  active = function() return ModStorage.active() end,
+  read = function(path)
+    return ModStorage.bytes(STADIUM2_STORAGE .. path)
+  end,
+  write = function(path, bytes)
+    return ModStorage.writeBytes(STADIUM2_STORAGE .. path, bytes)
+  end,
+  ensure = function() return true end,
+  clear = function(root, count)
+    count = math.min(151, math.max(1, tonumber(count) or 151))
+    ModStorage.delete(STADIUM2_STORAGE .. root .. "/pack.info")
+    ModStorage.delete(STADIUM2_STORAGE .. root .. "/import_error.log")
+    ModStorage.delete(STADIUM2_STORAGE .. root .. "/battle/substitute.dsm")
+    for species = 1, count do
+      local file = ("%03d.dsm"):format(species)
+      ModStorage.delete(STADIUM2_STORAGE .. root .. "/normal/" .. file)
+      ModStorage.delete(STADIUM2_STORAGE .. root .. "/shiny/" .. file)
+    end
+    return true
+  end,
+}
 local StadiumLog = namespace.require("StadiumLog")
 namespace.log = StadiumLog.new(mod.log)
 local BattleProviders = namespace.require("BattleProviders")
@@ -62,7 +87,10 @@ local StadiumModelSources = namespace.require("StadiumModelSources")
 local Stadium2Importer = namespace.require("stadium2/importer")
 local Stadium2ModelPackApi = namespace.require("stadium2/model_pack_api")
 Stadium2Importer.bind(mod)
-Stadium2Importer.configure({ count=151, meshOnly=true, includeUnownForms=false })
+-- Retain Stadium 2 pose bundles when building the locally derived cache.  The
+-- shared Stadium renderer remains the draw backend; the hybrid source uses
+-- Stadium 1 only when a Stadium 2 pose bundle cannot be decoded.
+Stadium2Importer.configure({ count=151, meshOnly=false, includeUnownForms=false })
 local stadium2SourceDefinition = {
   label = "STADIUM 2 (GEN 1 RIG)",
   embedded = true,
@@ -82,6 +110,8 @@ local ThunderShockSpec = namespace.require("effects/ThunderShockSpec")
 local StadiumAssets = namespace.require("StadiumAssets")
 local StadiumArenaAssets = namespace.require("StadiumArenaAssets")
 local StadiumTrainerPortraits = namespace.require("StadiumTrainerPortraits")
+local ModelInstall = namespace.require("StadiumInstall")
+local EffectCacheScreen = namespace.require("EffectCacheScreen")
 local MoveSpecs = namespace.require("effects/MoveSpecs")
 local StadiumFxPlayer = namespace.require("effects/StadiumFxPlayer")
 local StadiumScreenFx = namespace.require("effects/StadiumScreenFx")
@@ -128,8 +158,6 @@ local optionSchema = {
       { "OFF", "off" }, { "10%", "10" }, { "25%", "25" },
       { "35%", "35" }, { "50%", "50" },
     } },
-  { key = "stadium2_models", label = "STADIUM 2 MODEL PACK", type = "toggle",
-    default = true },
   { key = "stadium2_shader", label = "MODEL SHADER", type = "choice",
     default = "stadium",
     choices = { { "STADIUM", "stadium" }, { "WATERCOLOR MANGA", "cel" } },
@@ -239,6 +267,7 @@ mod.exports.battleArtCompatibility = BattleArtCompat.status
 mod.hooks:wrap("input.step", function(next, game, dt)
   ModStorage.setGame(game)
   local result = next(game, dt)
+  EffectCacheScreen.maybePush(game)
   BattleHost.update(dt)
   if stadiumOwns("announcer") then Announcer.update(dt, game) end
   FailureNotice.update(dt)
@@ -317,11 +346,38 @@ mod.events:on("battle.started", function(payload)
     end)
 end)
 
--- Cartridge-derived caches are built by the external personalized-pack
--- builder. Runtime options contain no file picker or cache mutation actions.
+local function cacheRefreshRow()
+  return {
+    id = "STADIUM_BATTLE_FX:refreshCache",
+    label = "REBUILD STADIUM CACHE",
+    value = function()
+      local states = {
+        StadiumAssets.status().state,
+        StadiumArenaAssets.status().state,
+        StadiumTrainerPortraits.status().state,
+        ModelInstall.status.state,
+        Stadium2Importer.status().state,
+        Announcer.cacheStatus().state,
+      }
+      for _, state in ipairs(states) do
+        if state == "building" then return "BUILDING" end
+      end
+      return "REBUILD"
+    end,
+    activate = function(game)
+      if not (game and game.stack and game.stack.push) then return false end
+      game.stack:push(EffectCacheScreen.new(game, true))
+      return true
+    end,
+  }
+end
+
+-- Rebuild only from ROMs already supplied to the mod manager. The sandbox
+-- owns all real paths; this action never opens a picker or writes a host file.
 mod.hooks:wrap("ui.options.rows", function(next, game, rows)
   local out = next(game, rows)
   if type(out) ~= "table" then return out end
+  out[#out + 1] = cacheRefreshRow()
   out[#out + 1] = StadiumLogExport.row()
   return out
 end)

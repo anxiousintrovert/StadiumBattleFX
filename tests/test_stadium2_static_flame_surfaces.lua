@@ -135,4 +135,56 @@ do
     "Blastoise cannon mounts must retain their upper-shell offset")
 end
 
+-- Native Stadium 2 pose data must retain the source skeleton and streams,
+-- rather than being bind-retargeted into Stadium 1 coordinates. The shared
+-- renderer consumes the same public rig fields in either case.
+do
+  local base=baseModel(1,{})
+  base.boneCount=2
+  base.parent={0,1}
+  base.restT={0,0,0,4,0,0}
+  base.restR={0,0,0,0,0,0}
+  base.restS={1,1,1,1,1,1}
+  appearance={
+    boneCount=2,
+    bones={
+      {parent=-1,t={0,0,0},r={0,0,0},s={1,1,1}},
+      {parent=0,t={10,0,0},r={0,0,0},s={1,1,1}},
+    },
+    textures={{w=1,h=1,rgba=string.char(255,255,255,255)}},prims={},height=1,
+    anims={{name="idle",frames=2,loopStart=0,tracks={}},
+      {name="attack_default",frames=3,loopStart=0,tracks={}}},
+    auxAnims={{frames=2,loopStart=0,channels={{0,0}}}},
+    moveAnim={1},moveAux={0},context={0,1},rootScale=1,staticPose=false,
+  }
+  local model,err=Api.hybridModel(25,"normal",base)
+  assert(model,err)
+  assert(model.stadium2NativePose and not model.bindRetargeted,
+    "decoded Stadium 2 poses must select their matching source rig: native="
+      .. tostring(model.stadium2NativePose) .. " retarget=" .. tostring(model.bindRetargeted))
+  assert(model.parent[1]==0 and model.parent[2]==1 and model.restT[4]==10,
+    "source skeleton was not adapted to the shared rig format")
+  assert(model.anims==appearance.anims and model.auxAnims==appearance.auxAnims
+      and model.ctx==appearance.context,
+    "source animation streams were not retained by the hybrid")
+end
+
+-- Native poses must also keep their matching Stadium 2 geometry.  Reusing
+-- Stadium 1 callback primitives against this rig is what deformed Muk.
+do
+  local base=baseModel(1,{})
+  appearance={
+    boneCount=1,bones={{parent=-1,t={0,0,0},r={0,0,0},s={1,1,1}}},
+    textures={{w=1,h=1,rgba=string.char(255,255,255,255)}},
+    prims={{tex=1,texAnim=-1,nverts=1,nidx=0,
+      pos={0,0,0},nrm={0,1,0},skin={0},uv={0,0},idx={}}},height=1,
+    anims={{frames=1,tracks={}}, {frames=1,tracks={}}},
+    auxAnims={},context={0},rootScale=1,
+  }
+  local model,err=Api.hybridModel(89,"normal",base)
+  assert(model,err)
+  assert(model.stadium2NativePose and model.primCount==1,
+    "native Stadium 2 geometry must replace the legacy Muk primitive layout")
+end
+
 return true

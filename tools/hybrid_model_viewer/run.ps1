@@ -22,4 +22,17 @@ if ($latest) {
 }
 
 $env:STADIUM_WORKSPACE = $workspace
+$cacheRoot = $env:S2_CACHE_ROOT
+if (-not $cacheRoot) {
+    $candidate = Join-Path $workspace 'tmp\stadium2-native-pose-cache'
+    if (Test-Path -LiteralPath $candidate -PathType Container) { $cacheRoot = $candidate }
+}
+if ($cacheRoot) {
+    $env:S2_CACHE_ROOT = $cacheRoot
+    $packRoot = Join-Path $cacheRoot 'storage\models\packs'
+    if (-not $env:S1_PACK_ROOT -and (Test-Path -LiteralPath $packRoot -PathType Container)) {
+        $env:S1_PACK_ROOT = $packRoot
+    }
+    Write-Host "Using SBFX cache: $env:S2_CACHE_ROOT"
+}
 & $love $PSScriptRoot

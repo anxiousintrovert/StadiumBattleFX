@@ -7,6 +7,7 @@ local Assets = V.require("StadiumAssets")
 local ArenaAssets = V.require("StadiumArenaAssets")
 local TrainerPortraits = V.require("StadiumTrainerPortraits")
 local ModelInstall = V.require("StadiumInstall")
+local Stadium2Importer = V.require("stadium2/importer")
 local Announcer = V.require("Announcer")
 
 local Screen = {}
@@ -66,6 +67,21 @@ end
 
 function Screen:enter()
   V.log:event("cache", "sequence-started", { refresh = self.refresh })
+  -- Start the optional model job with the ordinary cache pipeline. Its step
+  -- is bounded and runs once each update below, so both imports progress
+  -- concurrently instead of one delaying the other by the full roster.
+  if (self.refresh and Stadium2Importer.canImport()) or Stadium2Importer.pending() then
+    local started, importErr
+    if self.refresh then started, importErr = Stadium2Importer.refresh()
+    else started, importErr = Stadium2Importer.autoImport() end
+    self.stadium2Started = true
+    if not started then
+      self.startError = tostring(importErr or "could not start Stadium 2 cache")
+    end
+    V.log:event("cache", "stadium2-stage-started", {
+      accepted = started and true or false,
+    })
+  end
   local ok, err
   if self.refresh then ok, err = Assets.refresh()
   else ok, err = Assets.begin() end
@@ -87,6 +103,8 @@ function Screen:activeStatus()
   if ModelInstall.status.state == "building" or ModelInstall.status.state == "failed" then
     return ModelInstall.status
   end
+  local stadium2 = Stadium2Importer.status()
+  if stadium2.state == "building" or stadium2.state == "failed" then return stadium2 end
   if self.voiceStarted then return Announcer.cacheStatus() end
   return ModelInstall.status
 end
@@ -97,6 +115,10 @@ local function pop(self)
 end
 
 function Screen:update(dt)
+  -- This is deliberately before the normal stages, which return after their
+  -- own unit of work. One Stadium 2 coroutine phase therefore advances every
+  -- frame while effects, arenas, portraits, and Stadium 1 models are built.
+  if Stadium2Importer.status().state == "building" then Stadium2Importer.step() end
   local status = Assets.status()
   if status.state == "building" then
     Assets.step()
@@ -172,6 +194,7 @@ function Screen:update(dt)
       effects = Assets.status().state,
       arenas = ArenaAssets.status().state,
       models = ModelInstall.status.state,
+      stadium2 = Stadium2Importer.status().state,
       voices = Announcer.cacheStatus().state,
     })
     pop(self)
@@ -184,6 +207,7 @@ function Screen:onKeyPressed(key)
     ArenaAssets.cancel()
     TrainerPortraits.cancel()
     ModelInstall.cancel()
+    Stadium2Importer.cancel()
     Announcer.cancelCache()
     V.log:event("cache", "sequence-cancelled")
     pop(self)
@@ -243,12 +267,16 @@ function Screen:draw()
   local effects, arenas = Assets.status(), ArenaAssets.status()
   local models = ModelInstall.status
   models.ready = ModelInstall.ready()
-  row("ATTACK FX", labelStatus(effects, true), 83)
-  row("ARENAS", labelStatus(arenas, true), 94)
-  row("TRAINERS", labelStatus(TrainerPortraits.status(), true), 105)
-  row("MODELS", labelStatus(models, true), 116)
+  row("ATTACK FX", labelStatus(effects, true), 78)
+  row("ARENAS", labelStatus(arenas, true), 88)
+  row("TRAINERS", labelStatus(TrainerPortraits.status(), true), 98)
+  row("MODELS", labelStatus(models, true), 108)
+  local stadium2 = Stadium2Importer.status()
+  row("STADIUM 2", labelStatus(stadium2,
+    stadium2.state == "building" or stadium2.state == "failed"
+      or Stadium2Importer.pending() or Stadium2Importer.available()), 118)
   local voice = Announcer.cacheStatus()
-  row("ANNOUNCER", labelStatus(voice, voice.installed), 127)
+  row("ANNOUNCER", labelStatus(voice, voice.installed), 128)
   love.graphics.setColor(1, 1, 1, 1)
 end
 
@@ -260,6 +288,7 @@ function Screen.maybePush(game)
   asked = true
   if not Assets.pending() and not ArenaAssets.pending() and not TrainerPortraits.pending()
       and not ModelInstall.pending()
+      and not Stadium2Importer.pending()
       and not Announcer.cachePending() then
     return false
   end

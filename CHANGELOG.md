@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.1.7
+
+- Restored Stadium 1's persistent F3DEX material and cull state while
+  converting model display lists.  Closed body meshes now use their native
+  back-face behavior, while two-sided effect sheets remain visible.
+- Bumped the Stadium 1 derived-model cache revision so models are rebuilt
+  instead of retaining the older flattened mesh state.
+- Fixed Stadium 2 optional-ROM model rebuilding under restricted sandboxes
+  that provide `mod:read` but do not expose persistent scoped mod storage.
+  Generated packs now remain available through a safe process-local backend
+  for the active session.
+- Start the optional Stadium 2 model rebuild alongside the standard first-run
+  cache stages. Its bounded extraction phase advances every cache-screen tick.
+- Changing between Stadium 1 and Stadium 2 now replaces the active battler's
+  rig, preventing the previous model source from remaining visible.
+
 ## 2.1.5
 
 - Restored startup on Gen1Recomp 0.1.86's restricted mod sandbox. The shipped

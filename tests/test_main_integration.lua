@@ -43,7 +43,7 @@ local booted, bootError = pcall(function()
 end)
 package = runtimePackage
 assert(booted, bootError)
-assert(mod.exports.version == "2.1.5")
+assert(mod.exports.version == "2.1.7")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
@@ -63,8 +63,10 @@ assert(values.trainer_portraits == true
        "Stadium trainer portraits did not expose an enabled-by-default toggle")
 assert(values.model_source == "stadium:default",
   "performance-safe Stadium 1 model source was not the default")
-assert(values.stadium2_models == true and values.stadium2_shader == "stadium",
-  "embedded Stadium 2 options were not defined")
+assert(values.stadium2_shader == "stadium",
+  "embedded Stadium 2 shader option was not defined")
+assert(values.stadium2_models == nil,
+  "Stadium 2 must not expose a second model-enable toggle")
 assert(type(mod.exports.stadium2) == "table"
     and mod.exports.stadium2.speciesCount == 151
     and mod.exports.stadium2.sourceId == "STADIUM2_IMPORTER:gen1-model-pack",
@@ -95,8 +97,14 @@ assert(type(handlers["hook:ui.options.rows"]) == "function",
   "diagnostic option row hook was not registered")
 local optionRows = handlers["hook:ui.options.rows"](
   function(_, rows) return rows end, {}, {})
-assert(#optionRows == 1 and optionRows[1].id == "STADIUM_BATTLE_FX:exportLog",
-  "runtime ROM import/cache actions must not be exposed in the sandbox")
+assert(#optionRows == 2
+    and optionRows[1].id == "STADIUM_BATTLE_FX:refreshCache"
+    and optionRows[2].id == "STADIUM_BATTLE_FX:exportLog",
+  "sandbox-safe cache rebuild and diagnostic actions were not exposed")
+local redrawOk, redrawValue = pcall(optionRows[1].value)
+assert(redrawOk and (redrawValue == "REBUILD" or redrawValue == "BUILDING"),
+  "cache-rebuild row crashed while the options menu evaluated its value: "
+    .. tostring(redrawValue))
 
 -- Battle Cinematics loads after Stadium's supported renderer and wraps that
 -- renderer's shared BattleCam table. The final mod-load event must consume the
@@ -148,4 +156,4 @@ handlers["battle.fainted"]({ battle = faintBattle, battler = faintBattle.player 
 local faintStatus = mod.exports.faintStatus()
 assert(faintStatus.requests == 1,
        "player faint was not forwarded to the local Stadium model runtime")
-print("ok 2.1.5 packaged-cache sandbox compatibility")
+print("ok 2.1.7 manifest-import sandbox compatibility")

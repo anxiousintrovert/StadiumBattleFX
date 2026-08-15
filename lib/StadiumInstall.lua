@@ -50,14 +50,16 @@ StadiumInstall.MARKER = StadiumInstall.DIR .. "/pack.info"
 
 -- Bumped whenever the .dsm format changes, so an old cache is rebuilt rather
 -- than misread. Must track StadiumPack's magic.
-StadiumInstall.FORMAT = "DSM6"
+StadiumInstall.FORMAT = "DSM7"
 
 -- Bumped when the packs' CONTENT changes without the byte layout moving, so
 -- a cache built by an older extractor is rebuilt rather than trusted. Rev 2
 -- is the hermite-animation decode fix: the five keyframe species (Pidgeot,
 -- Dodrio, Exeggutor, Tangela, Magmar) come out garbled or bind-posed from
 -- any rev-1 build.
-StadiumInstall.REV = 2
+-- Rev 4 replays persistent native material/cull state; older packs baked
+-- every primitive as back-culled and must be regenerated.
+StadiumInstall.REV = 4
 
 StadiumInstall.COUNT = 151
 

@@ -323,6 +323,9 @@ function Model:build()
   -- these models get blended joints. Each slot remembers the bone whose
   -- matrix was current when it was loaded.
   self.vbuf = {}
+  -- F3DEX geometry mode persists across display-list calls. Stadium starts
+  -- each model unculled, then materials and geometry lists opt in.
+  self.geometryMode = 0
   if not self.geoLayouts[1] then
     self.warnings[#self.warnings + 1] = "no geo layout"
     return
@@ -394,6 +397,8 @@ function Model:walk(o, depth)
       -- func_800176DC swaps this material's texture per frame out of the
       -- auxiliary animation's stream.
       self.curTexAnim = f:s16(o + 2)
+      -- The texture graph node executes its material list before geometry.
+      self.geometryMode = self:materialMode(self.curMat, 0, self.geometryMode)
     elseif cmd == 0x24 then                           -- effect attachment tag
       -- At draw time the original graph node records the current matrix's
       -- origin under this id (func_80014D24 -> func_80014CB8). Keeping the
@@ -407,8 +412,12 @@ function Model:walk(o, depth)
     elseif cmd == 0x1E then                           -- DL on named bone
       local named = self.boneById[f:s16(o + 2)]
       self:runDL(f:ptr(o + 4), named or self:curBone(), 0)
-    elseif cmd == 0x20 or cmd == 0x21 then            -- DL + own transform
-      self:runDL(f:ptr(o + (cmd == 0x20 and 0x10 or 0xC)), self:curBone(), 0)
+    elseif cmd == 0x20 or cmd == 0x21 then
+      -- Transform graph nodes, not display-list nodes.  Their final words
+      -- look like pointers, but feeding them to runDL turns node data into
+      -- bogus triangles (most visibly as detached Grimer shards).  The
+      -- renderer already receives the real animated bone transforms from
+      -- 0x1D; these nodes affect traversal/state only and emit no mesh.
     end
     if cmd ~= nil then o = o + size end
   end
@@ -493,7 +502,6 @@ function Model:runDL(o, bone, depth)
   if o == nil or depth > 8 then return end
   local f = self.f
   local vbuf = self.vbuf
-  local cull = 0x400
   while true do
     local w0, w1 = f:u32(o), f:u32(o + 4)
     local op = floor(w0 / 0x1000000)
@@ -524,19 +532,18 @@ function Model:runDL(o, bone, depth)
         end
       end
     elseif op == 0xD9 then                            -- G_GEOMETRYMODE
-      -- `cull = (cull & (w0 & 0xFFFFFF)) | w1`.
+      -- `mode = (mode & (w0 & 0xFFFFFF)) | w1`.
       --
-      -- Only bits 9 and 10 -- G_CULL_FRONT and G_CULL_BACK -- are ever read
-      -- out of this, so the whole word is kept to eleven bits and the AND and
-      -- OR done over those. Bits above that cannot influence bits 9 and 10
-      -- under either operator, so nothing is lost and the two loops that used
-      -- to run 24 times each now run 11.
-      cull = bor(band(cull, w0 % 0x800, 11), w1 % 0x800, 11)
+      -- Keep the full low word: culling controls winding, while material
+      -- extraction also needs G_TEXTURE_GEN from this same persistent state.
+      self.geometryMode = bor(band(self.geometryMode, w0 % 0x1000000, 24),
+                              w1 % 0x1000000, 24)
     elseif op == 0x05 or op == 0x06 then              -- G_TRI1 / G_TRI2
+      local mode = self.geometryMode
       local prim = self:primFor(self.curTex, self.curTlut, self.curMat,
-                                self.curTexAnim, cull % 0x800 - cull % 0x200)
-      local flip = (floor(cull / 0x200) % 2 == 1)
-                   and (floor(cull / 0x400) % 2 == 0)
+                                self.curTexAnim, mode % 0x800 - mode % 0x200)
+      local flip = (floor(mode / 0x200) % 2 == 1)
+                   and (floor(mode / 0x400) % 2 == 0)
       emit(prim, vbuf, flip,
            floor(floor(w0 / 0x10000) % 256 / 2),
            floor(floor(w0 / 0x100) % 256 / 2),
@@ -570,6 +577,32 @@ function Model:tilePalette(mat)
     mat = mat + 8
   end
   return pal
+end
+
+-- Material display lists carry more than a palette.  In particular, the
+-- original renderer can enable G_TEXTURE_GEN, which replaces authored UVs
+-- with normal-derived coordinates.  Retaining only the decoded texture made
+-- those pieces render as stretched shards in a conventional mesh renderer.
+-- Follow the small material lists (including calls) and reproduce the N64
+-- geometry-mode state needed by the portable renderer.
+function Model:materialMode(mat, depth, mode)
+  if mat == nil or (depth or 0) > 8 then return mode or 0 end
+  local f = self.f
+  mode = mode or 0
+  for _ = 1, 32 do
+    local w0, w1 = f:u32(mat), f:u32(mat + 4)
+    local op = floor(w0 / 0x1000000)
+    mat = mat + 8
+    if op == 0xDF then
+      break
+    elseif op == 0xDE then
+      mode = self:materialMode(f:off(w1), (depth or 0) + 1, mode)
+      if floor(w0 / 0x10000) % 256 ~= 0 then break end
+    elseif op == 0xD9 then
+      mode = bor(band(mode, w0 % 0x1000000, 24), w1 % 0x1000000, 24)
+    end
+  end
+  return mode
 end
 
 -- ------- animations
@@ -992,6 +1025,10 @@ function StadiumFragment.extract(data, name)
       end
       prims[#prims + 1] = {
         tex = ti, cull = p.cull, texAnim = p.texAnim, texMap = texMap,
+        -- G_TEXTURE_GEN (bit 0x40000) derives S/T from the posed normal.
+        -- This is material state, so it is shared by every triangle that
+        -- came from this source material rather than guessed per species.
+        texGen = m:materialMode(p.mat) % 0x80000 >= 0x40000,
         pos = pos, uv = uv, nrm = nrm, skin = skin, nverts = p.nverts,
         idx = idx, nidx = ni,
       }

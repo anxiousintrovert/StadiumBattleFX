@@ -1116,20 +1116,23 @@ local function newBuildJob(data, dependencies, writePack, writeSpecial)
       if not drawable then return nil, drawableErr end
       coroutine.yield("model")
 
-      -- Deliberately discard every Stadium 2 skeletal/auxiliary animation and
-      -- callback program. The generated one-frame bind pose is pack plumbing,
-      -- not source animation; StadiumBattleFX will later graft Stadium 1
-      -- animation, move and attachment metadata onto this compatible rig.
-      local realAnimationCount = 0
-      model.anims = {}
-      model.auxAnims = {}
+      -- Rebuild the native pose pipeline from the documented Stadium 2 pose
+      -- archive. The current renderer already consumes this track shape; it
+      -- only needs the decoded source skeleton and streams. A model with no
+      -- usable pose bundle remains a deliberate Stadium 1 fallback downstream.
+      local animations, auxiliary, animationErrors = decodeAnimationSources(data,
+        self.animationSources[species], model.bones, dependencies)
+      local realAnimationCount = #animations
+      model.anims = animations
+      model.auxAnims = auxiliary
       model.handlerOps = {}
       model.handlerTextures = {}
-      model.stadium2AnimationFallback = true
-      model.stadium2AnimationError = nil
+      model.stadium2AnimationFallback = realAnimationCount == 0
+      model.stadium2AnimationError = realAnimationCount == 0 and #animationErrors > 0
+        and table.concat(animationErrors, " | ") or nil
       local rows, contexts, animationErr = genericAnimationTable(model, Build)
       if not rows then return nil, animationErr end
-      coroutine.yield("bind-pose")
+      coroutine.yield(realAnimationCount > 0 and "animations" or "bind-pose")
 
       local normalBytes = Build.pack(model, species, rows, contexts)
       coroutine.yield("normal")

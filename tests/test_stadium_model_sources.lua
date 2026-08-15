@@ -15,6 +15,7 @@ local namespace = {
 local Sources = chunk(namespace)
 assert(Sources.VERSION == 1)
 assert(Sources.optionRow().choices[1][2] == Sources.DEFAULT)
+assert(Sources.selectionToken() == Sources.DEFAULT)
 
 local invalidated, availabilityChecks, keeps = 0, 0, 0
 local definition = {
@@ -35,6 +36,7 @@ assert(#Sources.list() == 1)
 assert(Sources.decorate(25, "shiny", "stadium1") == "stadium1")
 
 selected = id
+assert(Sources.selectionToken() == id)
 local hybrid = Sources.decorate(25, "shiny", "stadium1")
 assert(hybrid.species == 25 and hybrid.variant == "shiny")
 assert(hybrid.base == "stadium1")

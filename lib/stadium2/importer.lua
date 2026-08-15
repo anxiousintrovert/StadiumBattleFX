@@ -15,6 +15,9 @@ local modelCache = {}
 local modelOrder = {}
 local MODEL_KEEP = 4
 local configuredCount = 151
+local BUNDLED_ROM = "baseroms/stadium2.z64"
+local bundledChecked = false
+local bundledBytes
 local NATIVE_PICKED = "picked_rom.gb"
 local nativePickPending = false
 local nativePickBefore = nil
@@ -86,7 +89,17 @@ end
 
 function Importer.bind(mod)
   modRef = mod
+  bundledChecked, bundledBytes = false, nil
   return Importer
+end
+
+local function readBundledRom()
+  if bundledChecked then return bundledBytes end
+  bundledChecked = true
+  if not (modRef and type(modRef.read) == "function") then return nil end
+  local ok, bytes = pcall(modRef.read, modRef, BUNDLED_ROM)
+  if ok and type(bytes) == "string" and #bytes > 0 then bundledBytes = bytes end
+  return bundledBytes
 end
 
 function Importer.configure(options)
@@ -98,7 +111,7 @@ function Importer.configure(options)
     cache = options.cache,
     shinyPalettes = options.shinyPalettes,
     palettePairs = options.palettePairs,
-    meshOnly = true,
+    meshOnly = false,
     includeUnownForms = false,
   })
   if Cache.available(configuredCount) and status.state ~= "building"
@@ -115,10 +128,8 @@ function Importer.available(count)
 end
 
 function Importer.modelsEnabled()
-  if modRef and modRef.options and modRef.options.get then
-    local ok, value = pcall(modRef.options.get, modRef.options, "stadium2_models")
-    if ok and value == false then return false end
-  end
+  -- Appearance selection belongs exclusively to BTL MODEL PACK. Keeping a
+  -- second boolean gate here made a saved toggle disagree with that selector.
   return true
 end
 
@@ -324,11 +335,45 @@ function Importer.autoImport()
     setReady()
     return true
   end
-  return false, "Use the external personalized-pack builder to add Stadium 2 models"
+  local bytes = readBundledRom()
+  if type(bytes) ~= "string" then
+    return false, "optional Pokemon Stadium 2 ROM is not imported"
+  end
+  local started, err = Importer.beginFrom(bytes, BUNDLED_ROM)
+  if started then bundledChecked, bundledBytes = false, nil end
+  return started, err
+end
+
+-- Rebuild from the optional ROM already imported through the mod manager.
+-- The sandbox exposes that file through mod:read; no host path or picker is
+-- involved. Unlike autoImport, this deliberately replaces a valid pack.
+function Importer.refresh()
+  if job then return false, "Stadium 2 import is already running" end
+  local bytes = readBundledRom()
+  if type(bytes) ~= "string" then
+    return false, "optional Pokemon Stadium 2 ROM is not imported"
+  end
+  local started, err = Importer.beginFrom(bytes, BUNDLED_ROM)
+  if started then bundledChecked, bundledBytes = false, nil end
+  return started, err
 end
 
 function Importer.request()
-  return false, "Use the external personalized-pack builder to add Stadium 2 models"
+  return Importer.autoImport()
+end
+
+function Importer.pending()
+  if Importer.available() or job then return false end
+  return type(readBundledRom()) == "string"
+end
+
+function Importer.canImport()
+  return type(readBundledRom()) == "string"
+end
+
+function Importer.cancel()
+  job = nil
+  if status.state == "building" then status.state = "idle" end
 end
 
 function Importer.step()
@@ -354,10 +399,10 @@ function Importer.step()
     job = nil
     setReady()
     if modRef and modRef.log then
-      pcall(function()
-        modRef.log:info("stadium2 model pack: built %d/%d Gen 1 species plus Substitute; Stadium 2 animations excluded",
-          active.builtCount or 0,configuredCount)
-      end)
+        pcall(function()
+          modRef.log:info("stadium2 model pack: built %d/%d Gen 1 species plus Substitute; native pose bundles=%d",
+            active.builtCount or 0,configuredCount,active.animatedBuilt or 0)
+        end)
     end
     return false
   end
@@ -401,6 +446,7 @@ end
 Importer.US_MD5 = Rom.US_MD5
 Importer.FORMAT = Cache.FORMAT
 Importer.NATIVE_PICKED = NATIVE_PICKED
+Importer.BUNDLED_ROM = BUNDLED_ROM
 Importer.nativePickerAvailable = nativePickerAvailable
 Importer.COUNT = function() return configuredCount end
 Importer.shinyPalettesFromTransformSource = Palette.fromTransformSource

@@ -90,6 +90,13 @@ function Sources.selectedId()
   return value
 end
 
+-- A lightweight identity for a live battler. It intentionally does not ask
+-- whether the source is available: that check and any hybrid construction
+-- happen only after the player actually changes this option.
+function Sources.selectionToken()
+  return Sources.selectedId()
+end
+
 local function selectedEntry()
   local id = Sources.selectedId()
   if id == Sources.DEFAULT then return nil end

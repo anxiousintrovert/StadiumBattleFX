@@ -201,7 +201,8 @@ end
 
 function StadiumMon:release()
   if self.rig then self.rig:release() end
-  self.rig, self.model, self.species, self.variant = nil, nil, nil, nil
+  self.rig, self.model, self.species, self.variant, self.sourceToken =
+    nil, nil, nil, nil, nil
 end
 
 -- ------- which species this side is showing
@@ -229,13 +230,15 @@ end
 -- DATA rather than a list of dex numbers, so a future extraction bug that
 -- corrupts a species' idle falls back to the sprite instead of coming
 -- apart on the field -- and nothing here has to be edited when it does.
-function StadiumMon:setModel(dex, variant, model)
+function StadiumMon:setModel(dex, variant, model, sourceToken)
   variant = variant == "shiny" and "shiny" or "normal"
-  if dex == self.species and variant == self.variant and model == self.model then
+  if dex == self.species and variant == self.variant and model == self.model
+      and sourceToken == self.sourceToken then
     return self.rig ~= nil
   end
   if self.rig then self.rig:release() end
-  self.rig, self.model, self.species, self.variant = nil, nil, dex, variant
+  self.rig, self.model, self.species, self.variant, self.sourceToken =
+    nil, nil, dex, variant, sourceToken
   self.grow, self.grewOwn = nil, nil
   if not (dex and model) then return false end
   if model.staticPose then return false end
@@ -251,9 +254,13 @@ end
 
 function StadiumMon:setSpecies(dex, variant)
   variant = variant == "shiny" and "shiny" or "normal"
-  if dex == self.species and variant == self.variant then return self.rig ~= nil end
+  local sourceToken = StadiumPack.sourceToken()
+  if dex == self.species and variant == self.variant
+      and sourceToken == self.sourceToken then
+    return self.rig ~= nil
+  end
   local model = dex and StadiumPack.load(dex, variant) or nil
-  return self:setModel(dex, variant, model)
+  return self:setModel(dex, variant, model, sourceToken)
 end
 
 -- ------- the state machine

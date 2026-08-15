@@ -5,6 +5,12 @@ local V = ...
 local Storage = {}
 local currentGame
 local fallback = {}
+-- Some Gen1Recomp sandbox builds expose the optional-import reader before
+-- they expose playthrough-scoped persistent storage.  The Stadium 2 importer
+-- must still be able to build and use its packs in that session.  Keep track
+-- of that deliberate, process-local backend separately from whether it
+-- currently happens to contain a particular key.
+local fallbackActive = false
 local PACKAGED_ROOT = "cache/storage/"
 
 local function packaged(relative)
@@ -40,6 +46,7 @@ end
 function Storage.active()
   if V.mod and V.mod.storage ~= nil and Storage.game() ~= nil then return true end
   return packaged("_catalog.lua") ~= nil
+    or fallbackActive
 end
 
 function Storage.read(key)
@@ -62,7 +69,10 @@ end
 function Storage.write(key, value)
   local api, game = V.mod and V.mod.storage, Storage.game()
   if api and api.write and game then return api:write(game, key, value) end
-  -- In-memory fallback is used only by headless developer tests.
+  -- The fallback is sandbox-safe: it never opens a host path and is retained
+  -- only for this process. It lets an optional imported ROM produce usable
+  -- Stadium 2 models on hosts that do not yet offer scoped mod storage.
+  fallbackActive = true
   fallback[key] = value
   return true
 end

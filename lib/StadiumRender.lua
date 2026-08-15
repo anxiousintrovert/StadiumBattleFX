@@ -100,6 +100,15 @@ function Render.blend(mode)
   end
 end
 
+-- F3DEX leaves culling as material state. Closed meshes use back-face
+-- rejection, while billboards and effect sheets deliberately opt out.
+function Render.cull(enabled)
+  if not active then return end
+  if love.graphics.setMeshCullMode then
+    love.graphics.setMeshCullMode(enabled and "back" or "none")
+  end
+end
+
 -- Compatibility no-ops for the extracted StadiumRig. These features belonged
 -- to Dramaless's voxel-world shader and intentionally do not exist here.
 function Render.seams() end

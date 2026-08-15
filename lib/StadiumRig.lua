@@ -747,6 +747,14 @@ function StadiumRig:skin(yaw)
       local wx = piv[o + 1] * ax + piv[o + 2] * ay + piv[o + 3] * az
       local wy = piv[o + 5] * ax + piv[o + 6] * ay + piv[o + 7] * az
       local wz = piv[o + 9] * ax + piv[o + 10] * ay + piv[o + 11] * az
+      if prim.texGen then
+        -- G_TEXTURE_GEN uses the normal projected onto the renderer's
+        -- look-at basis.  This view keeps a fixed world-up axis and presents
+        -- the model's +X axis horizontally, so the equivalent portable S/T
+        -- is the signed normal remapped from -1..1 to 0..1.
+        row[4] = 0.5 + wx * 0.5
+        row[5] = 0.5 - wy * 0.5
+      end
       -- the model matrix's yaw, by hand: (x, z) turned, y untouched
       row[6] = SHADE_BASE + SHADE_X * (cy * wx + sy * wz) + SHADE_Y * wy
                + SHADE_Z * (cy * wz - sy * wx)
@@ -836,6 +844,7 @@ function StadiumRig:draw(matrix, pull)
       additive[#additive + 1] = part
     elseif part.texture then
       applyWrap(part)
+      if Voxel3D.cull then Voxel3D.cull(part.prim.cull) end
       Voxel3D.draw(part.mesh, part.texture, matrix, pull)
     end
   end
@@ -844,6 +853,7 @@ function StadiumRig:draw(matrix, pull)
     for _, part in ipairs(additive) do
       if part.texture then
         applyWrap(part)
+        if Voxel3D.cull then Voxel3D.cull(part.prim.cull) end
         Voxel3D.draw(part.mesh, part.texture, matrix, pull)
       end
     end
@@ -861,6 +871,7 @@ function StadiumRig:caster(shadowMap, matrix)
   for _, part in ipairs(self.parts) do
     if part.texture and not part.prim.additive then
       applyWrap(part)
+      if Voxel3D.cull then Voxel3D.cull(part.prim.cull) end
       shadowMap.draw(part.mesh, part.texture, matrix)
     end
   end

@@ -62,24 +62,22 @@ StadiumBattleFX 2.0 because both would otherwise own the same battle systems.
 
 1. Install the versioned `STADIUM_BATTLE_FX-<version>.zip` through
    Gen1Recomp's mod manager.
-2. Enable **StadiumBattleFX**.
-3. The official ROM-free ZIP loads with procedural effects. For
-   cartridge-backed models, arenas, textures, portraits, and announcer audio,
-   use the external **StadiumBattleFX Personalized Pack Builder**.
-4. Select Pokemon Stadium (USA) v1.0, optionally Pokemon Stadium 2 (USA), the
-   official voice-free ZIP, and an output location. The builder validates the
-   cartridges and generates every derived cache before installation.
-5. Install the personalized ZIP instead of the public copy. Both use the same
-   mod ID and must not be installed together.
+2. Open the mod's **Imported files** action and select Pokemon Stadium (USA)
+   v1.0. Gen1Recomp validates this required file before enabling the mod.
+3. In the same panel, optionally select Pokemon Stadium 2 (USA) to enable its
+   normal and shiny appearance pack.
+4. Enable **StadiumBattleFX** and start a playthrough. ROM-derived caches are
+   built locally on first use; the source ROMs remain private copies in this
+   mod's `baseroms/` directory.
 
 Required normalized ROM MD5 hashes:
 
 - Pokemon Stadium (US) 1.0: `ed1378bc12115f71209a77844965ba50`
 - Pokemon Stadium 2 (US): `1561c75d11cedf356a8ddb1a4a5f9d5d`
 
-The external builder accepts `.z64`, `.n64`, and `.v64` byte orders, normalizes them,
-and then checks the corresponding hash above. Other regions and revisions are
-not supported.
+Gen1Recomp accepts `.z64`, `.n64`, and `.v64` byte orders plus recognized
+512-byte copier headers, normalizes them to canonical `.z64`, and then checks
+the corresponding hash above. Other regions and revisions are not supported.
 
 Set **STADIUM TRAINER PORTRAITS** to **OFF** to keep the original Gen 1 trainer
 sprites during battle openings. The setting is enabled by default.
@@ -90,9 +88,9 @@ reinstall action. If the displayed version does not change, remove every old
 then install the new ZIP. This clears same-ID folders left by older mod-manager
 versions without deleting the private effect cache.
 
-The official ZIP and personalized ZIP contain no source ROM. The personalized
-ZIP contains ROM-derived caches and audio, is for the builder's user only, and
-must never be redistributed.
+The official ZIP contains no source ROM or ROM-derived cache. Imported ROMs and
+the caches built from them remain local to the player and must never be
+redistributed.
 
 ## Stadium animations
 
@@ -226,7 +224,7 @@ are extracted into the same private cache from the player-supplied ROM.
 StadiumBattleFX 2.0 owns Pokemon model extraction, skeletal animation,
 attachments, hit/faint/recall timing, cameras, and battle presentation. The
 player-supplied Stadium ROM is converted into the private
-`stadium_battle_fx/models/v6/` cache alongside attack and arena caches. DSM6
+`stadium_battle_fx/models/v6/` cache alongside attack and arena caches. DSM7
 retains Stadium's complete 16-byte per-species/per-move synchronization rows;
 older DSM5 packs remain readable but do not expose native trigger frames.
 
@@ -434,7 +432,7 @@ Build the same runtime-only ZIP used by tagged releases:
 
 ```powershell
 python tools/package_runtime.py `
-  --output dist\STADIUM_BATTLE_FX-2.1.5.zip
+  --output dist\STADIUM_BATTLE_FX-2.1.7.zip
 ```
 
 The allowlisted packer excludes ROMs, saves, caches, captures, research files,

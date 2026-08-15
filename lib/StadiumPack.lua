@@ -197,7 +197,7 @@ local function readHeader(s, p, model, format)
   for i = 1, StadiumPack.N_MOVES do moveAttachA[i], p = u8(s, p) end
   for i = 1, StadiumPack.N_MOVES do moveAttachB[i], p = u8(s, p) end
   local moveSync = {}
-  if format == "DSM6" then
+  if format == "DSM6" or format == "DSM7" then
     for i = 1, StadiumPack.N_MOVES do
       local row = { nil, nil, moveAttachA[i], moveAttachB[i] }
       for field = 5, 16 do row[field], p = u8(s, p) end
@@ -262,7 +262,7 @@ end
 -- list had them, because that is what makes the skinning a single matrix
 -- multiply per vertex (every vertex in the set is rigidly bound to one bone
 -- -- see model_extract/README.md) rather than a weighted blend.
-local function readPrims(s, p, model)
+local function readPrims(s, p, model, format)
   local prims = {}
   for i = 1, model.primCount do
     local prim = {}
@@ -273,6 +273,11 @@ local function readPrims(s, p, model)
     blend, p = u8(s, p)
     prim.cull = cull ~= 0
     prim.additive = blend ~= 0
+    if format == "DSM7" then
+      local texGen
+      texGen, p = u8(s, p)
+      prim.texGen = texGen ~= 0
+    end
     prim.texAnim, p = i16(s, p)
 
     -- the texture-animation channel's value -> which texture to swap in.
@@ -344,7 +349,7 @@ local function readPrims(s, p, model)
       idx[k] = idx[k] + 1
     end
     prim.index = idx
-    prims[i] = prim
+    prims[#prims + 1] = prim
   end
   model.prims = prims
   return p
@@ -579,15 +584,15 @@ function StadiumPack.loadBase(species)
 
   local ok, model = pcall(function()
     local format = bytes:sub(1, 4)
-    if format ~= "DSM5" and format ~= "DSM6" then
-      error("not a DSM5/DSM6 pack -- delete it and let the mod rebuild it", 0)
+    if format ~= "DSM5" and format ~= "DSM6" and format ~= "DSM7" then
+      error("not a DSM5/DSM6/DSM7 pack -- delete it and let the mod rebuild it", 0)
     end
     local m = { bytes = bytes }
     local p = 5
     p = readHeader(bytes, p, m, format)
     p = readBones(bytes, p, m)
     p = readAttachments(bytes, p, m)
-    p = readPrims(bytes, p, m)
+    p = readPrims(bytes, p, m, format)
     p = readTextures(bytes, p, m)
     p = readAnims(bytes, p, m)
     readAux(bytes, p, m)
@@ -611,6 +616,13 @@ function StadiumPack.load(species, variant)
   local base = StadiumPack.loadBase(species)
   if not base then return nil end
   return V.require("StadiumModelSources").decorate(species, variant, base)
+end
+
+-- StadiumMon polls this inexpensive option identity so a player can switch
+-- between Stadium 1 and Stadium 2 while a battle is active. Do not fold it
+-- into load(): resolving a hybrid remains an on-change operation.
+function StadiumPack.sourceToken()
+  return V.require("StadiumModelSources").selectionToken()
 end
 
 -- Drop everything (hot reload, or a graphics context that went away).
