@@ -180,7 +180,9 @@ do
   -- The enemy enters first. Its name cannot play while the text box is up.
   announcer.update(0.1)
   assert(announcer.status().pendingActions == 2)
-  b.current, b.msgHold, b.enemySendingOut = nil, nil, false
+  -- A completed automatic page remains painted through msgHold on current
+  -- Gen1Recomp builds, but it must not block the completed send-out cue.
+  b.current, b.msgHold, b.enemySendingOut = nil, true, false
   played[1].playing = false
   announcer.update(0.2)
   announcer.update(0.2)
@@ -191,7 +193,7 @@ do
   -- The player's name follows only after the player's separate send-out.
   b.current = { text = "Go!" }
   announcer.update(0.1)
-  b.current, b.sendingOut = nil, false
+  b.current, b.msgHold, b.sendingOut = nil, true, false
   played[2].playing = false
   announcer.update(0.2)
   announcer.update(0.2)

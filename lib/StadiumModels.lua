@@ -219,8 +219,9 @@ Stadium._entersFromBall = entersFromBall
 -- A model must not use those flags alone as permission to enter or it flashes
 -- over "X sent out Y!", is hidden again by the engine, then enters twice.
 local function sendOutTextActive(battle)
-  return ((battle.current and battle.current.text) or battle.msgHold)
-         and true or false
+  -- `msgHold` keeps a completed automatic page painted behind the next
+  -- action in newer Gen1Recomp versions; it is not an active lifecycle lock.
+  return battle and battle.current and battle.current.text and true or false
 end
 
 local function arrivalReady(textActive, sending, sawText)
@@ -228,6 +229,7 @@ local function arrivalReady(textActive, sending, sawText)
 end
 
 Stadium._arrivalReady = arrivalReady
+Stadium._sendOutTextActive = sendOutTextActive
 
 -- Whether this side has anything on the field at all this frame.
 --
