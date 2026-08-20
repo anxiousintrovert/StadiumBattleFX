@@ -36,6 +36,14 @@ rows until Gen1Recomp provides a scoped binary import API. `mod.storage` remains
 appropriate for small playthrough data and diagnostics, but personalized
 binary cache assets are package-scoped so they are reusable across saves.
 
+## Gen1Recomp battle lifecycle compatibility
+
+Gen1Recomp 0.2.10 was inspected at `872d6b4516654eb3ecefaacd2c352b299eead4b5`.
+Its automatic battle text completion retains the finished textbox through
+`msgHold` while clearing `current`, so `msgHold` is visual persistence rather
+than an active-message or send-out lifecycle signal. SBFX model arrivals and
+announcer timing must gate on `battle.current.text` only.
+
 ## Existing SBFX integration surface
 
 The public integration contract is documented in

@@ -45,6 +45,10 @@ assert(Stadium._arrivalReady(false, false, true),
   "Pokemon missed the text-clear edge after the send-out flag ended")
 assert(not Stadium._arrivalReady(false, false, false),
   "Pokemon entered without observing a send-out")
+assert(Stadium._sendOutTextActive({ current = { text = "Go!" }, msgHold = true }),
+  "active send-out text was ignored")
+assert(not Stadium._sendOutTextActive({ msgHold = true }),
+  "retained automatic text blocked a completed send-out")
 
 local function fieldBattle(kind, side)
   local battler = { sprite = {} }
