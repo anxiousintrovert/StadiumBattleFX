@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.8
+
+- Keep the Battle Presentation API's player and enemy battler references
+  synchronized with Gen1Recomp after a Pokemon switches. External arena,
+  model, camera, effects, HUD, overlay, transition, and announcer providers
+  now receive the live battler objects during lifecycle events and updates.
+- Added regression coverage for provider contexts at battle start, immediately
+  after a switch event, and on subsequent updates.
+
 ## 2.1.7
 
 - Restored Stadium 1's persistent F3DEX material and cull state while
