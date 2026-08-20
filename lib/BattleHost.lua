@@ -17,6 +17,7 @@ local SERVICE_SLOTS = {
   "hud", "overlay", "transitions",
 }
 local defaultArena
+local syncSides
 
 local function externalOwner(battle)
   if type(BattleArtCompat.owner) == "function" then
@@ -43,6 +44,7 @@ local function invoke(session, slot, provider, method, ...)
   end
   local fn = provider and provider[method]
   if type(fn) ~= "function" then return true, nil end
+  if syncSides then syncSides(session.context, session.battle) end
   local ok, a, b, c = pcall(fn, provider, session.context, ...)
   if not ok then
     session.failed[slot] = true
@@ -121,6 +123,21 @@ local function contextFor(battle)
     services = { log = V.log },
   }
 end
+
+-- BattleState replaces a side's battler object when a Pokemon switches. The
+-- presentation context survives for the whole battle, so its side records must
+-- follow those live objects rather than retaining the opening pair forever.
+-- Refresh immediately before every provider call so events, update/draw hooks,
+-- and independently registered presentation components all observe the same
+-- authoritative battlers as BattleState.
+syncSides = function(context, battle)
+  if not (context and context.sides) then return end
+  context.sides.player = context.sides.player or {}
+  context.sides.enemy = context.sides.enemy or {}
+  context.sides.player.battler = battle and battle.player or nil
+  context.sides.enemy.battler = battle and battle.enemy or nil
+end
+Host.syncSides = syncSides
 
 local function baseCamera(arena)
   local R = arena and arena.camera or defaultArena().camera
@@ -371,6 +388,7 @@ function Host.update(dt)
     invoke(session, "models", session.providers.models, "update", dt)
   end
   if session.ids.camera == Providers.DEFAULT then
+    syncSides(session.context, session.battle)
     CinematicsCompat.update(session.context, dt)
   end
   for _, slot in ipairs(SERVICE_SLOTS) do
@@ -381,6 +399,7 @@ end
 function Host.event(name, payload)
   local session = Host.session
   if not session then return end
+  syncSides(session.context, session.battle)
   if name == "battle.turn_started" or name == "battle.turn_ended" then
     session.context.phase = "passive"
   elseif name == "battle.move_used" then
