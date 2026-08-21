@@ -124,7 +124,7 @@ assert(ordinary and ordinary.stadiumVenue == nil and ordinary.discs == false
   and ordinary.stadiumTheme == "grass",
   "ordinary battles did not receive the standalone grass theme")
 assert(Arena:preferredExternal({ battle = { oppClass = "OPP_YOUNGSTER" } })
-  == "DRAMALESS_SHAPE:voxel-map")
+  == "potato_voxel:voxel-map")
 assert(Arena:preferredExternal({ battle = { oppClass = "OPP_BROCK" } }) == nil)
 
 print("ok Stadium boss arena selection")

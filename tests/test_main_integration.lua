@@ -43,12 +43,14 @@ local booted, bootError = pcall(function()
 end)
 package = runtimePackage
 assert(booted, bootError)
-assert(mod.exports.version == "2.1.7")
+assert(mod.exports.version == "2.1.8.1")
 assert(type(mod.exports.battles) == "table" and mod.exports.battles.version == 1,
        "StadiumBattleFX did not export provider API 1")
 assert(type(mod.exports.battles.registerComponent) == "function"
        and type(mod.exports.battles.resolve) == "function",
        "provider registration/resolution methods were not exported")
+assert(mod.exports.battles:enabled() == true,
+       "provider API did not expose the enabled Stadium FX state")
 assert(type(mod.exports.models) == "table" and mod.exports.models.version == 1
        and type(mod.exports.models.acquire) == "function"
        and type(mod.exports.models.withRenderer) == "function",

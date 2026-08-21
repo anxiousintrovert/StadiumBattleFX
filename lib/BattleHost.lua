@@ -315,6 +315,19 @@ function Host.begin(battle, trainerPortraitsEnabled)
   local session = { battle = battle, context = contextFor(battle), providers = {},
                     ids = {}, failed = {} }
   Host.session = session
+  -- The renderer chooses whether to clear the UI canvas transparent before it
+  -- calls BattleState:draw.  A hosted world override must participate in that
+  -- decision from battle begin, not merely suppress the later paper rectangle.
+  -- Keep this instance-only and restore it at finish so normal battles retain
+  -- the player's BATTLE BG setting.
+  session.hadOpaque = rawget(battle, "isOpaque")
+  session.hadBgMode = rawget(battle, "bgMode")
+  session.baseBgMode = battle.bgMode
+  battle.bgMode = function(self)
+    if Host.session == session then return "world" end
+    return session.baseBgMode(self)
+  end
+  battle.isOpaque = false
   -- Shape-family renderers own their selected trainer collection while they
   -- own the staged battle. Do not replace that source before it captures the
   -- trainer card.
@@ -604,6 +617,10 @@ end
 function Host.finish(reason)
   local session = Host.session
   if not session then return end
+  if session.battle then
+    session.battle.isOpaque = session.hadOpaque
+    session.battle.bgMode = session.hadBgMode
+  end
   TrainerPortraits.restore(session.trainerPortraits)
   if session.battle then session.battle.stadiumTrainerPortraitToken = nil end
   invoke(session, "models", session.providers.models, "finish", reason or "ended")
@@ -641,6 +658,7 @@ end
 local function withoutBattleField(battle, fn)
   local g = love.graphics
   local rectangle = g.rectangle
+  local clear = g.clear
   local fieldSuppressed = false
   local session = Host.session
   local arenaId = session and (session.ids.arena
@@ -711,8 +729,22 @@ local function withoutBattleField(battle, fn)
     end
     return rectangle(mode, x, y, w, h, ...)
   end
+  -- Newer renderer paths clear the UI target directly before the classic
+  -- battle state has a chance to paint its field.  Treat that exact opaque
+  -- white clear as the same paper background as the rectangle above; leaving
+  -- every other clear untouched preserves canvases owned by effects/providers.
+  if type(clear) == "function" then
+    g.clear = function(r, green, b, a, ...)
+      if (r or 0) > .99 and (green or 0) > .99 and (b or 0) > .99
+          and (a == nil or a > .99) then
+        return clear(0, 0, 0, 0, ...)
+      end
+      return clear(r, green, b, a, ...)
+    end
+  end
   local ok, result = pcall(fn)
   g.rectangle = rectangle
+  g.clear = clear
   if not ok then error(result, 0) end
   return result
 end
@@ -780,14 +812,28 @@ function Host.install(force)
     local innerDraw = BattleState.draw
     installedDraw = function(self, ...)
     local args = { ... }
+    -- A mod loaded between two host attachments may retain an earlier SBFX
+    -- draw wrapper as its `innerDraw`.  When it delegates during our current
+    -- composition, that earlier wrapper must reach the engine directly:
+    -- re-entering Host.draw clears/replaces the already-prepared world and
+    -- leaves the opaque 160x144 battle field over an otherwise-correct arena.
+    if self.stadiumBattleFxHostDrawing then
+      return innerDraw(self, unpack(args))
+    end
     local world = Host.draw(self)
     local result
     if world then
-      self.letterboxWhite = false
-      love.graphics.clear(0, 0, 0, 0)
-      result = withoutBattleField(self, function()
-        return innerDraw(self, unpack(args))
+      self.stadiumBattleFxHostDrawing = true
+      local ok, value = pcall(function()
+        self.letterboxWhite = false
+        love.graphics.clear(0, 0, 0, 0)
+        return withoutBattleField(self, function()
+          return innerDraw(self, unpack(args))
+        end)
       end)
+      self.stadiumBattleFxHostDrawing = nil
+      if not ok then error(value, 0) end
+      result = value
     else
       self.letterboxWhite = nil
       result = innerDraw(self, unpack(args))

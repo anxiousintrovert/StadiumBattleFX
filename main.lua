@@ -8,7 +8,7 @@ if love and (type(mod) ~= "table" or type(mod.read) ~= "function") then
   return require("viewer.App")
 end
 
-local VERSION = "2.1.7"
+local VERSION = "2.1.8.1"
 mod.exports.version = VERSION
 
 local namespace = { mod = mod, path = mod.path, engineRequire = require }
@@ -175,8 +175,18 @@ end
 mod.options:define(optionSchema)
 
 BattleProviders.setBuiltin("arena", StadiumArena, {
-  description = "Automatic voxel map, Stadium boss rooms, or portable location themes",
-  available = function(context) return StadiumArena:available(context) end,
+  description = "Automatic arena; Battle Art map stages or Stadium special arenas",
+  available = function(context)
+    if not StadiumArena:available(context) then return false end
+    -- Battle Art is the ordinary map-backed stage when it is actively serving
+    -- this battle.  Keep Stadium's authored boss rooms available, but do not
+    -- silently fall back to a generic portable theme beneath an active map.
+    if not StadiumArena.venueFor(context and context.battle)
+        and BattleArtCompat.enabled() then
+      return false
+    end
+    return true
+  end,
 })
 BattleProviders.setBuiltin("models", StadiumModelProvider, {
   description = "Pokemon Stadium battle models, poses, attachments, and reactions",
@@ -239,6 +249,9 @@ mod.exports.stadium2 = {
 mod.exports.battles = {
   version = BattleProviders.VERSION,
   FALLBACK = BattleProviders.FALLBACK,
+  enabled = function()
+    return mod.options:get("enabled") ~= false
+  end,
   registerComponent = function(_, owner, slot, id, definition)
     return BattleProviders.registerComponent(owner, slot, id, definition)
   end,
@@ -299,7 +312,12 @@ mod.events:on("battle.started", function(payload)
   elseif hookErr then
     namespace.log:info("battle presentation host reattached at battle start")
   end
-  BattleHost.begin(battle, mod.options:get("trainer_portraits") ~= false)
+  -- A disabled Stadium FX must leave all presentation ownership with the
+  -- engine (or another mod).  Providers may remain registered for the next
+  -- enabled battle, but no SBFX session is created while this switch is off.
+  if mod.options:get("enabled") ~= false then
+    BattleHost.begin(battle, mod.options:get("trainer_portraits") ~= false)
+  end
   namespace.log:info("battle started; animation adapter=%s", battle and battle.animPlayer and "available" or "missing")
   if stadiumOwns("announcer") then Announcer.beginBattle(battle) end
   if not (battle and battle.animPlayer) then return end

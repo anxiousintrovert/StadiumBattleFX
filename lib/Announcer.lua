@@ -428,9 +428,11 @@ local function rotate(name, clips)
   return clips[at]
 end
 
-local function textVisible(battle)
+-- `msgHold` only keeps a completed automatic page painted behind the next
+-- action. It is not an active message, so it must not delay announcer cues.
+local function textActive(battle)
   local current = battle and battle.current
-  return (current and current.text) or (battle and battle.msgHold) or false
+  return current and current.text or false
 end
 
 local function sideFor(battle, battler, eventSide)
@@ -486,7 +488,7 @@ local function sendoutReady(action)
      or sideBattler(battle, action.side) ~= action.battler then
     return nil
   end
-  local text = textVisible(battle)
+  local text = textActive(battle)
   local sending = sideSending(battle, action.side)
   if text then action.seenText = true end
   if sending then action.seenSending = true end
@@ -497,7 +499,7 @@ end
 
 local function messageReady(action)
   if action.battle ~= state.battle then return nil end
-  if textVisible(action.battle) then action.seenBusy = true return false end
+  if textActive(action.battle) then action.seenBusy = true return false end
   return action.seenBusy and true or false
 end
 
@@ -678,7 +680,7 @@ function Announcer.beginBattle(battle)
         clip = 368 + dex, priority = PRIORITY.sendout,
         key = "initial_" .. side, ready = sendoutReady,
         requireSending = true,
-        seenText = textVisible(battle),
+        seenText = textActive(battle),
         seenSending = sideSending(battle, side) and true or false })
     end
   end
@@ -698,7 +700,7 @@ function Announcer.battlerSwitched(payload)
       and rotate(side .. "_switch",
         side == "player" and SWITCH_PLAYER or SWITCH_ENEMY) or nil,
     key = side .. "_sendout", ready = sendoutReady,
-    seenText = textVisible(battle),
+    seenText = textActive(battle),
     seenSending = sideSending(battle, side) and true or false })
 end
 
@@ -712,7 +714,7 @@ function Announcer.moveUsed(payload)
     clip = 583 + moveIndex, priority = PRIORITY.move,
     firstMove = state.moveCount == 1 and rotate("first_move", FIRST_MOVE) or nil,
     key = "move:" .. tostring(state.moveCount), ready = moveReady,
-    seenBusy = textVisible(battle) })
+    seenBusy = textActive(battle) })
   noteMoveForFlow()
   return queued
 end
@@ -740,7 +742,7 @@ function Announcer.statusInflicted(payload)
   if not clip then return false end
   return deferAction({ battle = payload.battle, clip = clip,
     priority = PRIORITY.status, key = "status:" .. tostring(payload.status),
-    ready = messageReady, seenBusy = textVisible(payload.battle) })
+    ready = messageReady, seenBusy = textActive(payload.battle) })
 end
 
 -- `battle.fainted` is emitted when the battle logic sets a Pokemon's real HP

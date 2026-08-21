@@ -12,6 +12,12 @@ local Compat = {}
 
 local BACKENDS = {
   { id = "BATTLE_ART_VOXEL_FORK", label = "Battle Art" },
+  -- Dramaless 2.x normally contributes providers through the public SBFX
+  -- selector.  It retains a standalone staged renderer as a safe fallback
+  -- while mods are loading, though, so it must also participate in this
+  -- read-only ownership bridge.  Otherwise SBFX can replace its opening
+  -- trainer image before that renderer has captured the native card.
+  { id = "DRAMALESS_SHAPE", label = "Dramaless Shape" },
   { id = "DRAMATIC_SHAPE", label = "Dramatic Shape" },
   { id = "potato_voxel", label = "PotatoVoxel" },
 }

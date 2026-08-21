@@ -79,7 +79,9 @@ local Host = assert(loader("lib/BattleHost.lua"))({
         owner = function(got) assert(got == battle); return externalOwnerId end,
         ownerLabel = function(got)
           assert(got == battle)
-          return externalOwnerId == "DRAMATIC_SHAPE" and "Dramatic Shape" or nil
+          if externalOwnerId == "DRAMATIC_SHAPE" then return "Dramatic Shape" end
+          if externalOwnerId == "DRAMALESS_SHAPE" then return "Dramaless Shape" end
+          return nil
         end,
       }
     end
@@ -162,4 +164,14 @@ assert(not Host.draw(battle),
   "SBFX rendered a competing world while Battle Art owned the battle")
 assert(Host.session.externalPresentation == "DRAMATIC_SHAPE")
 Host.finish("battle-art-test")
+
+-- Dramaless 2.x can temporarily use its standalone staged renderer while its
+-- SBFX selector bridge is unavailable. Its trainer source must remain intact
+-- until that renderer has captured the opening card.
+battleArtOwns, battleArtActive = true, true
+externalOwnerId = "DRAMALESS_SHAPE"
+assert(Host.begin(battle))
+assert(portraitApplyCalls == 2,
+  "Stadium portraits replaced Dramaless's staged trainer image")
+Host.finish("dramaless-fallback-test")
 print("ok protected battle-provider lifecycle")

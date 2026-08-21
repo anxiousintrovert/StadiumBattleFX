@@ -76,12 +76,13 @@ function StadiumArena:available(ctx)
 end
 
 -- The built-in arena choice is intentionally an AUTO policy. Ordinary
--- battles prefer Dramaless's richer map-backed stage when that exact provider
--- is registered and ready; bosses retain their authored Stadium rooms. If the
--- voxel provider later declines, BattleHost returns here and uses a theme.
+-- battles prefer PotatoVoxel's performance-scaled map-backed stage when that
+-- exact provider is registered and ready; Gyms, the Elite Four, and the
+-- Champion retain their authored Stadium rooms. If the voxel provider later
+-- declines, BattleHost returns here and uses a theme.
 function StadiumArena:preferredExternal(ctx)
   if not StadiumArena.venueFor(ctx and ctx.battle) then
-    return "DRAMALESS_SHAPE:voxel-map"
+    return "potato_voxel:voxel-map"
   end
 end
 

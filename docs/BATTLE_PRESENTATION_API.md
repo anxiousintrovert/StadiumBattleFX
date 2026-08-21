@@ -116,6 +116,7 @@ Registration returns the canonical `OWNER_ID:local-id` string.
 ```lua
 api.version                                      -- integer: 1
 api.FALLBACK                                     -- unique sentinel
+api:enabled()                                    -- true when STADIUM FX is enabled
 api:registerComponent(owner, slot, id, definition)
 api:componentList(slot)                          -- copied metadata array
 api:selectedId(slot)                             -- saved canonical ID/default/off
@@ -129,6 +130,10 @@ returns the selected usable provider. It returns the Stadium built-in for
 `stadium:default`, and `nil` for `off`, an unavailable provider, or a stale
 saved ID. A stale/unavailable selection safely falls back to the built-in and
 is reported once in the diagnostic log.
+
+Registration is independent of the player's current setting. A provider that
+would take presentation ownership must check `api:enabled()` from its
+capability/begin path so it remains inactive while **STADIUM FX** is off.
 
 ## Common lifecycle
 

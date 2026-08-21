@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.8.1
+
+- Fixed the Dramaless Shape 2.0.x standalone staged-battle fallback handoff.
+  SBFX now recognizes `DRAMALESS_SHAPE` as a Shape-family presentation owner
+  before its first projected card is ready, preserving native trainer and
+  Pokemon card capture instead of replacing the opening trainer image.
+- Added a regression test for the Dramaless fallback ownership path. This is
+  a compatibility-only hotfix; it does not change announcer caching, Battle
+  Cinematics settings, or third-party visual-overhaul settings.
+
 ## 2.1.8
 
 - Keep the Battle Presentation API's player and enemy battler references

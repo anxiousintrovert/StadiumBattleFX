@@ -162,6 +162,18 @@ assert(state.version == "1.8.2", "stale Shape exports.version won over manifest 
 assert(Compat.owner(activeBattle) == "DRAMATIC_SHAPE")
 
 handles.DRAMATIC_SHAPE = nil
+handles.DRAMALESS_SHAPE = {
+  version = "2.0.2",
+  exports = { version = "2.0.2", lib = handle.exports.lib },
+}
+Compat.refresh()
+state = assert(Compat.presentationState(activeBattle))
+assert(state.owner == "DRAMALESS_SHAPE" and state.ownerLabel == "Dramaless Shape")
+assert(state.version == "2.0.2")
+assert(Compat.ownsBattle(activeBattle),
+  "Dramaless fallback did not claim its staged battle before the first shot")
+
+handles.DRAMALESS_SHAPE = nil
 handles.potato_voxel = {
   version = "1.5.2",
   exports = { version = "1.6.2-brick.17", lib = handle.exports.lib },
